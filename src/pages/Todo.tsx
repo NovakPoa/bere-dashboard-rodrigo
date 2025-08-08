@@ -107,17 +107,15 @@ export default function Todo() {
           <Button variant="outline" size="sm" className="shrink-0" onClick={() => removeTask(task.id)}>Remover</Button>
         </div>
       </div>
-      {task.status === "done" && (
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="text-sm text-muted-foreground">Data de finalização</label>
-          <Input
-            type="date"
-            className="w-full sm:w-auto"
-            value={task.completedAt || ""}
-            onChange={(e) => updateTask(task.id, { completedAt: e.target.value || undefined })}
-          />
-        </div>
-      )}
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="text-sm text-muted-foreground">Data de finalização</label>
+        <Input
+          type="date"
+          className="w-full sm:w-auto"
+          value={task.completedAt || ""}
+          onChange={(e) => updateTask(task.id, { completedAt: e.target.value || undefined })}
+        />
+      </div>
     </article>
   );
 
