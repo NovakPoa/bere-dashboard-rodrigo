@@ -4,15 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { format } from "date-fns";
+import type { DateRange } from "react-day-picker";
 
 const HABITS_KEY = "habits_v1";
 const CHECKS_KEY = "habit_checks_v1";
 
 type Habit = { id: string; name: string; createdAt: number };
-type Checks = Record<string, string[]>; // habitId -> ["YYYY-MM-DD", ...]
-
+type Checks = Record<string, Record<string, number>>; // habitId -> { "YYYY-MM-DD": count }
 function dateKey(d: Date) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -39,16 +41,33 @@ export default function Habitos() {
       return [];
     }
   });
-  const [checks, setChecks] = useState<Checks>(() => {
-    try {
-      const raw = localStorage.getItem(CHECKS_KEY);
-      return raw ? (JSON.parse(raw) as Checks) : {};
-    } catch {
-      return {};
+const [checks, setChecks] = useState<Checks>(() => {
+  try {
+    const raw = localStorage.getItem(CHECKS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as any;
+    const migrated: Checks = {};
+    for (const [habitId, val] of Object.entries(parsed)) {
+      if (Array.isArray(val)) {
+        const rec: Record<string, number> = {};
+        (val as unknown as string[]).forEach((k) => {
+          rec[k] = (rec[k] || 0) + 1;
+        });
+        migrated[habitId] = rec;
+      } else if (val && typeof val === "object") {
+        migrated[habitId] = val as Record<string, number>;
+      }
     }
-  });
+    return migrated;
+  } catch {
+    return {};
+  }
+});
   const [newHabit, setNewHabit] = useState("");
-  const [period, setPeriod] = useState<number>(7);
+const [range, setRange] = useState<DateRange>(() => {
+  const defaults = rangeDays(7);
+  return { from: defaults[0], to: defaults[defaults.length - 1] };
+});
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => setPageSEO("Hábitos | Berê", "Crie hábitos e marque seu progresso diário"), []);
@@ -58,8 +77,19 @@ export default function Habitos() {
     if (!selectedId && habits[0]) setSelectedId(habits[0].id);
   }, [habits, selectedId]);
 
-  const days = useMemo(() => rangeDays(period), [period]);
-
+const days = useMemo(() => {
+  const from = range?.from;
+  const to = range?.to ?? range?.from;
+  if (!from) return [];
+  const arr: Date[] = [];
+  const cur = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const last = new Date((to ?? from).getFullYear(), (to ?? from).getMonth(), (to ?? from).getDate());
+  while (cur <= last) {
+    arr.push(new Date(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return arr;
+}, [range]);
   function addHabit() {
     const name = newHabit.trim();
     if (!name) return;
@@ -69,25 +99,37 @@ export default function Habitos() {
     setSelectedId((id) => id || h.id);
   }
 
-  function isChecked(habitId: string, key: string) {
-    return (checks[habitId] || []).includes(key);
-  }
+function getCount(habitId: string, key: string) {
+  return checks[habitId]?.[key] ?? 0;
+}
 
-  function toggleCheck(habitId: string, key: string) {
-    setChecks((prev) => {
-      const arr = new Set(prev[habitId] || []);
-      if (arr.has(key)) arr.delete(key); else arr.add(key);
-      return { ...prev, [habitId]: Array.from(arr).sort() };
-    });
-  }
+function setCount(habitId: string, key: string, count: number) {
+  setChecks((prev) => {
+    const byDate = { ...(prev[habitId] || {}) };
+    if (count <= 0) {
+      delete byDate[key];
+    } else {
+      byDate[key] = Math.floor(count);
+    }
+    return { ...prev, [habitId]: byDate };
+  });
+}
 
-  const analysis = useMemo(() => {
-    if (!selectedId) return { done: 0, total: days.length };
-    const set = new Set(checks[selectedId] || []);
-    const keys = days.map(dateKey);
-    const done = keys.reduce((acc, k) => acc + (set.has(k) ? 1 : 0), 0);
-    return { done, total: keys.length };
-  }, [selectedId, checks, days]);
+function increment(habitId: string, key: string) {
+  setCount(habitId, key, getCount(habitId, key) + 1);
+}
+
+function decrement(habitId: string, key: string) {
+  setCount(habitId, key, Math.max(0, getCount(habitId, key) - 1));
+}
+
+const analysis = useMemo(() => {
+  if (!selectedId) return { done: 0, total: days.length };
+  const byDate = checks[selectedId] || {};
+  const keys = days.map(dateKey);
+  const done = keys.reduce((acc, k) => acc + ((byDate[k] ?? 0) > 0 ? 1 : 0), 0);
+  return { done, total: keys.length };
+}, [selectedId, checks, days]);
 
   const chartData = [
     { name: "Feitos", value: analysis.done },
@@ -122,23 +164,27 @@ export default function Habitos() {
           </Card>
         </section>
 
-        <section aria-labelledby="periodo">
-          <h2 id="periodo" className="sr-only">Período</h2>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">Período:</span>
-            <Select value={String(period)} onValueChange={(v) => setPeriod(Number(v))}>
-              <SelectTrigger className="w-28">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">Últimos 7 dias</SelectItem>
-                <SelectItem value="14">Últimos 14 dias</SelectItem>
-                <SelectItem value="30">Últimos 30 dias</SelectItem>
-                <SelectItem value="90">Últimos 90 dias</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </section>
+<section aria-labelledby="periodo">
+  <h2 id="periodo" className="sr-only">Período</h2>
+  <div className="flex items-center gap-3">
+    <span className="text-sm text-muted-foreground">Período:</span>
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className="w-auto justify-start">
+          {range?.from && range?.to ? `${format(range.from, "dd/MM/yyyy")} - ${format(range.to, "dd/MM/yyyy")}` : "Selecione datas"}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="p-0" align="start">
+        <Calendar
+          mode="range"
+          selected={range}
+          onSelect={(r) => setRange(r ?? undefined)}
+          numberOfMonths={2}
+        />
+      </PopoverContent>
+    </Popover>
+  </div>
+</section>
 
         <section aria-labelledby="lista" className="space-y-4">
           <h2 id="lista" className="text-sm text-muted-foreground">Seus hábitos</h2>
@@ -154,16 +200,20 @@ export default function Habitos() {
                   <CardContent>
                     <div className="overflow-x-auto">
                       <div className="grid" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(40px, 1fr))` }}>
-                        {days.map((d) => {
-                          const key = dateKey(d);
-                          const checked = isChecked(h.id, key);
-                          return (
-                            <div key={key} className="flex flex-col items-center gap-1 py-2">
-                              <span className="text-[10px] text-muted-foreground">{d.getDate().toString().padStart(2, "0")}</span>
-                              <Checkbox checked={checked} onCheckedChange={() => toggleCheck(h.id, key)} />
-                            </div>
-                          );
-                        })}
+{days.map((d) => {
+  const key = dateKey(d);
+  const count = getCount(h.id, key);
+  return (
+    <div key={key} className="flex flex-col items-center gap-1 py-2">
+      <span className="text-[10px] text-muted-foreground">{d.getDate().toString().padStart(2, "0")}</span>
+      <div className="flex items-center gap-1">
+        <Button variant="outline" size="icon" aria-label="Diminuir" onClick={(e) => { e.stopPropagation(); decrement(h.id, key); }}>-</Button>
+        <span className="text-xs tabular-nums min-w-[1.25rem] text-center">{count}</span>
+        <Button variant="outline" size="icon" aria-label="Aumentar" onClick={(e) => { e.stopPropagation(); increment(h.id, key); }}>+</Button>
+      </div>
+    </div>
+  );
+})}
                       </div>
                     </div>
                   </CardContent>
