@@ -33,7 +33,7 @@ export default function Calendario() {
     if (!settings.calendarId) return "";
     const src = encodeURIComponent(settings.calendarId);
     const tz = encodeURIComponent(settings.timezone);
-    return `https://calendar.google.com/calendar/embed?src=${src}&ctz=${tz}&mode=MONTH&showTitle=0&showPrint=0&showTabs=1&showTz=0`;
+    return `https://calendar.google.com/calendar/embed?src=${src}&ctz=${tz}`;
   }, [settings]);
 
   return (
