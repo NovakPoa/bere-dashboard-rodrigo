@@ -167,47 +167,50 @@ export default function Alimentacao() {
   const FoodSim = MessageSimulator<FoodEntry>;
 
   return (
-    <div className="space-y-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Alimentação</h1>
-          <p className="text-muted-foreground">Registre refeições e monitore nutrição</p>
-        </div>
-        <div className="flex gap-2">
-          {periods.map((period) => (
-            <Button
-              key={period.days}
-              variant="outline"
-              size="sm"
-              onClick={() => handlePeriodChange(period.days, period.label)}
-              className={cn(
-                range?.from && range?.to &&
-                Math.ceil((range.to.getTime() - range.from.getTime()) / (1000 * 60 * 60 * 24)) + 1 === period.days &&
-                "bg-primary text-primary-foreground"
-              )}
-            >
-              {period.label}
-            </Button>
-          ))}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm">
-                <CalendarIcon className="h-4 w-4 mr-2" />
-                {getCurrentPeriodLabel()}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="range"
-                selected={range}
-                onSelect={setRange}
-                numberOfMonths={2}
-                className={cn("p-3 pointer-events-auto")}
-              />
-            </PopoverContent>
-          </Popover>
+    <div className="min-h-screen">
+      <header className="bg-gradient-primary">
+        <div className="container py-12">
+          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Alimentação | Berê</h1>
         </div>
       </header>
+
+      <main className="container py-8 space-y-8">
+        <section aria-labelledby="filters" className="flex justify-end">
+          <div className="flex gap-2">
+            {periods.map((period) => (
+              <Button
+                key={period.days}
+                variant="outline"
+                size="sm"
+                onClick={() => handlePeriodChange(period.days, period.label)}
+                className={cn(
+                  range?.from && range?.to &&
+                  Math.ceil((range.to.getTime() - range.from.getTime()) / (1000 * 60 * 60 * 24)) + 1 === period.days &&
+                  "bg-primary text-primary-foreground"
+                )}
+              >
+                {period.label}
+              </Button>
+            ))}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  {getCurrentPeriodLabel()}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  selected={range}
+                  onSelect={setRange}
+                  numberOfMonths={2}
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </section>
 
       <NutritionCharts entries={entries} dateRange={range?.from && range?.to ? { from: range.from, to: range.to } : undefined} />
 
@@ -257,6 +260,7 @@ export default function Alimentacao() {
       </section>
 
       <RecentMeals entries={entries} dateRange={range?.from && range?.to ? { from: range.from, to: range.to } : undefined} />
+      </main>
     </div>
   );
 }
