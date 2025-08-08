@@ -57,7 +57,7 @@ function save(entry: FitnessEntryLocal) {
 
 export default function Atividades() {
   const [entries, setEntries] = useState<FitnessEntryLocal[]>([]);
-  const [range, setRange] = useState<{ from: Date; to: Date }>(() => ({ from: subDays(new Date(), 6), to: new Date() }));
+  const [range, setRange] = useState<Partial<{ from: Date; to: Date }> | undefined>(undefined);
 
   useEffect(() => setPageSEO("Atividades Físicas | Berê", "Registre exercícios por mensagem"), []);
   useEffect(() => setEntries(getActivities()), []);
@@ -65,11 +65,11 @@ export default function Atividades() {
   const FitnessSim = MessageSimulator<FitnessEntryLocal>;
 
   const periodEntries = useMemo(() => {
-    const from = startOfDay(range.from);
-    const to = addDays(startOfDay(range.to), 1);
+    const efFrom = startOfDay(range?.from ?? subDays(new Date(), 6));
+    const efToEnd = addDays(startOfDay(range?.to ?? new Date()), 1);
     return entries.filter((e) => {
       const d = new Date(e.data);
-      return d >= from && d < to;
+      return d >= efFrom && d < efToEnd;
     });
   }, [entries, range]);
 
@@ -77,7 +77,9 @@ export default function Atividades() {
 
   const modalities = useMemo(() => Array.from(new Set(periodEntries.map((e) => e.tipo?.toLowerCase() || "atividade"))), [periodEntries]);
   const series = useMemo(() => {
-    const days = eachDayOfInterval({ start: startOfDay(range.from), end: startOfDay(range.to) });
+    const efFrom = startOfDay(range?.from ?? subDays(new Date(), 6));
+    const efTo = startOfDay(range?.to ?? new Date());
+    const days = eachDayOfInterval({ start: efFrom, end: efTo });
     return {
       data: days.map((day) => {
         const next = addDays(day, 1);
@@ -101,8 +103,16 @@ export default function Atividades() {
   const totalMinutes = periodEntries.reduce((s, e) => s + (e.minutos || 0), 0);
   const totalKm = periodEntries.reduce((s, e) => s + (e.distanciaKm || 0), 0);
   const totalCal = useMemo(() => totalCalories(periodEntries), [periodEntries]);
-  const daysCount = differenceInCalendarDays(range.to, range.from) + 1;
+  const daysCount = (() => {
+    const efFrom = startOfDay(range?.from ?? subDays(new Date(), 6));
+    const efTo = startOfDay(range?.to ?? new Date());
+    return differenceInCalendarDays(efTo, efFrom) + 1;
+  })();
   const avgCalories = useMemo(() => Math.round(totalCal / Math.max(daysCount, 1)), [totalCal, daysCount]);
+  const periodEntriesSorted = useMemo(() =>
+    [...periodEntries].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()),
+    [periodEntries]
+  );
 
   const formatHm = (mins: number) => {
     const h = Math.floor(mins / 60);
@@ -135,7 +145,7 @@ export default function Atividades() {
                   onSelect={(r: any) => {
                     if (r?.from && r?.to) {
                       if (range && r.from.getTime() === range.from.getTime() && r.to.getTime() === range.to.getTime()) {
-                        setRange({ from: subDays(new Date(), 6), to: new Date() });
+                        setRange(undefined);
                       } else {
                         setRange({ from: r.from, to: r.to });
                       }
@@ -202,6 +212,11 @@ export default function Atividades() {
               <ActivitiesChart data={series.data} modalities={series.modalities} />
             </CardContent>
           </Card>
+        </section>
+
+        <section aria-labelledby="list">
+          <h2 id="list" className="text-lg font-medium mb-3">Atividades</h2>
+          <ActivitiesTable entries={periodEntriesSorted} />
         </section>
       </main>
     </div>
