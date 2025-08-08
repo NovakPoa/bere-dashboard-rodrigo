@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import { setPageSEO } from "@/lib/seo";
 import { MessageSimulator } from "@/components/common/MessageSimulator";
@@ -6,6 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format, subDays } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import NutritionCharts from "@/components/nutrition/NutritionCharts";
+import RecentMeals from "@/components/nutrition/RecentMeals";
 
 const STORAGE_KEY = "food_diary_v1";
 
@@ -42,12 +51,25 @@ function save(entry: FoodEntry) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
 }
 
+function getFoodEntries(): FoodEntry[] {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
 export default function Alimentacao() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [entries, setEntries] = useState<FoodEntry[]>([]);
+  const [range, setRange] = useState<Partial<{ from: Date; to: Date }> | undefined>(
+    () => ({ from: subDays(new Date(), 6), to: new Date() })
+  );
   const fieldsRef = useRef<Partial<FoodEntry>>({});
 
   useEffect(() => setPageSEO("Alimentação | Berê", "Registre refeições por texto ou foto"), []);
+  useEffect(() => setEntries(getFoodEntries()), []);
 
   const onFile = (f: File | null) => {
     setFile(f);
@@ -98,7 +120,37 @@ export default function Alimentacao() {
       data: new Date().toISOString(),
     };
     save(entry);
+    setEntries(getFoodEntries());
     toast({ title: "Refeição registrada" });
+  };
+
+  const periods = [
+    { label: "Últimos 7 dias", days: 7 },
+    { label: "Últimos 15 dias", days: 15 },
+    { label: "Último mês", days: 30 },
+    { label: "Últimos 3 meses", days: 90 },
+  ];
+
+  const handlePeriodChange = (days: number, label: string) => {
+    const currentPeriod = range?.from && range?.to ? 
+      Math.ceil((range.to.getTime() - range.from.getTime()) / (1000 * 60 * 60 * 24)) + 1 : 7;
+    
+    if (currentPeriod === days) {
+      // Deselect if same period
+      setRange({ from: subDays(new Date(), 6), to: new Date() });
+    } else {
+      setRange({
+        from: subDays(new Date(), days - 1),
+        to: new Date(),
+      });
+    }
+  };
+
+  const getCurrentPeriodLabel = () => {
+    if (!range?.from || !range?.to) return "Últimos 7 dias";
+    const days = Math.ceil((range.to.getTime() - range.from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const period = periods.find(p => p.days === days);
+    return period?.label || "Período personalizado";
   };
 
   // Campos editáveis tipados
@@ -114,10 +166,49 @@ export default function Alimentacao() {
   const FoodSim = MessageSimulator<FoodEntry>;
 
   return (
-    <main className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">Alimentação</h1>
+    <div className="space-y-6">
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Alimentação</h1>
+          <p className="text-muted-foreground">Registre refeições e monitore nutrição</p>
+        </div>
+        <div className="flex gap-2">
+          {periods.map((period) => (
+            <Button
+              key={period.days}
+              variant="outline"
+              size="sm"
+              onClick={() => handlePeriodChange(period.days, period.label)}
+              className={cn(
+                range?.from && range?.to &&
+                Math.ceil((range.to.getTime() - range.from.getTime()) / (1000 * 60 * 60 * 24)) + 1 === period.days &&
+                "bg-primary text-primary-foreground"
+              )}
+            >
+              {period.label}
+            </Button>
+          ))}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm">
+                <CalendarIcon className="h-4 w-4 mr-2" />
+                {getCurrentPeriodLabel()}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="range"
+                selected={range}
+                onSelect={setRange}
+                numberOfMonths={2}
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
       </header>
+
+      <NutritionCharts entries={entries} dateRange={range as { from: Date; to: Date }} />
 
       <section className="grid gap-4 lg:grid-cols-2">
         <FoodSim
@@ -126,6 +217,7 @@ export default function Alimentacao() {
           parse={parseFood}
           onConfirm={(data) => {
             save(data);
+            setEntries(getFoodEntries());
             toast({ title: "Refeição registrada" });
           }}
         />
@@ -162,6 +254,8 @@ export default function Alimentacao() {
           </CardContent>
         </Card>
       </section>
-    </main>
+
+      <RecentMeals entries={entries} dateRange={range as { from: Date; to: Date }} />
+    </div>
   );
 }
