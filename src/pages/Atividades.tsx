@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import StatCard from "@/components/finance/StatCard";
 import ActivitiesChart from "@/components/fitness/ActivitiesChart";
+import ActivitiesTable from "@/components/fitness/ActivitiesTable";
 import { FitnessEntry, getActivities, groupTotalsByModality, totalCalories } from "@/lib/fitness";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -130,8 +131,16 @@ export default function Atividades() {
               <PopoverContent className="w-auto p-0" align="end">
                 <Calendar
                   mode="range"
-                  selected={range}
-                  onSelect={(r: any) => r?.from && r?.to && setRange({ from: r.from, to: r.to })}
+                  selected={range as any}
+                  onSelect={(r: any) => {
+                    if (r?.from && r?.to) {
+                      if (range && r.from.getTime() === range.from.getTime() && r.to.getTime() === range.to.getTime()) {
+                        setRange({ from: subDays(new Date(), 6), to: new Date() });
+                      } else {
+                        setRange({ from: r.from, to: r.to });
+                      }
+                    }
+                  }}
                   initialFocus
                   className="p-3 pointer-events-auto"
                 />
