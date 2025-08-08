@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Calendar } from "@/components/ui/calendar";
+import { DateRange } from "react-day-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format, subDays } from "date-fns";
@@ -63,7 +64,7 @@ export default function Alimentacao() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [entries, setEntries] = useState<FoodEntry[]>([]);
-  const [range, setRange] = useState<Partial<{ from: Date; to: Date }> | undefined>(
+  const [range, setRange] = useState<DateRange | undefined>(
     () => ({ from: subDays(new Date(), 6), to: new Date() })
   );
   const fieldsRef = useRef<Partial<FoodEntry>>({});
@@ -208,7 +209,7 @@ export default function Alimentacao() {
         </div>
       </header>
 
-      <NutritionCharts entries={entries} dateRange={range as { from: Date; to: Date }} />
+      <NutritionCharts entries={entries} dateRange={range?.from && range?.to ? { from: range.from, to: range.to } : undefined} />
 
       <section className="grid gap-4 lg:grid-cols-2">
         <FoodSim
@@ -255,7 +256,7 @@ export default function Alimentacao() {
         </Card>
       </section>
 
-      <RecentMeals entries={entries} dateRange={range as { from: Date; to: Date }} />
+      <RecentMeals entries={entries} dateRange={range?.from && range?.to ? { from: range.from, to: range.to } : undefined} />
     </div>
   );
 }
