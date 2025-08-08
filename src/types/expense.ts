@@ -1,11 +1,16 @@
 export type PaymentMethod = "pix" | "boleto" | "credit";
 
 export type Category =
-  | "restaurante"
-  | "supermarket"
-  | "gas"
-  | "renting"
-  | "presents";
+  | "alimentacao"
+  | "assinaturas"
+  | "casa"
+  | "lazer"
+  | "mercado"
+  | "presentes"
+  | "saude"
+  | "transporte"
+  | "utilidades"
+  | "outros";
 
 export interface Expense {
   id: string;

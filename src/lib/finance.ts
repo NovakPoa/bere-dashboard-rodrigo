@@ -3,25 +3,66 @@ import { Expense, Category, PaymentMethod } from "@/types/expense";
 const STORAGE_KEY = "finance_expenses_v1";
 
 const CATEGORY_SYNONYMS: Record<string, Category> = {
-  restaurante: "restaurante",
-  restaurant: "restaurante",
-  refeicao: "restaurante",
-  refeição: "restaurante",
-  comida: "restaurante",
-  supermarket: "supermarket",
-  mercado: "supermarket",
-  supermercado: "supermarket",
-  compras: "supermarket",
-  gas: "gas",
-  gasolina: "gas",
-  combustivel: "gas",
-  combustível: "gas",
-  renting: "renting",
-  aluguel: "renting",
-  rent: "renting",
-  presents: "presents",
-  presentes: "presents",
-  gift: "presents",
+  // Novas categorias
+  alimentacao: "alimentacao",
+  "alimentação": "alimentacao",
+  comida: "alimentacao",
+  refeicao: "alimentacao",
+  "refeição": "alimentacao",
+  restaurante: "alimentacao",
+
+  assinaturas: "assinaturas",
+  assinatura: "assinaturas",
+  streaming: "assinaturas",
+  netflix: "assinaturas",
+  spotify: "assinaturas",
+
+  casa: "casa",
+  aluguel: "casa",
+  renting: "casa",
+  condominio: "casa",
+  "condomínio": "casa",
+
+  lazer: "lazer",
+  cinema: "lazer",
+  bar: "lazer",
+  show: "lazer",
+
+  mercado: "mercado",
+  supermercado: "mercado",
+  supermarket: "mercado",
+  compras: "mercado",
+
+  presentes: "presentes",
+  presente: "presentes",
+  gift: "presentes",
+
+  saude: "saude",
+  "saúde": "saude",
+  farmacia: "saude",
+  "farmácia": "saude",
+  medico: "saude",
+  "médico": "saude",
+
+  transporte: "transporte",
+  gas: "transporte",
+  gasolina: "transporte",
+  combustivel: "transporte",
+  "combustível": "transporte",
+  uber: "transporte",
+  taxi: "transporte",
+
+  utilidades: "utilidades",
+  conta: "utilidades",
+  luz: "utilidades",
+  energia: "utilidades",
+  agua: "utilidades",
+  "água": "utilidades",
+  internet: "utilidades",
+  telefone: "utilidades",
+
+  outros: "outros",
+  outro: "outros",
 };
 
 const METHOD_SYNONYMS: Record<string, PaymentMethod> = {
@@ -78,8 +119,62 @@ export function getExpenses(): Expense[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as Expense[];
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed = JSON.parse(raw) as any[];
+
+    const mapOldToNew: Record<string, Category> = {
+      restaurante: "alimentacao",
+      restaurant: "alimentacao",
+      refeicao: "alimentacao",
+      "refeição": "alimentacao",
+      comida: "alimentacao",
+      supermarket: "mercado",
+      mercado: "mercado",
+      supermercado: "mercado",
+      compras: "mercado",
+      gas: "transporte",
+      gasolina: "transporte",
+      combustivel: "transporte",
+      "combustível": "transporte",
+      renting: "casa",
+      aluguel: "casa",
+      rent: "casa",
+      presents: "presentes",
+      presentes: "presentes",
+      gift: "presentes",
+      // já novas
+      alimentacao: "alimentacao",
+      "alimentação": "alimentacao",
+      assinaturas: "assinaturas",
+      assinatura: "assinaturas",
+      casa: "casa",
+      lazer: "lazer",
+      saude: "saude",
+      "saúde": "saude",
+      transporte: "transporte",
+      utilidades: "utilidades",
+      outros: "outros",
+    };
+
+    const validNew = new Set<Category>([
+      "alimentacao",
+      "assinaturas",
+      "casa",
+      "lazer",
+      "mercado",
+      "presentes",
+      "saude",
+      "transporte",
+      "utilidades",
+      "outros",
+    ]);
+
+    const normalized: Expense[] = (Array.isArray(parsed) ? parsed : []).map((e: any) => {
+      const key = typeof e?.category === "string" ? e.category.toLowerCase() : "";
+      const newCat = mapOldToNew[key] ?? (validNew.has(e?.category) ? e.category : "outros");
+      return { ...e, category: newCat } as Expense;
+    });
+
+    return normalized;
   } catch {
     return [];
   }
@@ -131,11 +226,16 @@ export function getMonthlyTotal(expenses: Expense[], date = new Date()) {
 
 export function groupByCategory(expenses: Expense[]): Record<Category, number> {
   const base: Record<Category, number> = {
-    restaurante: 0,
-    supermarket: 0,
-    gas: 0,
-    renting: 0,
-    presents: 0,
+    alimentacao: 0,
+    assinaturas: 0,
+    casa: 0,
+    lazer: 0,
+    mercado: 0,
+    presentes: 0,
+    saude: 0,
+    transporte: 0,
+    utilidades: 0,
+    outros: 0,
   };
   for (const e of expenses) base[e.category] += e.amount;
   return base;

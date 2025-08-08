@@ -8,11 +8,16 @@ import { toast } from "@/hooks/use-toast";
 import { Trash2 } from "lucide-react";
 
 const CATEGORY_LABELS: Record<Expense["category"], string> = {
-  restaurante: "Restaurante",
-  supermarket: "Supermercado",
-  gas: "Combustível",
-  renting: "Aluguel",
-  presents: "Presentes",
+  alimentacao: "Alimentação",
+  assinaturas: "Assinaturas",
+  casa: "Casa",
+  lazer: "Lazer",
+  mercado: "Mercado",
+  presentes: "Presentes",
+  saude: "Saúde",
+  transporte: "Transporte",
+  utilidades: "Utilidades",
+  outros: "Outros",
 };
 
 const METHOD_LABELS: Record<Expense["method"], string> = {

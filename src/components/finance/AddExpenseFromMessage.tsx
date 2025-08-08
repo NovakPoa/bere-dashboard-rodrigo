@@ -10,11 +10,16 @@ export default function AddExpenseFromMessage({ onAdded }: { onAdded: () => void
   const [loading, setLoading] = useState(false);
 
   const CATEGORY_LABELS = {
-    restaurante: "Restaurante",
-    supermarket: "Supermercado",
-    gas: "Combustível",
-    renting: "Aluguel",
-    presents: "Presentes",
+    alimentacao: "Alimentação",
+    assinaturas: "Assinaturas",
+    casa: "Casa",
+    lazer: "Lazer",
+    mercado: "Mercado",
+    presentes: "Presentes",
+    saude: "Saúde",
+    transporte: "Transporte",
+    utilidades: "Utilidades",
+    outros: "Outros",
   } as const;
 
   const METHOD_LABELS = {
@@ -30,7 +35,7 @@ export default function AddExpenseFromMessage({ onAdded }: { onAdded: () => void
       if (!parsed) {
         toast({
           title: "Não foi possível interpretar",
-          description: "Inclua valor, categoria e forma de pagamento (ex.: 'R$ 45,90 restaurante crédito').",
+          description: "Inclua valor, categoria e forma de pagamento (ex.: 'R$ 45,90 alimentação crédito').",
           variant: "destructive",
         });
         return;
@@ -51,7 +56,7 @@ export default function AddExpenseFromMessage({ onAdded }: { onAdded: () => void
       </CardHeader>
       <CardContent className="space-y-3">
         <Textarea
-          placeholder="Ex.: R$ 45,90 restaurante crédito"
+          placeholder="Ex.: R$ 45,90 alimentação crédito"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           className="min-h-24"

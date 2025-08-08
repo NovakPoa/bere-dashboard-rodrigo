@@ -65,11 +65,16 @@ const Index = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todas</SelectItem>
-                    <SelectItem value="restaurante">Restaurante</SelectItem>
-                    <SelectItem value="supermarket">Supermercado</SelectItem>
-                    <SelectItem value="gas">Combustível</SelectItem>
-                    <SelectItem value="renting">Aluguel</SelectItem>
-                    <SelectItem value="presents">Presentes</SelectItem>
+                    <SelectItem value="alimentacao">Alimentação</SelectItem>
+                    <SelectItem value="assinaturas">Assinaturas</SelectItem>
+                    <SelectItem value="casa">Casa</SelectItem>
+                    <SelectItem value="lazer">Lazer</SelectItem>
+                    <SelectItem value="mercado">Mercado</SelectItem>
+                    <SelectItem value="presentes">Presentes</SelectItem>
+                    <SelectItem value="saude">Saúde</SelectItem>
+                    <SelectItem value="transporte">Transporte</SelectItem>
+                    <SelectItem value="utilidades">Utilidades</SelectItem>
+                    <SelectItem value="outros">Outros</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

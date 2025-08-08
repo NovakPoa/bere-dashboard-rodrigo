@@ -1,22 +1,27 @@
 import { useMemo } from "react";
 import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Expense } from "@/types/expense";
+import { Expense, Category } from "@/types/expense";
 import { groupByCategory } from "@/lib/finance";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--muted))", "hsl(var(--secondary))", "hsl(var(--ring))"];
-const CATEGORY_LABELS: Record<string, string> = {
-  restaurante: "Restaurante",
-  supermarket: "Supermercado",
-  gas: "Combustível",
-  renting: "Aluguel",
-  presents: "Presentes",
+const CATEGORY_LABELS: Record<Category, string> = {
+  alimentacao: "Alimentação",
+  assinaturas: "Assinaturas",
+  casa: "Casa",
+  lazer: "Lazer",
+  mercado: "Mercado",
+  presentes: "Presentes",
+  saude: "Saúde",
+  transporte: "Transporte",
+  utilidades: "Utilidades",
+  outros: "Outros",
 };
 
 export default function CategoryChart({ expenses }: { expenses: Expense[] }) {
   const data = useMemo(() => {
     const grouped = groupByCategory(expenses);
-    return Object.entries(grouped).map(([name, value]) => ({ name, value }));
+    return Object.entries(grouped).map(([name, value]) => ({ name: CATEGORY_LABELS[name as Category], value }));
   }, [expenses]);
 
   return (
