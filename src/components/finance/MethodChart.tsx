@@ -7,7 +7,7 @@ import { groupByMethod } from "@/lib/finance";
 const METHOD_LABELS: Record<PaymentMethod, string> = {
   pix: "PIX",
   boleto: "Boleto",
-  credit: "Credit",
+  credit: "Crédito",
 };
 
 export default function MethodChart({ expenses }: { expenses: Expense[] }) {
@@ -19,7 +19,7 @@ export default function MethodChart({ expenses }: { expenses: Expense[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm text-muted-foreground">By Payment Method</CardTitle>
+        <CardTitle className="text-sm text-muted-foreground">Por forma de pagamento</CardTitle>
       </CardHeader>
       <CardContent className="h-64">
         <ResponsiveContainer width="100%" height="100%">

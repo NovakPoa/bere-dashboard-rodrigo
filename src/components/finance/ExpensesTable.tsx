@@ -7,29 +7,43 @@ import { removeExpense } from "@/lib/finance";
 import { toast } from "@/hooks/use-toast";
 import { Trash2 } from "lucide-react";
 
+const CATEGORY_LABELS: Record<Expense["category"], string> = {
+  restaurante: "Restaurante",
+  supermarket: "Supermercado",
+  gas: "Combustível",
+  renting: "Aluguel",
+  presents: "Presentes",
+};
+
+const METHOD_LABELS: Record<Expense["method"], string> = {
+  pix: "PIX",
+  boleto: "Boleto",
+  credit: "Crédito",
+};
+
 export default function ExpensesTable({ expenses, onChange }: { expenses: Expense[]; onChange: () => void }) {
   const rows = useMemo(() => expenses, [expenses]);
 
   const handleDelete = (id: string) => {
     removeExpense(id);
-    toast({ title: "Deleted" });
+    toast({ title: "Excluído" });
     onChange();
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm text-muted-foreground">Recent Expenses</CardTitle>
+        <CardTitle className="text-sm text-muted-foreground">Despesas recentes</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>When</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>Data</TableHead>
+                <TableHead>Categoria</TableHead>
+                <TableHead>Forma de pagamento</TableHead>
+                <TableHead className="text-right">Valor</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
@@ -37,11 +51,11 @@ export default function ExpensesTable({ expenses, onChange }: { expenses: Expens
               {rows.map((e) => (
                 <TableRow key={e.id}>
                   <TableCell className="text-muted-foreground">{new Date(e.date).toLocaleString()}</TableCell>
-                  <TableCell className="capitalize">{e.category}</TableCell>
-                  <TableCell className="capitalize">{e.method}</TableCell>
+                  <TableCell className="capitalize">{CATEGORY_LABELS[e.category]}</TableCell>
+                  <TableCell className="capitalize">{METHOD_LABELS[e.method]}</TableCell>
                   <TableCell className="text-right font-medium">{e.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" aria-label="Delete" onClick={() => handleDelete(e.id)}>
+                    <Button variant="ghost" size="icon" aria-label="Excluir" onClick={() => handleDelete(e.id)}>
                       <Trash2 />
                     </Button>
                   </TableCell>
@@ -50,7 +64,7 @@ export default function ExpensesTable({ expenses, onChange }: { expenses: Expens
               {rows.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-10">
-                    No expenses yet. Paste a WhatsApp message to add your first one.
+                    Ainda não há despesas. Cole uma mensagem do WhatsApp para adicionar a primeira.
                   </TableCell>
                 </TableRow>
               )}

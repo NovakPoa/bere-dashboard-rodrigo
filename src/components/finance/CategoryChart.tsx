@@ -5,6 +5,13 @@ import { Expense } from "@/types/expense";
 import { groupByCategory } from "@/lib/finance";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--muted))", "hsl(var(--secondary))", "hsl(var(--ring))"];
+const CATEGORY_LABELS: Record<string, string> = {
+  restaurante: "Restaurante",
+  supermarket: "Supermercado",
+  gas: "Combustível",
+  renting: "Aluguel",
+  presents: "Presentes",
+};
 
 export default function CategoryChart({ expenses }: { expenses: Expense[] }) {
   const data = useMemo(() => {
@@ -15,7 +22,7 @@ export default function CategoryChart({ expenses }: { expenses: Expense[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm text-muted-foreground">By Category</CardTitle>
+        <CardTitle className="text-sm text-muted-foreground">Por categoria</CardTitle>
       </CardHeader>
       <CardContent className="h-64">
         <ResponsiveContainer width="100%" height="100%">

@@ -31,59 +31,59 @@ const Index = () => {
     <div className="min-h-screen">
       <header className="bg-gradient-primary">
         <div className="container py-12">
-          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Personal Finance Dashboard</h1>
+          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Painel de Finanças Pessoais</h1>
           <p className="text-primary-foreground/90 mt-2 max-w-2xl">
-            Send a WhatsApp message with the value, category (restaurante, supermarket, gas, renting, presents) and payment method (pix, boleto, credit). Paste it here to simulate.
+            Envie uma mensagem no WhatsApp com o valor, a categoria (restaurante, supermercado, combustível, aluguel, presentes) e a forma de pagamento (PIX, boleto, crédito). Cole aqui para simular.
           </p>
           <div className="mt-6">
-            <Button variant="hero" className="transition-smooth">Learn Integration Options</Button>
+            <Button variant="hero" className="transition-smooth">Ver opções de integração</Button>
           </div>
         </div>
       </header>
 
       <main className="container py-8 space-y-8">
         <section aria-labelledby="stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <h2 id="stats" className="sr-only">Key stats</h2>
-          <StatCard title="This Month" value={currency(totalThisMonth)} />
-          <StatCard title="Transactions" value={String(expenses.length)} />
-          <StatCard title="Filtered" value={String(filtered.length)} hint="Matching current filters" />
-          <StatCard title="Avg (filtered)" value={filtered.length ? currency(filtered.reduce((a, b) => a + b.amount, 0) / filtered.length) : "-"} />
+          <h2 id="stats" className="sr-only">Métricas principais</h2>
+          <StatCard title="Este mês" value={currency(totalThisMonth)} />
+          <StatCard title="Transações" value={String(expenses.length)} />
+          <StatCard title="Filtradas" value={String(filtered.length)} hint="De acordo com os filtros" />
+          <StatCard title="Média (filtradas)" value={filtered.length ? currency(filtered.reduce((a, b) => a + b.amount, 0) / filtered.length) : "-"} />
         </section>
 
         <section aria-labelledby="add-message" className="grid gap-6 md:grid-cols-5">
-          <h2 id="add-message" className="sr-only">Add expense from message</h2>
+          <h2 id="add-message" className="sr-only">Adicionar despesa por mensagem</h2>
           <div className="md:col-span-2">
             <AddExpenseFromMessage onAdded={refresh} />
           </div>
           <div className="md:col-span-3 grid gap-6">
             <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-end">
               <div className="flex-1">
-                <label className="text-sm text-muted-foreground">Category</label>
+                <label className="text-sm text-muted-foreground">Categoria</label>
                 <Select value={category} onValueChange={(v) => setCategory(v as any)}>
                   <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="All categories" />
+                    <SelectValue placeholder="Todas as categorias" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="all">Todas</SelectItem>
                     <SelectItem value="restaurante">Restaurante</SelectItem>
-                    <SelectItem value="supermarket">Supermarket</SelectItem>
-                    <SelectItem value="gas">Gas</SelectItem>
-                    <SelectItem value="renting">Renting</SelectItem>
-                    <SelectItem value="presents">Presents</SelectItem>
+                    <SelectItem value="supermarket">Supermercado</SelectItem>
+                    <SelectItem value="gas">Combustível</SelectItem>
+                    <SelectItem value="renting">Aluguel</SelectItem>
+                    <SelectItem value="presents">Presentes</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex-1">
-                <label className="text-sm text-muted-foreground">Payment Method</label>
+                <label className="text-sm text-muted-foreground">Forma de pagamento</label>
                 <Select value={method} onValueChange={(v) => setMethod(v as any)}>
                   <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="All methods" />
+                    <SelectValue placeholder="Todas as formas" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="all">Todas</SelectItem>
                     <SelectItem value="pix">PIX</SelectItem>
                     <SelectItem value="boleto">Boleto</SelectItem>
-                    <SelectItem value="credit">Credit</SelectItem>
+                    <SelectItem value="credit">Crédito</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -98,7 +98,7 @@ const Index = () => {
         <Separator />
 
         <section aria-labelledby="list">
-          <h2 id="list" className="text-lg font-medium mb-3">Expenses</h2>
+          <h2 id="list" className="text-lg font-medium mb-3">Despesas</h2>
           <ExpensesTable expenses={filtered} onChange={refresh} />
         </section>
       </main>

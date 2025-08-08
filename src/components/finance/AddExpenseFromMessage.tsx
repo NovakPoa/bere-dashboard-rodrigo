@@ -9,20 +9,34 @@ export default function AddExpenseFromMessage({ onAdded }: { onAdded: () => void
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const CATEGORY_LABELS = {
+    restaurante: "Restaurante",
+    supermarket: "Supermercado",
+    gas: "Combustível",
+    renting: "Aluguel",
+    presents: "Presentes",
+  } as const;
+
+  const METHOD_LABELS = {
+    pix: "PIX",
+    boleto: "Boleto",
+    credit: "Crédito",
+  } as const;
+
   const handleAdd = () => {
     setLoading(true);
     try {
       const parsed = parseExpenseMessage(message);
       if (!parsed) {
         toast({
-          title: "Could not parse",
-          description: "Please include value, category and payment method (e.g. 'R$ 45,90 restaurante credit').",
+          title: "Não foi possível interpretar",
+          description: "Inclua valor, categoria e forma de pagamento (ex.: 'R$ 45,90 restaurante crédito').",
           variant: "destructive",
         });
         return;
       }
       const saved = addExpense(parsed);
-      toast({ title: "Expense added", description: `${saved.category} • ${saved.method}` });
+      toast({ title: "Despesa adicionada", description: `${CATEGORY_LABELS[saved.category]} • ${METHOD_LABELS[saved.method]}` });
       setMessage("");
       onAdded();
     } finally {
@@ -33,18 +47,18 @@ export default function AddExpenseFromMessage({ onAdded }: { onAdded: () => void
   return (
     <Card className="bg-card/60 backdrop-blur">
       <CardHeader>
-        <CardTitle className="text-sm text-muted-foreground">Paste WhatsApp Message</CardTitle>
+        <CardTitle className="text-sm text-muted-foreground">Cole a mensagem do WhatsApp</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <Textarea
-          placeholder="Ex: R$ 45,90 restaurante credit"
+          placeholder="Ex.: R$ 45,90 restaurante crédito"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           className="min-h-24"
         />
         <div className="flex justify-end">
           <Button variant="hero" onClick={handleAdd} disabled={loading} className="transition-smooth">
-            {loading ? "Adding..." : "Parse & Add"}
+            {loading ? "Adicionando..." : "Interpretar e adicionar"}
           </Button>
         </div>
       </CardContent>
