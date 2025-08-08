@@ -111,6 +111,8 @@ export default function Alimentacao() {
     ["gorduras_g", "Gorduras (g)"],
   ] as const satisfies ReadonlyArray<readonly [keyof FoodEntry, string]>;
 
+  const FoodSim = MessageSimulator<FoodEntry>;
+
   return (
     <main className="space-y-6">
       <header>
@@ -118,7 +120,7 @@ export default function Alimentacao() {
       </header>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <MessageSimulator<FoodEntry>
+        <FoodSim
           title="Cole a mensagem (ex.: 'Almoço: frango com arroz')"
           placeholder="Ex.: Almoço: frango com arroz"
           parse={parseFood}

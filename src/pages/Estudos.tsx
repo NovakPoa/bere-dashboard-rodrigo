@@ -42,6 +42,8 @@ function save(entry: StudyEntry) {
 export default function Estudos() {
   useEffect(() => setPageSEO("Estudos | Berê", "Registre estudo por mensagem"), []);
 
+  const StudySim = MessageSimulator<StudyEntry>;
+
   return (
     <main className="space-y-6">
       <header>
@@ -49,7 +51,7 @@ export default function Estudos() {
       </header>
 
       <section>
-        <MessageSimulator<StudyEntry>
+        <StudySim
           title="Cole a mensagem (ex.: '2h Matemática' ou '30min Simulado')"
           placeholder="Ex.: 2h Matemática"
           parse={parseStudy}

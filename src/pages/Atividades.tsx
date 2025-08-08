@@ -47,6 +47,8 @@ function save(entry: FitnessEntry) {
 export default function Atividades() {
   useEffect(() => setPageSEO("Atividades Físicas | Berê", "Registre exercícios por mensagem"), []);
 
+  const FitnessSim = MessageSimulator<FitnessEntry>;
+
   return (
     <main className="space-y-6">
       <header>
@@ -54,7 +56,7 @@ export default function Atividades() {
       </header>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <MessageSimulator<FitnessEntry>
+        <FitnessSim
           title="Cole a mensagem (ex.: 'Corrida 30min 5km')"
           placeholder="Ex.: Corrida 30min 5km"
           parse={parseFitness}
