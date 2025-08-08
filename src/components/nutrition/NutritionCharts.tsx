@@ -71,11 +71,16 @@ export default function NutritionCharts({ entries, dateRange }: NutritionChartsP
 
     const days = dailyData.length;
     return [
-      { nome: "Calorias", valor: Math.round(totals.calorias / days), unidade: "kcal" },
       { nome: "Proteínas", valor: Math.round(totals.proteinas / days), unidade: "g" },
       { nome: "Carboidratos", valor: Math.round(totals.carboidratos / days), unidade: "g" },
       { nome: "Gorduras", valor: Math.round(totals.gorduras / days), unidade: "g" },
     ];
+  }, [dailyData]);
+
+  const avgCalories = useMemo(() => {
+    if (dailyData.length === 0) return 0;
+    const total = dailyData.reduce((acc: number, day: any) => acc + day.calorias, 0);
+    return Math.round(total / dailyData.length);
   }, [dailyData]);
 
   const chartConfig = {
@@ -88,8 +93,11 @@ export default function NutritionCharts({ entries, dateRange }: NutritionChartsP
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card>
-        <CardHeader>
-          <CardTitle className="text-sm text-muted-foreground">Média diária de nutrientes</CardTitle>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-sm text-muted-foreground">Média diária de macronutrientes</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Calorias médias/dia: <span className="font-medium text-foreground">{avgCalories} kcal</span>
+          </p>
         </CardHeader>
         <CardContent className="h-64">
           <ChartContainer config={chartConfig}>
