@@ -84,7 +84,18 @@ export function parseExpenseMessage(message: string): Omit<Expense, "id" | "date
   const rawAmount = currencyMatch?.[1]?.replace(".", "").replace(",", ".");
   const amount = rawAmount ? parseFloat(rawAmount) : NaN;
 
-  // category
+  // method
+  let method: PaymentMethod | undefined;
+  let matchedMethodKey: string | undefined;
+  for (const key of Object.keys(METHOD_SYNONYMS)) {
+    if (lower.includes(key)) {
+      method = METHOD_SYNONYMS[key];
+      matchedMethodKey = key;
+      break;
+    }
+  }
+
+  // category from synonyms first
   let category: Category | undefined;
   for (const key of Object.keys(CATEGORY_SYNONYMS)) {
     if (lower.includes(key)) {
@@ -93,22 +104,23 @@ export function parseExpenseMessage(message: string): Omit<Expense, "id" | "date
     }
   }
 
-  // method
-  let method: PaymentMethod | undefined;
-  for (const key of Object.keys(METHOD_SYNONYMS)) {
-    if (lower.includes(key)) {
-      method = METHOD_SYNONYMS[key];
-      break;
-    }
+  // fallback: any remaining words (custom category)
+  if (!category) {
+    let remaining = lower;
+    if (currencyMatch?.[0]) remaining = remaining.replace(currencyMatch[0], " ");
+    if (matchedMethodKey) remaining = remaining.replace(new RegExp(matchedMethodKey, "g"), " ");
+    remaining = remaining.replace(/r\$/g, " ");
+    const maybeCat = remaining.replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
+    if (maybeCat) category = maybeCat as Category;
   }
 
-  if (!isFinite(amount) || amount <= 0 || !category || !method) {
+  if (!isFinite(amount) || amount <= 0 || !method || !category) {
     return null;
   }
 
   return {
     amount,
-    category,
+    category: (typeof category === "string" ? category.toLowerCase() : (category as string)) as Category,
     method,
     source: "whatsapp",
     note: message.trim(),
@@ -141,7 +153,7 @@ export function getExpenses(): Expense[] {
       presents: "presentes",
       presentes: "presentes",
       gift: "presentes",
-      // já novas
+      // novas
       alimentacao: "alimentacao",
       "alimentação": "alimentacao",
       assinaturas: "assinaturas",
@@ -155,23 +167,11 @@ export function getExpenses(): Expense[] {
       outros: "outros",
     };
 
-    const validNew = new Set<Category>([
-      "alimentacao",
-      "assinaturas",
-      "casa",
-      "lazer",
-      "mercado",
-      "presentes",
-      "saude",
-      "transporte",
-      "utilidades",
-      "outros",
-    ]);
-
     const normalized: Expense[] = (Array.isArray(parsed) ? parsed : []).map((e: any) => {
       const key = typeof e?.category === "string" ? e.category.toLowerCase() : "";
-      const newCat = mapOldToNew[key] ?? (validNew.has(e?.category) ? e.category : "outros");
-      return { ...e, category: newCat } as Expense;
+      const mapped = mapOldToNew[key];
+      const finalCategory: Category = (mapped ?? (typeof e?.category === "string" && e.category.trim() ? (e.category as Category) : ("outros" as Category))) as Category;
+      return { ...e, category: finalCategory } as Expense;
     });
 
     return normalized;
@@ -225,20 +225,12 @@ export function getMonthlyTotal(expenses: Expense[], date = new Date()) {
 }
 
 export function groupByCategory(expenses: Expense[]): Record<Category, number> {
-  const base: Record<Category, number> = {
-    alimentacao: 0,
-    assinaturas: 0,
-    casa: 0,
-    lazer: 0,
-    mercado: 0,
-    presentes: 0,
-    saude: 0,
-    transporte: 0,
-    utilidades: 0,
-    outros: 0,
-  };
-  for (const e of expenses) base[e.category] += e.amount;
-  return base;
+  const result: Record<Category, number> = {} as Record<Category, number>;
+  for (const e of expenses) {
+    const key = (e.category as Category) || ("outros" as Category);
+    result[key] = (result[key] ?? 0) + e.amount;
+  }
+  return result;
 }
 
 export function groupByMethod(expenses: Expense[]): Record<PaymentMethod, number> {

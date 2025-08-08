@@ -7,18 +7,6 @@ import { removeExpense } from "@/lib/finance";
 import { toast } from "@/hooks/use-toast";
 import { Trash2 } from "lucide-react";
 
-const CATEGORY_LABELS: Record<Expense["category"], string> = {
-  alimentacao: "Alimentação",
-  assinaturas: "Assinaturas",
-  casa: "Casa",
-  lazer: "Lazer",
-  mercado: "Mercado",
-  presentes: "Presentes",
-  saude: "Saúde",
-  transporte: "Transporte",
-  utilidades: "Utilidades",
-  outros: "Outros",
-};
 
 const METHOD_LABELS: Record<Expense["method"], string> = {
   pix: "PIX",
@@ -56,7 +44,7 @@ export default function ExpensesTable({ expenses, onChange }: { expenses: Expens
               {rows.map((e) => (
                 <TableRow key={e.id}>
                   <TableCell className="text-muted-foreground">{new Date(e.date).toLocaleString()}</TableCell>
-                  <TableCell className="capitalize">{CATEGORY_LABELS[e.category]}</TableCell>
+                  <TableCell className="capitalize">{e.category}</TableCell>
                   <TableCell className="capitalize">{METHOD_LABELS[e.method]}</TableCell>
                   <TableCell className="text-right font-medium">{e.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
                   <TableCell className="text-right">

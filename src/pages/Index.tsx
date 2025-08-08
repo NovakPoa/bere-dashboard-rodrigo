@@ -22,19 +22,20 @@ const Index = () => {
     setExpenses(getExpenses());
   }, []);
 
+  useEffect(() => {
+    document.title = "Financeiro | Berê";
+  }, []);
+
   const filtered = useMemo(() => filterExpenses(expenses, { category, method }), [expenses, category, method]);
   const totalThisMonth = useMemo(() => getMonthlyTotal(expenses), [expenses]);
-
+  const categoriesList = useMemo(() => Array.from(new Set(expenses.map((e) => e.category))).sort(), [expenses]);
   const currency = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   return (
     <div className="min-h-screen">
       <header className="bg-gradient-primary">
         <div className="container py-12">
-          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Painel de Finanças Pessoais</h1>
-          <p className="text-primary-foreground/90 mt-2 max-w-2xl">
-            Envie uma mensagem no WhatsApp com o valor, a categoria (restaurante, supermercado, combustível, aluguel, presentes) e a forma de pagamento (PIX, boleto, crédito). Cole aqui para simular.
-          </p>
+          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Financeiro | Berê</h1>
           <div className="mt-6">
             <Button variant="hero" className="transition-smooth">Ver opções de integração</Button>
           </div>
@@ -55,7 +56,7 @@ const Index = () => {
           <div className="md:col-span-2">
             <AddExpenseFromMessage onAdded={refresh} />
           </div>
-          <div className="md:col-span-3 grid gap-6 bg-secondary rounded-lg p-4">
+          <div className="md:col-span-3 grid gap-6 rounded-lg p-4">
             <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-end">
               <div className="flex-1">
                 <label className="text-sm text-muted-foreground">Categoria</label>
@@ -65,16 +66,11 @@ const Index = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todas</SelectItem>
-                    <SelectItem value="alimentacao">Alimentação</SelectItem>
-                    <SelectItem value="assinaturas">Assinaturas</SelectItem>
-                    <SelectItem value="casa">Casa</SelectItem>
-                    <SelectItem value="lazer">Lazer</SelectItem>
-                    <SelectItem value="mercado">Mercado</SelectItem>
-                    <SelectItem value="presentes">Presentes</SelectItem>
-                    <SelectItem value="saude">Saúde</SelectItem>
-                    <SelectItem value="transporte">Transporte</SelectItem>
-                    <SelectItem value="utilidades">Utilidades</SelectItem>
-                    <SelectItem value="outros">Outros</SelectItem>
+                    {categoriesList.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        <span className="capitalize">{c}</span>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -93,11 +89,15 @@ const Index = () => {
                 </Select>
               </div>
             </div>
-            <div className="grid gap-6 md:grid-cols-2">
-              <CategoryChart expenses={filtered} />
+            <div className="grid gap-6">
               <MethodChart expenses={filtered} />
             </div>
           </div>
+        </section>
+
+        <section aria-labelledby="category-chart">
+          <h2 id="category-chart" className="sr-only">Distribuição por categoria</h2>
+          <CategoryChart expenses={filtered} />
         </section>
 
         <Separator />

@@ -9,18 +9,6 @@ export default function AddExpenseFromMessage({ onAdded }: { onAdded: () => void
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const CATEGORY_LABELS = {
-    alimentacao: "Alimentação",
-    assinaturas: "Assinaturas",
-    casa: "Casa",
-    lazer: "Lazer",
-    mercado: "Mercado",
-    presentes: "Presentes",
-    saude: "Saúde",
-    transporte: "Transporte",
-    utilidades: "Utilidades",
-    outros: "Outros",
-  } as const;
 
   const METHOD_LABELS = {
     pix: "PIX",
@@ -41,7 +29,7 @@ export default function AddExpenseFromMessage({ onAdded }: { onAdded: () => void
         return;
       }
       const saved = addExpense(parsed);
-      toast({ title: "Despesa adicionada", description: `${CATEGORY_LABELS[saved.category]} • ${METHOD_LABELS[saved.method]}` });
+      toast({ title: "Despesa adicionada", description: `${saved.category} • ${METHOD_LABELS[saved.method]}` });
       setMessage("");
       onAdded();
     } finally {
