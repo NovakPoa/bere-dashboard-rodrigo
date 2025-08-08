@@ -37,7 +37,7 @@ const parseFood = (msg: string): FoodEntry | null => {
 };
 
 function save(entry: FoodEntry) {
-  const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || "" + "[]") as FoodEntry[];
+  const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]") as FoodEntry[];
   all.unshift(entry);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
 }
@@ -90,7 +90,7 @@ export default function Alimentacao() {
     }
     const entry: FoodEntry = {
       descricao: f.descricao!,
-      refeicao: f.refeicao || "refeição",
+      refeicao: (f.refeicao as string) || "refeição",
       calorias: Number(f.calorias ?? 0),
       proteinas_g: Number(f.proteinas_g ?? 0),
       carboidratos_g: Number(f.carboidratos_g ?? 0),
@@ -100,6 +100,16 @@ export default function Alimentacao() {
     save(entry);
     toast({ title: "Refeição registrada" });
   };
+
+  // Campos editáveis tipados
+  const editorFields = [
+    ["descricao", "Descrição"],
+    ["refeicao", "Refeição"],
+    ["calorias", "Calorias (kcal)"],
+    ["proteinas_g", "Proteínas (g)"],
+    ["carboidratos_g", "Carboidratos (g)"],
+    ["gorduras_g", "Gorduras (g)"],
+  ] as const satisfies ReadonlyArray<readonly [keyof FoodEntry, string]>;
 
   return (
     <main className="space-y-6">
@@ -137,17 +147,10 @@ export default function Alimentacao() {
 
             {/* Editor rápido */}
             <div className="grid gap-2 sm:grid-cols-2">
-              {([
-                ["descricao", "Descrição"],
-                ["refeicao", "Refeição"],
-                ["calorias", "Calorias (kcal)"],
-                ["proteinas_g", "Proteínas (g)"],
-                ["carboidratos_g", "Carboidratos (g)"],
-                ["gorduras_g", "Gorduras (g)"],
-              ] as const).map(([key, label]) => (
+              {editorFields.map(([key, label]) => (
                 <div key={key} className="space-y-1.5">
                   <Label>{label}</Label>
-                  <Input onChange={(e) => (fieldsRef.current[key] = e.target.value as any)} />
+                  <Input onChange={(e) => ((fieldsRef.current as any)[key] = e.target.value)} />
                 </div>
               ))}
             </div>
