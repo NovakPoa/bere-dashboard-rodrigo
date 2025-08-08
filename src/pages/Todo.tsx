@@ -65,6 +65,20 @@ export default function Todo() {
     setTasks((prev) => prev.filter((t) => t.id !== id));
   };
 
+  const onDropTo = (status: Status) => (e: any) => {
+    e.preventDefault();
+    const id = e.dataTransfer?.getData("text/plain");
+    if (!id) return;
+    setTasks((prev) => {
+      const t = prev.find((x) => x.id === id);
+      if (!t || t.status === status) return prev;
+      const completedPatch = status === "done"
+        ? { completedAt: t.completedAt || new Date().toISOString().slice(0, 10) }
+        : { completedAt: undefined };
+      return prev.map((x) => (x.id === id ? { ...x, status, ...completedPatch } : x));
+    });
+  };
+
   const lists = useMemo(() => ({
     backlog: tasks.filter((t) => t.status === "backlog"),
     in_progress: tasks.filter((t) => t.status === "in_progress"),
@@ -85,7 +99,7 @@ export default function Todo() {
   );
 
   const TaskItem = ({ task }: { task: Task }) => (
-    <article className="rounded-md border p-3 flex flex-col gap-3">
+    <article className="rounded-md border p-3 flex flex-col gap-3" draggable onDragStart={(e) => { e.dataTransfer.setData("text/plain", task.id); e.dataTransfer.effectAllowed = "move"; }}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h4 className="font-medium leading-snug break-words">{task.title}</h4>
@@ -155,7 +169,7 @@ export default function Todo() {
               <CardTitle className="text-sm text-muted-foreground">Backlog</CardTitle>
               <Button variant="outline" size="sm" onClick={() => toggleAdd("backlog")}>+</Button>
             </CardHeader>
-            <CardContent className="grid gap-3">
+            <CardContent className="grid gap-3" onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }} onDrop={onDropTo("backlog")}>
               {newTask?.status === "backlog" && (
                 <div className="rounded-md border p-3 grid gap-2">
                   <Input placeholder="Título" value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} />
@@ -178,7 +192,7 @@ export default function Todo() {
               <CardTitle className="text-sm text-muted-foreground">Em desenvolvimento</CardTitle>
               <Button variant="outline" size="sm" onClick={() => toggleAdd("in_progress")}>+</Button>
             </CardHeader>
-            <CardContent className="grid gap-3">
+            <CardContent className="grid gap-3" onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }} onDrop={onDropTo("in_progress")}>
               {newTask?.status === "in_progress" && (
                 <div className="rounded-md border p-3 grid gap-2">
                   <Input placeholder="Título" value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} />
@@ -201,7 +215,7 @@ export default function Todo() {
               <CardTitle className="text-sm text-muted-foreground">Feitas</CardTitle>
               <Button variant="outline" size="sm" onClick={() => toggleAdd("done")}>+</Button>
             </CardHeader>
-            <CardContent className="grid gap-3">
+            <CardContent className="grid gap-3" onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }} onDrop={onDropTo("done")}>
               {newTask?.status === "done" && (
                 <div className="rounded-md border p-3 grid gap-2">
                   <Input placeholder="Título" value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} />
