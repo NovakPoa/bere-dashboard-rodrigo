@@ -57,7 +57,9 @@ function save(entry: FitnessEntryLocal) {
 
 export default function Atividades() {
   const [entries, setEntries] = useState<FitnessEntryLocal[]>([]);
-  const [range, setRange] = useState<Partial<{ from: Date; to: Date }> | undefined>(undefined);
+  const [range, setRange] = useState<Partial<{ from: Date; to: Date }> | undefined>(
+    () => ({ from: subDays(new Date(), 6), to: new Date() })
+  );
 
   useEffect(() => setPageSEO("Atividades Físicas | Berê", "Registre exercícios por mensagem"), []);
   useEffect(() => setEntries(getActivities()), []);
