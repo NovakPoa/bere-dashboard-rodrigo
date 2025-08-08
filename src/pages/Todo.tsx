@@ -32,22 +32,28 @@ const saveTasks = (tasks: Task[]) => localStorage.setItem(STORAGE_KEY, JSON.stri
 
 export default function Todo() {
   const [tasks, setTasks] = useState<Task[]>(() => loadTasks());
-  const [title, setTitle] = useState("");
-  const [notes, setNotes] = useState("");
+  const [newTask, setNewTask] = useState<{ status: Status; title: string; notes: string } | null>(null);
 
   useEffect(() => setPageSEO("To‑do | Berê", "Organize tarefas por status e conclua"), []);
   useEffect(() => saveTasks(tasks), [tasks]);
 
-  const addTask = () => {
-    const t = title.trim();
-    if (!t) {
+  const toggleAdd = (status: Status) => {
+    setNewTask((prev) => (prev?.status === status ? null : { status, title: "", notes: "" }));
+  };
+
+  const addInlineTask = (status: Status) => {
+    if (!newTask?.title.trim()) {
       toast({ title: "Informe um título", variant: "destructive" });
       return;
     }
-    const newTask: Task = { id: crypto.randomUUID(), title: t, notes: notes.trim() || undefined, status: "backlog" };
-    setTasks((prev) => [newTask, ...prev]);
-    setTitle("");
-    setNotes("");
+    const t: Task = {
+      id: crypto.randomUUID(),
+      title: newTask.title.trim(),
+      notes: newTask.notes.trim() || undefined,
+      status,
+    };
+    setTasks((prev) => [t, ...prev]);
+    setNewTask(null);
     toast({ title: "Tarefa adicionada" });
   };
 
@@ -124,28 +130,21 @@ export default function Todo() {
       </header>
 
       <main className="container py-8 space-y-8">
-        <section aria-labelledby="add" className="grid gap-4 md:grid-cols-3">
-          <h2 id="add" className="sr-only">Adicionar tarefa</h2>
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">Nova tarefa</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-3">
-              <Input placeholder="Título" value={title} onChange={(e) => setTitle(e.target.value)} />
-              <Textarea placeholder="Notas (opcional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
-              <div className="flex justify-end">
-                <Button onClick={addTask}>Adicionar</Button>
-              </div>
-            </CardContent>
-          </Card>
+        <section aria-labelledby="summary">
+          <h2 id="summary" className="sr-only">Resumo</h2>
           <Card>
             <CardHeader>
               <CardTitle className="text-sm text-muted-foreground">Resumo</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground space-y-1">
-              <p>Backlog: {lists.backlog.length}</p>
-              <p>Em desenvolvimento: {lists.in_progress.length}</p>
-              <p>Feitas: {lists.done.length}</p>
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <p className="text-sm text-muted-foreground">Backlog</p>
+                <div className="text-4xl font-semibold text-foreground">{lists.backlog.length}</div>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Em desenvolvimento</p>
+                <div className="text-4xl font-semibold text-foreground">{lists.in_progress.length}</div>
+              </div>
             </CardContent>
           </Card>
         </section>
@@ -154,10 +153,21 @@ export default function Todo() {
           <h2 id="board" className="sr-only">Quadro de tarefas</h2>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-sm text-muted-foreground">Backlog</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => toggleAdd("backlog")}>+</Button>
             </CardHeader>
             <CardContent className="grid gap-3">
+              {newTask?.status === "backlog" && (
+                <div className="rounded-md border p-3 grid gap-2">
+                  <Input placeholder="Título" value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} />
+                  <Textarea placeholder="Notas (opcional)" value={newTask.notes} onChange={(e) => setNewTask({ ...newTask, notes: e.target.value })} />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="secondary" onClick={() => setNewTask(null)}>Cancelar</Button>
+                    <Button onClick={() => addInlineTask("backlog")}>Adicionar</Button>
+                  </div>
+                </div>
+              )}
               {lists.backlog.map((t) => (
                 <TaskItem key={t.id} task={t} />
               ))}
@@ -166,10 +176,21 @@ export default function Todo() {
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-sm text-muted-foreground">Em desenvolvimento</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => toggleAdd("in_progress")}>+</Button>
             </CardHeader>
             <CardContent className="grid gap-3">
+              {newTask?.status === "in_progress" && (
+                <div className="rounded-md border p-3 grid gap-2">
+                  <Input placeholder="Título" value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} />
+                  <Textarea placeholder="Notas (opcional)" value={newTask.notes} onChange={(e) => setNewTask({ ...newTask, notes: e.target.value })} />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="secondary" onClick={() => setNewTask(null)}>Cancelar</Button>
+                    <Button onClick={() => addInlineTask("in_progress")}>Adicionar</Button>
+                  </div>
+                </div>
+              )}
               {lists.in_progress.map((t) => (
                 <TaskItem key={t.id} task={t} />
               ))}
@@ -178,10 +199,21 @@ export default function Todo() {
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-sm text-muted-foreground">Feitas</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => toggleAdd("done")}>+</Button>
             </CardHeader>
             <CardContent className="grid gap-3">
+              {newTask?.status === "done" && (
+                <div className="rounded-md border p-3 grid gap-2">
+                  <Input placeholder="Título" value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} />
+                  <Textarea placeholder="Notas (opcional)" value={newTask.notes} onChange={(e) => setNewTask({ ...newTask, notes: e.target.value })} />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="secondary" onClick={() => setNewTask(null)}>Cancelar</Button>
+                    <Button onClick={() => addInlineTask("done")}>Adicionar</Button>
+                  </div>
+                </div>
+              )}
               {lists.done.map((t) => (
                 <TaskItem key={t.id} task={t} />
               ))}
