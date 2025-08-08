@@ -55,7 +55,7 @@ const Index = () => {
           <div className="md:col-span-2">
             <AddExpenseFromMessage onAdded={refresh} />
           </div>
-          <div className="md:col-span-3 grid gap-6">
+          <div className="md:col-span-3 grid gap-6 bg-secondary rounded-lg p-4">
             <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-end">
               <div className="flex-1">
                 <label className="text-sm text-muted-foreground">Categoria</label>
