@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const STORAGE_KEY = "calendar_settings_v1";
+const STORAGE_KEY = "calendar_settings_v2";
 
 type Settings = {
   calendarId: string; // e.g., seu_email@gmail.com ou ID público
@@ -15,9 +15,9 @@ type Settings = {
 const loadSettings = (): Settings => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : { calendarId: "", timezone: "America/Sao_Paulo" };
+    return raw ? JSON.parse(raw) : { calendarId: "rodrigohcribeiro@gmail.com", timezone: "America/Sao_Paulo" };
   } catch {
-    return { calendarId: "", timezone: "America/Sao_Paulo" };
+    return { calendarId: "rodrigohcribeiro@gmail.com", timezone: "America/Sao_Paulo" };
   }
 };
 
