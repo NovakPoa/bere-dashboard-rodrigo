@@ -169,7 +169,7 @@ export default function Todo() {
               <CardTitle className="text-sm text-muted-foreground">Backlog</CardTitle>
               <Button variant="outline" size="sm" onClick={() => toggleAdd("backlog")}>+</Button>
             </CardHeader>
-            <CardContent className="grid gap-3" onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }} onDrop={onDropTo("backlog")}>
+            <CardContent className="grid gap-3 min-h-32" onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }} onDrop={onDropTo("backlog")}>
               {newTask?.status === "backlog" && (
                 <div className="rounded-md border p-3 grid gap-2">
                   <Input placeholder="Título" value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} />
@@ -192,7 +192,7 @@ export default function Todo() {
               <CardTitle className="text-sm text-muted-foreground">Em desenvolvimento</CardTitle>
               <Button variant="outline" size="sm" onClick={() => toggleAdd("in_progress")}>+</Button>
             </CardHeader>
-            <CardContent className="grid gap-3" onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }} onDrop={onDropTo("in_progress")}>
+            <CardContent className="grid gap-3 min-h-32" onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }} onDrop={onDropTo("in_progress")}>
               {newTask?.status === "in_progress" && (
                 <div className="rounded-md border p-3 grid gap-2">
                   <Input placeholder="Título" value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} />
@@ -215,7 +215,7 @@ export default function Todo() {
               <CardTitle className="text-sm text-muted-foreground">Feitas</CardTitle>
               <Button variant="outline" size="sm" onClick={() => toggleAdd("done")}>+</Button>
             </CardHeader>
-            <CardContent className="grid gap-3" onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }} onDrop={onDropTo("done")}>
+            <CardContent className="grid gap-3 min-h-32" onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }} onDrop={onDropTo("done")}>
               {newTask?.status === "done" && (
                 <div className="rounded-md border p-3 grid gap-2">
                   <Input placeholder="Título" value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} />
