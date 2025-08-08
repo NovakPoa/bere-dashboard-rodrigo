@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { format } from "date-fns";
+import { format, eachDayOfInterval, startOfDay, addDays, differenceInCalendarDays, subDays } from "date-fns";
 import { setPageSEO } from "@/lib/seo";
 import { MessageSimulator } from "@/components/common/MessageSimulator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import StatCard from "@/components/finance/StatCard";
 import ActivitiesChart from "@/components/fitness/ActivitiesChart";
-import { FitnessEntry, getActivities, lastNDays, groupTotalsByModality, dailySeriesMinutes, totalCalories } from "@/lib/fitness";
+import { FitnessEntry, getActivities, groupTotalsByModality, totalCalories } from "@/lib/fitness";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -56,24 +56,52 @@ function save(entry: FitnessEntryLocal) {
 
 export default function Atividades() {
   const [entries, setEntries] = useState<FitnessEntryLocal[]>([]);
-  const [baseDate, setBaseDate] = useState<Date>(new Date());
+  const [range, setRange] = useState<{ from: Date; to: Date }>(() => ({ from: subDays(new Date(), 6), to: new Date() }));
 
   useEffect(() => setPageSEO("Atividades Físicas | Berê", "Registre exercícios por mensagem"), []);
   useEffect(() => setEntries(getActivities()), []);
 
   const FitnessSim = MessageSimulator<FitnessEntryLocal>;
 
-  const last7 = useMemo(() => lastNDays(entries, 7, baseDate), [entries, baseDate]);
-  const totals = useMemo(() => groupTotalsByModality(last7), [last7]);
-  const series = useMemo(() => dailySeriesMinutes(last7), [last7]);
-  const sessionsCount = last7.length;
-  const totalMinutes = last7.reduce((s, e) => s + (e.minutos || 0), 0);
-  const totalKm = last7.reduce((s, e) => s + (e.distanciaKm || 0), 0);
-  const totalCal = useMemo(() => totalCalories(last7), [last7]);
-  const avgCalories = useMemo(() => {
-    const total = totalCal;
-    return Math.round(total / 7);
-  }, [totalCal]);
+  const periodEntries = useMemo(() => {
+    const from = startOfDay(range.from);
+    const to = addDays(startOfDay(range.to), 1);
+    return entries.filter((e) => {
+      const d = new Date(e.data);
+      return d >= from && d < to;
+    });
+  }, [entries, range]);
+
+  const totals = useMemo(() => groupTotalsByModality(periodEntries), [periodEntries]);
+
+  const modalities = useMemo(() => Array.from(new Set(periodEntries.map((e) => e.tipo?.toLowerCase() || "atividade"))), [periodEntries]);
+  const series = useMemo(() => {
+    const days = eachDayOfInterval({ start: startOfDay(range.from), end: startOfDay(range.to) });
+    return {
+      data: days.map((day) => {
+        const next = addDays(day, 1);
+        const slice = periodEntries.filter((e) => {
+          const d = new Date(e.data);
+          return d >= day && d < next;
+        });
+        const row: any = { dia: format(day, "dd/MM") };
+        for (const m of modalities) row[m] = 0;
+        for (const e of slice) {
+          const k = e.tipo?.toLowerCase() || "atividade";
+          row[k] += e.minutos || 0;
+        }
+        return row;
+      }),
+      modalities,
+    };
+  }, [periodEntries, range, modalities]);
+
+  const sessionsCount = periodEntries.length;
+  const totalMinutes = periodEntries.reduce((s, e) => s + (e.minutos || 0), 0);
+  const totalKm = periodEntries.reduce((s, e) => s + (e.distanciaKm || 0), 0);
+  const totalCal = useMemo(() => totalCalories(periodEntries), [periodEntries]);
+  const daysCount = differenceInCalendarDays(range.to, range.from) + 1;
+  const avgCalories = useMemo(() => Math.round(totalCal / Math.max(daysCount, 1)), [totalCal, daysCount]);
 
   const formatHm = (mins: number) => {
     const h = Math.floor(mins / 60);
@@ -92,18 +120,18 @@ export default function Atividades() {
       <main className="container py-8 space-y-8">
         <section aria-labelledby="filters" className="flex justify-end">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Data base</span>
+            <span className="text-sm text-muted-foreground">Período</span>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-[240px] justify-start text-left font-normal">
-                  {format(baseDate, "PPP")}
+                <Button variant="outline" className="w-[280px] justify-start text-left font-normal">
+                  {range?.from && range?.to ? `${format(range.from, "PPP")} – ${format(range.to, "PPP")}` : "Selecione o período"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
                 <Calendar
-                  mode="single"
-                  selected={baseDate}
-                  onSelect={(d) => d && setBaseDate(d)}
+                  mode="range"
+                  selected={range}
+                  onSelect={(r: any) => r?.from && r?.to && setRange({ from: r.from, to: r.to })}
                   initialFocus
                   className="p-3 pointer-events-auto"
                 />
@@ -113,10 +141,10 @@ export default function Atividades() {
         </section>
         <section aria-labelledby="stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <h2 id="stats" className="sr-only">Métricas</h2>
-          <StatCard title="Sessões (7d)" value={String(sessionsCount)} />
-          <StatCard title="Tempo total (7d)" value={formatHm(totalMinutes)} />
-          <StatCard title="Distância total (7d)" value={`${totalKm.toFixed(1)} km`} />
-          <StatCard title="Calorias médias (7d)" value={`${avgCalories.toLocaleString()} kcal/dia`} />
+          <StatCard title="Sessões (período)" value={String(sessionsCount)} />
+          <StatCard title="Tempo total (período)" value={formatHm(totalMinutes)} />
+          <StatCard title="Distância total (período)" value={`${totalKm.toFixed(1)} km`} />
+          <StatCard title="Calorias médias (dia)" value={`${avgCalories.toLocaleString()} kcal/dia`} />
         </section>
 
         <section aria-labelledby="add-message" className="grid gap-6 md:grid-cols-5">
@@ -136,18 +164,18 @@ export default function Atividades() {
           <div className="md:col-span-3">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm text-muted-foreground">Resumo (7 dias)</CardTitle>
+                <CardTitle className="text-sm text-muted-foreground">Resumo (período)</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="text-sm text-muted-foreground grid gap-1">
-                  <li>Calorias (estimadas 7d): {totalCal.toLocaleString()} kcal</li>
+                  <li>Calorias (estimadas no período): {totalCal.toLocaleString()} kcal</li>
                   {Object.entries(totals).map(([m, t]) => (
                     <li key={m} className="capitalize">
                       {m}: {t.distanciaKm ? `${t.distanciaKm.toFixed(1)} km - ` : ""}{formatHm(t.minutos)}
                     </li>
                   ))}
                   {Object.keys(totals).length === 0 && (
-                    <li>Nenhuma atividade nos últimos 7 dias.</li>
+                    <li>Nenhuma atividade no período.</li>
                   )}
                 </ul>
               </CardContent>
