@@ -1,12 +1,107 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { getExpenses, filterExpenses, getMonthlyTotal } from "@/lib/finance";
+import type { Category, PaymentMethod } from "@/types/expense";
+import StatCard from "@/components/finance/StatCard";
+import AddExpenseFromMessage from "@/components/finance/AddExpenseFromMessage";
+import CategoryChart from "@/components/finance/CategoryChart";
+import MethodChart from "@/components/finance/MethodChart";
+import ExpensesTable from "@/components/finance/ExpensesTable";
 
 const Index = () => {
+  const [expenses, setExpenses] = useState(() => getExpenses());
+  const [category, setCategory] = useState<"all" | Category>("all");
+  const [method, setMethod] = useState<"all" | PaymentMethod>("all");
+
+  const refresh = () => setExpenses(getExpenses());
+
+  useEffect(() => {
+    // Initial load from localStorage
+    setExpenses(getExpenses());
+  }, []);
+
+  const filtered = useMemo(() => filterExpenses(expenses, { category, method }), [expenses, category, method]);
+  const totalThisMonth = useMemo(() => getMonthlyTotal(expenses), [expenses]);
+
+  const currency = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen">
+      <header className="bg-gradient-primary">
+        <div className="container py-12">
+          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Personal Finance Dashboard</h1>
+          <p className="text-primary-foreground/90 mt-2 max-w-2xl">
+            Send a WhatsApp message with the value, category (restaurante, supermarket, gas, renting, presents) and payment method (pix, boleto, credit). Paste it here to simulate.
+          </p>
+          <div className="mt-6">
+            <Button variant="hero" className="transition-smooth">Learn Integration Options</Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="container py-8 space-y-8">
+        <section aria-labelledby="stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <h2 id="stats" className="sr-only">Key stats</h2>
+          <StatCard title="This Month" value={currency(totalThisMonth)} />
+          <StatCard title="Transactions" value={String(expenses.length)} />
+          <StatCard title="Filtered" value={String(filtered.length)} hint="Matching current filters" />
+          <StatCard title="Avg (filtered)" value={filtered.length ? currency(filtered.reduce((a, b) => a + b.amount, 0) / filtered.length) : "-"} />
+        </section>
+
+        <section aria-labelledby="add-message" className="grid gap-6 md:grid-cols-5">
+          <h2 id="add-message" className="sr-only">Add expense from message</h2>
+          <div className="md:col-span-2">
+            <AddExpenseFromMessage onAdded={refresh} />
+          </div>
+          <div className="md:col-span-3 grid gap-6">
+            <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-end">
+              <div className="flex-1">
+                <label className="text-sm text-muted-foreground">Category</label>
+                <Select value={category} onValueChange={(v) => setCategory(v as any)}>
+                  <SelectTrigger className="w-full mt-1">
+                    <SelectValue placeholder="All categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="restaurante">Restaurante</SelectItem>
+                    <SelectItem value="supermarket">Supermarket</SelectItem>
+                    <SelectItem value="gas">Gas</SelectItem>
+                    <SelectItem value="renting">Renting</SelectItem>
+                    <SelectItem value="presents">Presents</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1">
+                <label className="text-sm text-muted-foreground">Payment Method</label>
+                <Select value={method} onValueChange={(v) => setMethod(v as any)}>
+                  <SelectTrigger className="w-full mt-1">
+                    <SelectValue placeholder="All methods" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="pix">PIX</SelectItem>
+                    <SelectItem value="boleto">Boleto</SelectItem>
+                    <SelectItem value="credit">Credit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              <CategoryChart expenses={filtered} />
+              <MethodChart expenses={filtered} />
+            </div>
+          </div>
+        </section>
+
+        <Separator />
+
+        <section aria-labelledby="list">
+          <h2 id="list" className="text-lg font-medium mb-3">Expenses</h2>
+          <ExpensesTable expenses={filtered} onChange={refresh} />
+        </section>
+      </main>
     </div>
   );
 };
