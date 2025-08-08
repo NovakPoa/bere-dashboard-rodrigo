@@ -67,7 +67,7 @@ export default function Todo() {
 
   const StatusSelect = ({ value, onChange }: { value: Status; onChange: (s: Status) => void }) => (
     <Select value={value} onValueChange={(v) => onChange(v as Status)}>
-      <SelectTrigger className="w-[180px]">
+      <SelectTrigger className="w-full sm:w-56">
         <SelectValue placeholder="Status" />
       </SelectTrigger>
       <SelectContent>
@@ -80,12 +80,12 @@ export default function Todo() {
 
   const TaskItem = ({ task }: { task: Task }) => (
     <article className="rounded-md border p-3 flex flex-col gap-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h4 className="font-medium leading-snug">{task.title}</h4>
-          {task.notes && <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{task.notes}</p>}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h4 className="font-medium leading-snug break-words">{task.title}</h4>
+          {task.notes && <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line break-words">{task.notes}</p>}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <StatusSelect
             value={task.status}
             onChange={(s) => {
@@ -98,15 +98,15 @@ export default function Todo() {
               }
             }}
           />
-          <Button variant="outline" size="sm" onClick={() => removeTask(task.id)}>Remover</Button>
+          <Button variant="outline" size="sm" className="shrink-0" onClick={() => removeTask(task.id)}>Remover</Button>
         </div>
       </div>
       {task.status === "done" && (
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <label className="text-sm text-muted-foreground">Data de finalização</label>
           <Input
             type="date"
-            className="w-auto"
+            className="w-full sm:w-auto"
             value={task.completedAt || ""}
             onChange={(e) => updateTask(task.id, { completedAt: e.target.value || undefined })}
           />
@@ -150,7 +150,7 @@ export default function Todo() {
           </Card>
         </section>
 
-        <section aria-labelledby="board" className="grid gap-6 md:grid-cols-3">
+        <section aria-labelledby="board" className="grid gap-6 grid-cols-1">
           <h2 id="board" className="sr-only">Quadro de tarefas</h2>
 
           <Card>
