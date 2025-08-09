@@ -1,4 +1,5 @@
 import { addDays, isAfter, startOfDay, subDays } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 export type FitnessEntry = {
   tipo: string;
@@ -95,4 +96,47 @@ export function dailySeriesMinutes(entries: FitnessEntry[]) {
   });
 
   return { data, modalities } as { data: Array<Record<string, number | string>>; modalities: string[] };
+}
+
+// Supabase integration
+export type DbActivityRow = {
+  modalidade?: string | null;
+  distancia_km?: number | string | null;
+  duracao_min?: number | string | null;
+  calorias?: number | string | null;
+  data?: string | null;
+  ts?: string | null;
+  tipo?: string | null;
+};
+
+const toNum = (v: unknown | null | undefined): number | undefined =>
+  v === null || v === undefined || v === "" ? undefined : Number(v);
+
+export function mapDbRowToFitnessEntry(r: DbActivityRow): FitnessEntry {
+  const minutos = Number(r.duracao_min ?? 0);
+  const distanciaKm = toNum(r.distancia_km);
+  const d = r.ts || r.data || new Date().toISOString();
+  return {
+    tipo: (r.modalidade || r.tipo || "atividade")!,
+    minutos,
+    distanciaKm,
+    data: new Date(d).toISOString(),
+  };
+}
+
+export async function fetchActivitiesFromSupabase(from?: Date, to?: Date): Promise<FitnessEntry[]> {
+  let query = supabase
+    .from("bereproject")
+    .select("modalidade, distancia_km, duracao_min, calorias, data, ts, tipo")
+    .order("ts", { ascending: false });
+
+  if (from && to) {
+    const fromStr = from.toISOString().slice(0, 10);
+    const toStr = to.toISOString().slice(0, 10);
+    query = query.gte("data", fromStr).lte("data", toStr);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data as DbActivityRow[]).map(mapDbRowToFitnessEntry);
 }

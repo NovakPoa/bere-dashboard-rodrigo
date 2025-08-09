@@ -8,9 +8,10 @@ import { toast } from "@/hooks/use-toast";
 import StatCard from "@/components/finance/StatCard";
 import ActivitiesChart from "@/components/fitness/ActivitiesChart";
 import ActivitiesTable from "@/components/fitness/ActivitiesTable";
-import { FitnessEntry, getActivities, groupTotalsByModality, totalCalories } from "@/lib/fitness";
+import { FitnessEntry, groupTotalsByModality, totalCalories, fetchActivitiesFromSupabase } from "@/lib/fitness";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useQuery } from "@tanstack/react-query";
 
 const STORAGE_KEY = "fitness_activities_v1";
 
@@ -56,13 +57,19 @@ function save(entry: FitnessEntryLocal) {
 }
 
 export default function Atividades() {
-  const [entries, setEntries] = useState<FitnessEntryLocal[]>([]);
   const [range, setRange] = useState<Partial<{ from: Date; to: Date }> | undefined>(
     () => ({ from: subDays(new Date(), 6), to: new Date() })
   );
 
   useEffect(() => setPageSEO("Atividades Físicas | Berê", "Registre exercícios por mensagem"), []);
-  useEffect(() => setEntries(getActivities()), []);
+
+  const efFrom = startOfDay(range?.from ?? subDays(new Date(), 6));
+  const efTo = startOfDay(range?.to ?? new Date());
+  const { data: dbEntries, isLoading, error } = useQuery({
+    queryKey: ["activities", efFrom.toISOString(), efTo.toISOString()],
+    queryFn: () => fetchActivitiesFromSupabase(efFrom, efTo),
+  });
+  const entries = (dbEntries as FitnessEntryLocal[] | undefined) ?? [];
 
   const FitnessSim = MessageSimulator<FitnessEntryLocal>;
 
@@ -175,10 +182,11 @@ export default function Atividades() {
               title="Cole a mensagem (ex.: 'Corrida 30min 5km')"
               placeholder="Ex.: Corrida 30min 5km"
               parse={parseFitness}
-              onConfirm={(data) => {
-                save(data);
-                setEntries(getActivities());
-                toast({ title: "Atividade registrada" });
+              onConfirm={() => {
+                toast({
+                  title: "Registro local criado",
+                  description: "Posso enviar para o Supabase também se você quiser."
+                });
               }}
             />
           </div>
