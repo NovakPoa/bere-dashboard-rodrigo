@@ -5,6 +5,7 @@ export type FitnessEntry = {
   tipo: string;
   minutos: number;
   distanciaKm?: number;
+  calorias?: number;
   nota?: string;
   data: string; // ISO
 };
@@ -71,7 +72,7 @@ export function estimateCalories(e: FitnessEntry) {
 }
 
 export function totalCalories(entries: FitnessEntry[]) {
-  return entries.reduce((sum, e) => sum + estimateCalories(e), 0);
+  return entries.reduce((sum, e) => sum + (typeof e.calorias === 'number' ? e.calorias : estimateCalories(e)), 0);
 }
 
 export function dailySeriesMinutes(entries: FitnessEntry[]) {
@@ -120,6 +121,7 @@ export function mapDbRowToFitnessEntry(r: DbActivityRow): FitnessEntry {
     tipo: (r.modalidade || r.tipo || "atividade")!,
     minutos,
     distanciaKm,
+    calorias: toNum(r.calorias),
     data: new Date(d).toISOString(),
   };
 }

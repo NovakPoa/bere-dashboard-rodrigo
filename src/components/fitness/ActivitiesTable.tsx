@@ -23,7 +23,7 @@ export default function ActivitiesTable({ entries }: { entries: FitnessEntry[] }
                 <TableHead>Data</TableHead>
                 <TableHead>Modalidade</TableHead>
                 <TableHead className="text-right">Distância</TableHead>
-                <TableHead className="text-right">Tempo</TableHead>
+                <TableHead className="text-right">Duração</TableHead>
                 <TableHead className="text-right">Calorias</TableHead>
               </TableRow>
             </TableHeader>
@@ -34,7 +34,7 @@ export default function ActivitiesTable({ entries }: { entries: FitnessEntry[] }
                   <TableCell className="capitalize">{e.tipo || "atividade"}</TableCell>
                   <TableCell className="text-right">{(e.distanciaKm ?? 0).toFixed(1)} km</TableCell>
                   <TableCell className="text-right">{fmtHm(e.minutos || 0)}</TableCell>
-                  <TableCell className="text-right">{estimateCalories(e).toLocaleString()} kcal</TableCell>
+                  <TableCell className="text-right">{((e.calorias ?? estimateCalories(e)) || 0).toLocaleString()} kcal</TableCell>
                 </TableRow>
               ))}
               {rows.length === 0 && (
