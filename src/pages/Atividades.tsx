@@ -11,8 +11,8 @@ import ActivitiesTable from "@/components/fitness/ActivitiesTable";
 import { FitnessEntry, groupTotalsByModality, totalCalories, fetchActivitiesFromSupabase } from "@/lib/fitness";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useQuery } from "@tanstack/react-query";
-
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 const STORAGE_KEY = "fitness_activities_v1";
 
 type FitnessEntryLocal = FitnessEntry;
@@ -70,6 +70,38 @@ export default function Atividades() {
     queryFn: () => fetchActivitiesFromSupabase(efFrom, efTo),
   });
   const entries = (dbEntries as FitnessEntryLocal[] | undefined) ?? [];
+
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const channel = supabase
+      .channel("bereproject-changes")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "bereproject" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["activities"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "bereproject" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["activities"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "bereproject" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["activities"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const FitnessSim = MessageSimulator<FitnessEntryLocal>;
 

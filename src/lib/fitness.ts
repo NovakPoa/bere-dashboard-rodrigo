@@ -130,7 +130,7 @@ export async function fetchActivitiesFromSupabase(from?: Date, to?: Date): Promi
   let query = supabase
     .from("bereproject")
     .select("modalidade, distancia_km, duracao_min, calorias, data, ts, tipo")
-    .order("ts", { ascending: false });
+    .order("data", { ascending: false });
 
   if (from && to) {
     const fromStr = from.toISOString().slice(0, 10);
