@@ -135,7 +135,11 @@ export async function fetchActivitiesFromSupabase(from?: Date, to?: Date): Promi
   if (from && to) {
     const fromStr = from.toISOString().slice(0, 10);
     const toStr = to.toISOString().slice(0, 10);
-    query = query.gte("data", fromStr).lte("data", toStr);
+    // Incluir também registros onde "data" seja nula mas o "ts" caia no intervalo selecionado
+    const endTs = addDays(to, 1).toISOString();
+    query = query.or(
+      `and(data.gte.${fromStr},data.lte.${toStr}),and(data.is.null,ts.gte.${from.toISOString()},ts.lt.${endTs})`
+    );
   }
 
   const { data, error } = await query;
