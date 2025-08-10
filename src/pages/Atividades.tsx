@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import StatCard from "@/components/finance/StatCard";
 import ActivitiesChart from "@/components/fitness/ActivitiesChart";
 import ActivitiesTable from "@/components/fitness/ActivitiesTable";
-import { FitnessEntry, groupTotalsByModality, totalCalories, fetchActivitiesFromSupabase } from "@/lib/fitness";
+import { FitnessEntry, groupTotalsByModality, totalCalories, fetchActivitiesFromSupabase, estimateCalories } from "@/lib/fitness";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -214,11 +214,24 @@ export default function Atividades() {
               title="Cole a mensagem (ex.: 'Corrida 30min 5km')"
               placeholder="Ex.: Corrida 30min 5km"
               parse={parseFitness}
-              onConfirm={() => {
-                toast({
-                  title: "Registro local criado",
-                  description: "Posso enviar para o Supabase também se você quiser."
-                });
+              onConfirm={async (data) => {
+                const when = data?.data ? new Date(data.data) : new Date();
+                const payload = {
+                  modalidade: data.tipo,
+                  tipo: data.tipo,
+                  distancia_km: data.distanciaKm ?? null,
+                  duracao_min: data.minutos,
+                  calorias: typeof data.calorias === 'number' ? data.calorias : estimateCalories(data),
+                  data: when.toISOString().slice(0, 10),
+                  ts: when.toISOString(),
+                };
+                const { error } = await supabase.from('bereproject').insert([payload]);
+                if (error) {
+                  toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
+                  return;
+                }
+                toast({ title: 'Atividade registrada', description: 'Sua atividade foi salva no Supabase.' });
+                queryClient.invalidateQueries({ queryKey: ['activities'] });
               }}
             />
           </div>
