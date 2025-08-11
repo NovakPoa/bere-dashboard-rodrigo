@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { getExpenses, filterExpenses, getMonthlyTotal } from "@/lib/finance";
@@ -33,13 +33,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen">
-      <header className="bg-gradient-primary">
-        <div className="container py-12">
-          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Financeiro</h1>
-          <div className="mt-6">
-            <Button variant="hero" className="transition-smooth">Ver opções de integração</Button>
-          </div>
-        </div>
+      <header className="container py-6">
+        <h1 className="text-3xl md:text-4xl font-semibold text-foreground">Financeiro</h1>
       </header>
 
       <main className="container py-8 space-y-8">
