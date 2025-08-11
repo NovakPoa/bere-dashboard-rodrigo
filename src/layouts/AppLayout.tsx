@@ -14,7 +14,7 @@ export default function AppLayout() {
           <header className="h-12 flex items-center border-b px-2">
             {/* Único trigger global */}
             <SidebarTrigger className="mr-2" />
-            <span className="text-sm text-muted-foreground">Berê</span>
+            
           </header>
           <main className="flex-1 p-4">
             <Outlet />
