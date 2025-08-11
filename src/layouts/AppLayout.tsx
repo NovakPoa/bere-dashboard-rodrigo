@@ -11,12 +11,12 @@ export default function AppLayout() {
           <AppSidebar />
         </aside>
         <div className="flex-1 flex flex-col">
-          <header className="h-12 flex items-center border-b px-2">
+          <header className="sticky top-0 z-40 h-14 flex items-center border-b px-4 bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             {/* Único trigger global */}
             <SidebarTrigger className="mr-2" />
             
           </header>
-          <main className="flex-1 p-4">
+          <main className="flex-1 p-6 md:p-8 container">
             <Outlet />
           </main>
         </div>
