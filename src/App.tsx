@@ -10,11 +10,11 @@ import AppLayout from "./layouts/AppLayout";
 import Home from "./pages/Home";
 import Atividades from "./pages/Atividades";
 import Alimentacao from "./pages/Alimentacao";
-import Estudos from "./pages/Estudos";
-import Todo from "./pages/Todo";
+
+
 import Cultura from "./pages/Cultura";
 import Calendario from "./pages/Calendario";
-import Listas from "./pages/Listas";
+
 import Habitos from "./pages/Habitos";
 
 const queryClient = new QueryClient();
@@ -31,11 +31,11 @@ const App = () => (
             <Route path="/financeira" element={<Index />} />
             <Route path="/atividades" element={<Atividades />} />
             <Route path="/alimentacao" element={<Alimentacao />} />
-            <Route path="/estudos" element={<Estudos />} />
-            <Route path="/todo" element={<Todo />} />
+            
+            
             <Route path="/cultura" element={<Cultura />} />
             <Route path="/calendario" element={<Calendario />} />
-            <Route path="/listas" element={<Listas />} />
+            
             <Route path="/habitos" element={<Habitos />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
