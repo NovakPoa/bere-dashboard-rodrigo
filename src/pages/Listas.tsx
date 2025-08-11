@@ -147,10 +147,8 @@ export default function Listas() {
 
   return (
     <div className="min-h-screen">
-      <header className="bg-gradient-primary">
-        <div className="container py-12">
-          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Listas inteligentes</h1>
-        </div>
+      <header className="container py-6">
+        <h1 className="text-3xl md:text-4xl font-semibold text-foreground">Listas inteligentes</h1>
       </header>
 
       <main className="container py-8 space-y-8">
