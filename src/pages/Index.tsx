@@ -23,7 +23,7 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
-    document.title = "Financeiro | Berê";
+    document.title = "Financeiro";
   }, []);
 
   const filtered = useMemo(() => filterExpenses(expenses, { category, method }), [expenses, category, method]);
@@ -35,7 +35,7 @@ const Index = () => {
     <div className="min-h-screen">
       <header className="bg-gradient-primary">
         <div className="container py-12">
-          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Financeiro | Berê</h1>
+          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Financeiro</h1>
           <div className="mt-6">
             <Button variant="hero" className="transition-smooth">Ver opções de integração</Button>
           </div>

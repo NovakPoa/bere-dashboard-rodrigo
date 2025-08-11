@@ -4,7 +4,7 @@ import { setPageSEO } from "@/lib/seo";
 
 export default function Home() {
   useEffect(() => {
-    setPageSEO("Principal | Berê", "Resumo dos últimos 7 dias");
+    setPageSEO("Principal", "Resumo dos últimos 7 dias");
   }, []);
 
   return (

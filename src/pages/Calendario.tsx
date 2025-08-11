@@ -26,7 +26,7 @@ export default function Calendario() {
   const [draftId, setDraftId] = useState(settings.calendarId);
   const [draftTz, setDraftTz] = useState(settings.timezone);
 
-  useEffect(() => setPageSEO("Calendário | Berê", "Visualize seu Google Agenda"), []);
+  useEffect(() => setPageSEO("Calendário", "Visualize seu Google Agenda"), []);
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)), [settings]);
 
   const embedUrl = useMemo(() => {
@@ -40,7 +40,7 @@ export default function Calendario() {
     <div className="min-h-screen">
       <header className="bg-gradient-primary">
         <div className="container py-12">
-          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Calendário | Berê</h1>
+          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Calendário</h1>
         </div>
       </header>
 

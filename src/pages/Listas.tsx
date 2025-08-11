@@ -67,7 +67,7 @@ export default function Listas() {
   const [editing, setEditing] = useState<Note | null>(null);
   const [editTags, setEditTags] = useState("");
 
-  useEffect(() => setPageSEO("Listas inteligentes | Berê", "Notas estilo Google Keep com listas e lembretes"), []);
+  useEffect(() => setPageSEO("Listas inteligentes", "Notas estilo Google Keep com listas e lembretes"), []);
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(notes)), [notes]);
 
   const filtered = useMemo(() => {
@@ -149,7 +149,7 @@ export default function Listas() {
     <div className="min-h-screen">
       <header className="bg-gradient-primary">
         <div className="container py-12">
-          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Listas inteligentes | Berê</h1>
+          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Listas inteligentes</h1>
         </div>
       </header>
 

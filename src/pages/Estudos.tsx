@@ -40,7 +40,7 @@ function save(entry: StudyEntry) {
 }
 
 export default function Estudos() {
-  useEffect(() => setPageSEO("Estudos | Berê", "Registre estudo por mensagem"), []);
+  useEffect(() => setPageSEO("Estudos", "Registre estudo por mensagem"), []);
 
   const StudySim = MessageSimulator<StudyEntry>;
 

@@ -35,7 +35,7 @@ const saveItems = (items: Item[]) => localStorage.setItem(STORAGE_KEY, JSON.stri
 
 export default function Cultura() {
   const [items, setItems] = useState<Item[]>(() => loadItems());
-  useEffect(() => setPageSEO("Cultura | Berê", "Listas de filmes, séries e livros"), []);
+  useEffect(() => setPageSEO("Cultura", "Listas de filmes, séries e livros"), []);
   useEffect(() => saveItems(items), [items]);
 
   // Form inline por lista
@@ -263,7 +263,7 @@ export default function Cultura() {
     <div className="min-h-screen">
       <header className="bg-gradient-primary">
         <div className="container py-12">
-          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Cultura | Berê</h1>
+          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Cultura</h1>
         </div>
       </header>
 

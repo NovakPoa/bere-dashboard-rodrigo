@@ -61,7 +61,7 @@ export default function Atividades() {
     () => ({ from: subDays(new Date(), 6), to: new Date() })
   );
 
-  useEffect(() => setPageSEO("Atividades Físicas | Berê", "Registre exercícios por mensagem"), []);
+  useEffect(() => setPageSEO("Atividades Físicas", "Registre exercícios por mensagem"), []);
 
   const efFrom = startOfDay(range?.from ?? subDays(new Date(), 6));
   const efTo = startOfDay(range?.to ?? new Date());
@@ -165,7 +165,7 @@ export default function Atividades() {
     <div className="min-h-screen">
       <header className="bg-gradient-primary">
         <div className="container py-12">
-          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Atividades Físicas | Berê</h1>
+          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Atividades Físicas</h1>
         </div>
       </header>
 

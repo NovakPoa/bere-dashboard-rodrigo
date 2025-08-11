@@ -34,7 +34,7 @@ export default function Todo() {
   const [tasks, setTasks] = useState<Task[]>(() => loadTasks());
   const [newTask, setNewTask] = useState<{ status: Status; title: string; notes: string } | null>(null);
 
-  useEffect(() => setPageSEO("To‑do | Berê", "Organize tarefas por status e conclua"), []);
+  useEffect(() => setPageSEO("To‑do", "Organize tarefas por status e conclua"), []);
   useEffect(() => saveTasks(tasks), [tasks]);
 
   const toggleAdd = (status: Status) => {
@@ -137,7 +137,7 @@ export default function Todo() {
     <div className="min-h-screen">
       <header className="bg-gradient-primary">
         <div className="container py-12">
-          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">To‑do | Berê</h1>
+          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">To‑do</h1>
         </div>
       </header>
 

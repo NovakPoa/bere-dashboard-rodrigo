@@ -69,7 +69,7 @@ export default function Alimentacao() {
   );
   const fieldsRef = useRef<Partial<FoodEntry>>({});
 
-  useEffect(() => setPageSEO("Alimentação | Berê", "Registre refeições por texto ou foto"), []);
+  useEffect(() => setPageSEO("Alimentação", "Registre refeições por texto ou foto"), []);
   useEffect(() => setEntries(getFoodEntries()), []);
 
   const onFile = (f: File | null) => {
@@ -170,7 +170,7 @@ export default function Alimentacao() {
     <div className="min-h-screen">
       <header className="bg-gradient-primary">
         <div className="container py-12">
-          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Alimentação | Berê</h1>
+          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Alimentação</h1>
         </div>
       </header>
 

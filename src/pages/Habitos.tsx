@@ -70,7 +70,7 @@ const [range, setRange] = useState<DateRange>(() => {
 });
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  useEffect(() => setPageSEO("Hábitos | Berê", "Crie hábitos e marque seu progresso diário"), []);
+  useEffect(() => setPageSEO("Hábitos", "Crie hábitos e marque seu progresso diário"), []);
   useEffect(() => localStorage.setItem(HABITS_KEY, JSON.stringify(habits)), [habits]);
   useEffect(() => localStorage.setItem(CHECKS_KEY, JSON.stringify(checks)), [checks]);
   useEffect(() => {
@@ -141,7 +141,7 @@ const analysis = useMemo(() => {
     <div className="min-h-screen">
       <header className="bg-gradient-primary">
         <div className="container py-12">
-          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Hábitos | Berê</h1>
+          <h1 className="text-4xl md:text-5xl font-semibold text-primary-foreground">Hábitos</h1>
         </div>
       </header>
 
