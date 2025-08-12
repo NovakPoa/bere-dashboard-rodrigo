@@ -241,7 +241,7 @@ export default function Organizacao() {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <aside className="lg:col-span-3 space-y-4">
+        <aside className="lg:col-span-3 space-y-4 md:-ml-2 lg:-ml-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Favoritos</CardTitle>
@@ -277,23 +277,13 @@ export default function Organizacao() {
               <CardTitle className="text-base">Todas as páginas</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex gap-2">
-                <Input placeholder="Nome da nova página" value={creatingTitle} onChange={e => setCreatingTitle(e.target.value)} />
-                <Button onClick={createRootPage}><FilePlus2 className="h-4 w-4 mr-2"/>Criar</Button>
-              </div>
+                <div className="flex gap-2">
+                  <Input placeholder="Nome da nova página" value={creatingTitle} onChange={e => setCreatingTitle(e.target.value)} />
+                  <Button onClick={createRootPage} variant="ghost" size="icon" aria-label="Criar página" className="text-[hsl(var(--org-green))] hover:text-[hsl(var(--org-green))]">
+                    <FilePlus2 />
+                  </Button>
+                </div>
               <Separator />
-              <div
-                className={`text-xs text-muted-foreground rounded-md border border-dashed p-2 hover-scale ${dropOverId==="__root__" ? 'ring-2 ring-primary' : ''}`}
-                onDragOver={(e) => { e.preventDefault(); setDropOverId("__root__"); }}
-                onDragLeave={() => setDropOverId(prev => prev === "__root__" ? null : prev)}
-                onDrop={async (e) => {
-                  e.preventDefault();
-                  const sourceId = e.dataTransfer.getData('text/plain');
-                  if (sourceId) await movePage(sourceId, null);
-                }}
-              >
-                Solte aqui para mover para a raiz. Dica: topo=reordenar antes, meio=aninhado, base=reordenar depois.
-              </div>
               <div className="space-y-1 max-h-[360px] overflow-auto">
                 <PageTree
                   pages={pages}
@@ -330,7 +320,7 @@ export default function Organizacao() {
                       const { error } = await supabase.from("org_pages").update({ title }).eq("id", currentPage.id);
                       if (error) toast({ title: "Erro", description: "Não foi possível renomear a página" });
                     }}
-                    className="text-2xl font-semibold bg-transparent border-0 focus-visible:ring-0 px-0"
+                    className="text-3xl md:text-4xl font-semibold bg-transparent border-0 focus-visible:ring-0 px-0"
                   />
                   <Separator />
                 </CardContent>
