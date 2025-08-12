@@ -66,7 +66,7 @@ export default function Organizacao() {
   useEffect(() => {
     const fetchPages = async () => {
       const { data, error } = await supabase.from("org_pages").select("*")
-        .order("parent_id", { ascending: true, nullsFirst: true as any })
+        .order("parent_id", { ascending: true, nullsFirst: true })
         .order("sort_index", { ascending: true })
         .order("created_at", { ascending: true });
       if (error) {
