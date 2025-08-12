@@ -10,6 +10,7 @@ import { Star, StarOff, FilePlus2, ChevronRight } from "lucide-react";
 import { setPageSEO } from "@/lib/seo";
 import { useToast } from "@/components/ui/use-toast";
 import RichNoteEditor from "@/components/organizacao/RichNoteEditor";
+import PageTree from "@/components/organizacao/PageTree";
 // Types aligning to our org tables
 type OrgPage = {
   id: string;
@@ -233,29 +234,16 @@ export default function Organizacao() {
                 Soltar aqui para mover para a raiz
               </div>
               <div className="space-y-1 max-h-[360px] overflow-auto">
-                {rootPages.map(p => (
-                  <button
-                    key={p.id}
-                    draggable
-                    onDragStart={(e) => { e.dataTransfer.setData('text/plain', p.id); setDraggingId(p.id); }}
-                    onDragEnd={() => { setDraggingId(null); setDropOverId(null); }}
-                    onDragOver={(e) => { e.preventDefault(); setDropOverId(p.id); }}
-                    onDragLeave={() => setDropOverId(prev => prev === p.id ? null : prev)}
-                    onDrop={async (e) => {
-                      e.preventDefault();
-                      const sourceId = e.dataTransfer.getData('text/plain');
-                      if (sourceId && sourceId !== p.id) await movePage(sourceId, p.id);
-                    }}
-                    onClick={() => openPage(p.id)}
-                    className={`w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth ${currentPageId===p.id? 'bg-muted' : ''} ${dropOverId===p.id ? 'ring-2 ring-primary' : ''}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <ChevronRight className="h-4 w-4" />
-                      <span className="truncate">{p.title}</span>
-                      {p.is_favorite && <Badge variant="secondary">★</Badge>}
-                    </div>
-                  </button>
-                ))}
+                <PageTree
+                  pages={pages}
+                  currentPageId={currentPageId}
+                  openPage={openPage}
+                  movePage={movePage}
+                  draggingId={draggingId}
+                  setDraggingId={setDraggingId}
+                  dropOverId={dropOverId}
+                  setDropOverId={setDropOverId}
+                />
               </div>
             </CardContent>
           </Card>
