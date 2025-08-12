@@ -120,6 +120,8 @@ export function BlockRow({ id, html, onChange, onSplit, onKeyDown }: BlockRowPro
       afterDiv.appendChild(afterFrag);
       const beforeHtml = sanitizeBidi(beforeDiv.innerHTML);
       const afterHtml = sanitizeBidi(afterDiv.innerHTML);
+      // Optimistically update current line to show split immediately
+      el.innerHTML = beforeHtml;
       onSplit?.(id, beforeHtml, afterHtml);
       return;
     }

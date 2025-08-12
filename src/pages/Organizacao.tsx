@@ -253,8 +253,8 @@ export default function Organizacao() {
   };
 
   // Split current block at caret: update current with beforeHtml and insert new block with afterHtml, then reorder
-  const splitBlock = async (blockId: string, beforeHtml: string, afterHtml: string) => {
-    if (!currentPageId) return;
+  const splitBlock = async (blockId: string, beforeHtml: string, afterHtml: string): Promise<string | null> => {
+    if (!currentPageId) return null;
     // Update current block content
     await updateBlock(blockId, { content: beforeHtml });
 
@@ -264,7 +264,7 @@ export default function Organizacao() {
       .insert({ page_id: currentPageId, type: 'text', order_index: 0, content: afterHtml })
       .select('*')
       .single();
-    if (insertError || !inserted) { toast({ title: 'Erro', description: 'Não foi possível criar a nova linha' }); return; }
+    if (insertError || !inserted) { toast({ title: 'Erro', description: 'Não foi possível criar a nova linha' }); return null; }
 
     // Prepare new ordering placing the new block right after the original one
     const siblings = [...blocks]
@@ -284,6 +284,8 @@ export default function Organizacao() {
       const updatedSiblings = arr.map((b, i) => ({ ...b, order_index: i * 100 } as any));
       return [...others, ...updatedSiblings];
     });
+
+    return (inserted as any).id as string;
   };
   const movePage = async (sourceId: string, newParentId: string | null) => {
     const { data, error } = await supabase

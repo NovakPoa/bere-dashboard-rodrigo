@@ -14,7 +14,7 @@ interface BlockListEditorProps {
   onReorder: (sourceId: string, targetId: string, position: "before" | "after") => void;
   onMoveToPage?: (blockId: string, targetPageId: string) => void; // handled by PageTree drop
   onCreateAfter?: (afterId: string) => void;
-  onSplit?: (id: string, beforeHtml: string, afterHtml: string) => void;
+  onSplit?: (id: string, beforeHtml: string, afterHtml: string) => Promise<string | null>;
 }
 
 export default function BlockListEditor({
