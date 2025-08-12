@@ -88,18 +88,17 @@ export default function PageTree({
               const sourceId = e.dataTransfer.getData("text/plain");
               if (!sourceId || sourceId === p.id) return;
               const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-              const before = e.clientY < rect.top + rect.height / 2;
+              const y = e.clientY - rect.top;
+              const h = rect.height;
+              const topZone = h * 0.33;
+              const bottomZone = h * 0.66;
 
-              if (before) {
+              if (y < topZone) {
                 await reorderSibling(sourceId, p.id, 'before');
+              } else if (y > bottomZone) {
+                await reorderSibling(sourceId, p.id, 'after');
               } else {
-                const source = pages.find(x => x.id === sourceId);
-                const sameParent = source && ((source.parent_id ?? null) === (p.parent_id ?? null));
-                if (sameParent) {
-                  await reorderSibling(sourceId, p.id, 'after');
-                } else {
-                  await movePage(sourceId, p.id); // nest under target
-                }
+                await movePage(sourceId, p.id); // nest under target
               }
             }}
             onClick={() => openPage(p.id)}

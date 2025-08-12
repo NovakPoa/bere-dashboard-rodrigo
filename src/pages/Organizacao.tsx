@@ -292,7 +292,7 @@ export default function Organizacao() {
                   if (sourceId) await movePage(sourceId, null);
                 }}
               >
-                Soltar aqui para mover para a raiz (arraste para a metade inferior de uma página para aninhar; metade superior para reordenar)
+                Solte aqui para mover para a raiz. Dica: topo=reordenar antes, meio=aninhado, base=reordenar depois.
               </div>
               <div className="space-y-1 max-h-[360px] overflow-auto">
                 <PageTree
