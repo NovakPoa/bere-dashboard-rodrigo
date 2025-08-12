@@ -186,12 +186,11 @@ export default function Organizacao() {
     if (srcIdx === -1 || tgtIdx === -1) return;
     const [moved] = favs.splice(srcIdx,1);
     favs.splice(tgtIdx,0,moved);
-    // persist with gaps of 100
-    await Promise.all(favs.map((p,i)=> supabase.from('org_pages').update({ favorite_order: i*100 }).eq('id', p.id)));
-    setPages(prev => prev.map(p=>{
-      const n = favs.find(f=>f.id===p.id);
-      return n ? { ...p, favorite_order: n.favorite_order } as any : p;
-    }));
+    // assign local orders with gaps of 100
+    const orderMap = new Map<string, number>();
+    favs.forEach((p,i)=> orderMap.set(p.id, i*100));
+    await Promise.all(favs.map((p)=> supabase.from('org_pages').update({ favorite_order: orderMap.get(p.id)! }).eq('id', p.id)));
+    setPages(prev => prev.map(p => orderMap.has(p.id) ? { ...p, favorite_order: orderMap.get(p.id)! } as any : p));
   };
 
   const reorderSibling = async (sourceId: string, targetId: string, position: 'before'|'after'='before') => {

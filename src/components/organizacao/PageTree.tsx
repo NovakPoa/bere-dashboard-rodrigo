@@ -6,6 +6,7 @@ export type OrgPageRef = {
   title: string;
   parent_id: string | null;
   is_favorite: boolean;
+  sort_index?: number;
 };
 
 interface PageTreeProps {
@@ -33,11 +34,15 @@ export default function PageTree({
 }: PageTreeProps) {
   const childrenMap = useMemo(() => {
     const m = new Map<string | null, OrgPageRef[]>();
-    // Keep insertion order from parent array (already ordered by sort_index)
     for (const p of pages) {
       const key = p.parent_id ?? null;
       if (!m.has(key)) m.set(key, []);
       m.get(key)!.push(p);
+    }
+    // sort each group by sort_index if provided, then title
+    for (const [key, arr] of m) {
+      arr.sort((a, b) => (a.sort_index ?? 0) - (b.sort_index ?? 0) || a.title.localeCompare(b.title));
+      m.set(key, arr);
     }
     return m;
   }, [pages]);
