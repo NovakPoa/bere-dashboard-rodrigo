@@ -251,6 +251,40 @@ export default function Organizacao() {
       return [...others, ...updatedSiblings];
     });
   };
+
+  // Split current block at caret: update current with beforeHtml and insert new block with afterHtml, then reorder
+  const splitBlock = async (blockId: string, beforeHtml: string, afterHtml: string) => {
+    if (!currentPageId) return;
+    // Update current block content
+    await updateBlock(blockId, { content: beforeHtml });
+
+    // Insert new block
+    const { data: inserted, error: insertError } = await supabase
+      .from('org_blocks')
+      .insert({ page_id: currentPageId, type: 'text', order_index: 0, content: afterHtml })
+      .select('*')
+      .single();
+    if (insertError || !inserted) { toast({ title: 'Erro', description: 'Não foi possível criar a nova linha' }); return; }
+
+    // Prepare new ordering placing the new block right after the original one
+    const siblings = [...blocks]
+      .filter(b => b.page_id === currentPageId)
+      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+
+    const idx = siblings.findIndex(b => b.id === blockId);
+    const arr = [...siblings];
+    arr.splice(idx + 1, 0, inserted as any);
+    const withOrder = arr.map((b, i) => ({ id: b.id, order_index: i * 100 }));
+
+    await Promise.all(withOrder.map(({ id, order_index }) => supabase.from('org_blocks').update({ order_index }).eq('id', id)));
+
+    // Update local state
+    setBlocks(prev => {
+      const others = prev.filter(b => b.page_id !== currentPageId);
+      const updatedSiblings = arr.map((b, i) => ({ ...b, order_index: i * 100 } as any));
+      return [...others, ...updatedSiblings];
+    });
+  };
   const movePage = async (sourceId: string, newParentId: string | null) => {
     const { data, error } = await supabase
       .from("org_pages")
@@ -263,7 +297,6 @@ export default function Organizacao() {
     setDraggingId(null);
     setDropOverId(null);
   };
-
   const reorderFavorites = async (sourceId: string, targetId: string) => {
     const favs = pages.filter(p => p.is_favorite).sort((a,b)=> (a.favorite_order??0)-(b.favorite_order??0));
     const srcIdx = favs.findIndex(p=>p.id===sourceId);
@@ -432,6 +465,7 @@ export default function Organizacao() {
                         onReorder={reorderBlocks}
                         onMoveToPage={moveBlock}
                         onCreateAfter={createBlockAfter}
+                        onSplit={splitBlock}
                       />
                     </CardContent>
                   </Card>

@@ -12,7 +12,10 @@ interface BlockRowProps {
   id: string;
   html: string | null;
   onChange: (id: string, html: string) => void;
+  onSplit?: (id: string, beforeHtml: string, afterHtml: string) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void;
+  autoFocus?: boolean;
+  onFocusDone?: () => void;
 }
 
 // Remove Unicode BiDi control characters that can flip text direction
@@ -34,7 +37,7 @@ const COLORS = [
 type ColorName = typeof COLORS[number];
 const colorClass = (c: ColorName) => (c === "default" ? "org-text-default" : `org-text-${c}`);
 
-export function BlockRow({ id, html, onChange, onKeyDown }: BlockRowProps) {
+export function BlockRow({ id, html, onChange, onSplit, onKeyDown }: BlockRowProps) {
   const ref = useRef<HTMLDivElement | null>(null);
 
   // Sync external html into the editor only when not focused to preserve caret position
@@ -98,6 +101,31 @@ export function BlockRow({ id, html, onChange, onKeyDown }: BlockRowProps) {
     onChange(id, sanitizeBidi(next));
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      const el = ref.current;
+      const sel = window.getSelection();
+      if (!el || !sel || sel.rangeCount === 0) return;
+      const caret = sel.getRangeAt(0);
+      const beforeRange = caret.cloneRange();
+      beforeRange.setStart(el, 0);
+      const afterRange = caret.cloneRange();
+      afterRange.setEnd(el, el.childNodes.length);
+      const beforeFrag = beforeRange.cloneContents();
+      const afterFrag = afterRange.cloneContents();
+      const beforeDiv = document.createElement('div');
+      const afterDiv = document.createElement('div');
+      beforeDiv.appendChild(beforeFrag);
+      afterDiv.appendChild(afterFrag);
+      const beforeHtml = sanitizeBidi(beforeDiv.innerHTML);
+      const afterHtml = sanitizeBidi(afterDiv.innerHTML);
+      onSplit?.(id, beforeHtml, afterHtml);
+      return;
+    }
+    onKeyDown?.(e);
+  };
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -108,7 +136,7 @@ export function BlockRow({ id, html, onChange, onKeyDown }: BlockRowProps) {
           className="org-ltr min-h-[24px] w-full whitespace-pre-wrap px-0 py-1 focus:outline-none text-left"
           style={{ direction: "ltr", unicodeBidi: "isolate-override" }}
           onInput={(e) => onChange(id, sanitizeBidi((e.currentTarget as HTMLDivElement).innerHTML || ""))}
-          onKeyDown={onKeyDown}
+          onKeyDown={handleKeyDown}
         />
       </ContextMenuTrigger>
       <ContextMenuContent className="z-50">

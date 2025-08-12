@@ -14,6 +14,7 @@ interface BlockListEditorProps {
   onReorder: (sourceId: string, targetId: string, position: "before" | "after") => void;
   onMoveToPage?: (blockId: string, targetPageId: string) => void; // handled by PageTree drop
   onCreateAfter?: (afterId: string) => void;
+  onSplit?: (id: string, beforeHtml: string, afterHtml: string) => void;
 }
 
 export default function BlockListEditor({
@@ -22,6 +23,7 @@ export default function BlockListEditor({
   onReorder,
   onMoveToPage,
   onCreateAfter,
+  onSplit,
 }: BlockListEditorProps) {
   const sorted = useMemo(
     () => [...blocks].sort((a, b) => a.order_index - b.order_index),
@@ -85,7 +87,7 @@ export default function BlockListEditor({
             >
               <GripVertical className="h-4 w-4" />
             </button>
-            <BlockRow id={b.id} html={b.content} onChange={onChangeContent} onKeyDown={(e) => handleKeyDown(b.id, e)} />
+            <BlockRow id={b.id} html={b.content} onChange={onChangeContent} onKeyDown={(e) => handleKeyDown(b.id, e)} onSplit={onSplit} />
           </div>
         </div>
       ))}
