@@ -1,8 +1,6 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { GripVertical, Plus } from "lucide-react";
-
-// Remove Unicode BiDi control characters that can flip text direction
-const sanitizeBidi = (s: string) => s.replace(/[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, "");
+import { BlockRow } from "./BlockRow";
 
 export type OrgBlockItem = {
   id: string;
@@ -31,8 +29,6 @@ export default function BlockListEditor({
   );
 
   const [dropOver, setDropOver] = useState<{ id: string; zone: "before" | "after" | null } | null>(null);
-
-  const editorsRef = useRef<Record<string, HTMLDivElement | null>>({});
 
   const handleDragStart = (id: string, e: React.DragEvent) => {
     e.dataTransfer.setData("text/plain", `block:${id}`);
@@ -73,7 +69,8 @@ export default function BlockListEditor({
   return (
     <div className="space-y-1">
       {sorted.map((b) => (
-        <div key={b.id}
+        <div
+          key={b.id}
           onDragOver={(e) => handleDragOver(b.id, e)}
           onDragLeave={() => handleDragLeave(b.id)}
           onDrop={(e) => handleDrop(b.id, e)}
@@ -88,16 +85,7 @@ export default function BlockListEditor({
             >
               <GripVertical className="h-4 w-4" />
             </button>
-            <div
-              ref={(el) => (editorsRef.current[b.id] = el)}
-              contentEditable
-              suppressContentEditableWarning
-              className="org-ltr min-h-[24px] w-full whitespace-pre-wrap px-0 py-1 focus:outline-none text-left"
-              style={{ direction: "ltr", unicodeBidi: "isolate-override" }}
-              onInput={(e) => onChangeContent(b.id, sanitizeBidi(e.currentTarget.innerHTML || ""))}
-              onKeyDown={(e) => handleKeyDown(b.id, e)}
-              dangerouslySetInnerHTML={{ __html: sanitizeBidi(b.content || "") }}
-            />
+            <BlockRow id={b.id} html={b.content} onChange={onChangeContent} onKeyDown={(e) => handleKeyDown(b.id, e)} />
           </div>
         </div>
       ))}
