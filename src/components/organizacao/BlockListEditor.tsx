@@ -15,6 +15,7 @@ interface BlockListEditorProps {
   onMoveToPage?: (blockId: string, targetPageId: string) => void; // handled by PageTree drop
   onCreateAfter?: (afterId: string) => void;
   onSplit?: (id: string, beforeHtml: string, afterHtml: string) => Promise<string | null>;
+  onJoinPrev?: (id: string, currentHtml: string) => Promise<string | null>;
 }
 
 export default function BlockListEditor({
@@ -24,6 +25,7 @@ export default function BlockListEditor({
   onMoveToPage,
   onCreateAfter,
   onSplit,
+  onJoinPrev,
 }: BlockListEditorProps) {
   const sorted = useMemo(
     () => [...blocks].sort((a, b) => a.order_index - b.order_index),
@@ -32,6 +34,7 @@ export default function BlockListEditor({
 
   const [dropOver, setDropOver] = useState<{ id: string; zone: "before" | "after" | null } | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
+  const [focusAtEnd, setFocusAtEnd] = useState(false);
 
   const handleDragStart = (id: string, e: React.DragEvent) => {
     e.dataTransfer.setData("text/plain", `block:${id}`);
@@ -95,10 +98,16 @@ export default function BlockListEditor({
               onKeyDown={(e) => handleKeyDown(b.id, e)}
               onSplit={async (id, before, after) => {
                 const newId = await onSplit?.(id, before, after);
-                if (newId) setFocusId(newId);
+                if (newId) { setFocusId(newId); setFocusAtEnd(false); }
                 return newId ?? null;
               }}
+              onJoinPrev={async (id, html) => {
+                const prevId = await (typeof onJoinPrev === 'function' ? onJoinPrev(id, html) : Promise.resolve(null));
+                if (prevId) { setFocusId(prevId); setFocusAtEnd(true); }
+                return prevId ?? null;
+              }}
               autoFocus={focusId === b.id}
+              autoFocusAtEnd={focusId === b.id ? focusAtEnd : false}
               onFocusDone={() => setFocusId(null)}
             />
           </div>

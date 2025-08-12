@@ -287,19 +287,44 @@ export default function Organizacao() {
 
     return (inserted as any).id as string;
   };
-  const movePage = async (sourceId: string, newParentId: string | null) => {
-    const { data, error } = await supabase
-      .from("org_pages")
-      .update({ parent_id: newParentId })
-      .eq("id", sourceId)
-      .select("*")
+  // Join current block with previous one and return previous id
+  const joinWithPrevious = async (blockId: string, currentHtml: string): Promise<string | null> => {
+    if (!currentPageId) return null;
+    const siblings = [...blocks]
+      .filter(b => b.page_id === currentPageId)
+      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+    const idx = siblings.findIndex(b => b.id === blockId);
+    if (idx <= 0) return null;
+    const prev = siblings[idx - 1];
+    const combined = (prev.content || '') + (currentHtml || '');
+
+    // Update previous content
+    const { data: updatedPrev, error: updErr } = await supabase
+      .from('org_blocks')
+      .update({ content: combined })
+      .eq('id', prev.id)
+      .select('*')
       .single();
-    if (error) { toast({ title: "Erro", description: "Não foi possível mover a página" }); return; }
-    setPages(prev => prev.map(p => (p.id === sourceId ? (data as OrgPage) : p)));
-    setDraggingId(null);
-    setDropOverId(null);
+    if (updErr) { toast({ title: 'Erro', description: 'Não foi possível juntar com a linha anterior' }); return null; }
+
+    // Delete current block
+    await supabase.from('org_blocks').delete().eq('id', blockId);
+
+    // Recompute order for remaining siblings
+    const remaining = siblings.filter(b => b.id !== blockId).map((b, i) => ({ id: b.id, order_index: i * 100 }));
+    await Promise.all(remaining.map(({ id, order_index }) => supabase.from('org_blocks').update({ order_index }).eq('id', id)));
+
+    // Update local state
+    setBlocks(prevState => {
+      const next = prevState.filter(b => b.id !== blockId).map(b => (b.id === prev.id ? ({ ...(updatedPrev as any) }) : b));
+      return next.map(b => {
+        const n = remaining.find(r => r.id === b.id);
+        return n ? ({ ...b, order_index: n.order_index } as any) : b;
+      });
+    });
+
+    return prev.id;
   };
-  const reorderFavorites = async (sourceId: string, targetId: string) => {
     const favs = pages.filter(p => p.is_favorite).sort((a,b)=> (a.favorite_order??0)-(b.favorite_order??0));
     const srcIdx = favs.findIndex(p=>p.id===sourceId);
     const tgtIdx = favs.findIndex(p=>p.id===targetId);
@@ -468,6 +493,7 @@ export default function Organizacao() {
                         onMoveToPage={moveBlock}
                         onCreateAfter={createBlockAfter}
                         onSplit={splitBlock}
+                        onJoinPrev={joinWithPrevious}
                       />
                     </CardContent>
                   </Card>

@@ -13,8 +13,10 @@ interface BlockRowProps {
   html: string | null;
   onChange: (id: string, html: string) => void;
   onSplit?: (id: string, beforeHtml: string, afterHtml: string) => Promise<string | null>;
+  onJoinPrev?: (id: string, currentHtml: string) => Promise<string | null>;
   onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   autoFocus?: boolean;
+  autoFocusAtEnd?: boolean;
   onFocusDone?: () => void;
 }
 
@@ -37,7 +39,7 @@ const COLORS = [
 type ColorName = typeof COLORS[number];
 const colorClass = (c: ColorName) => (c === "default" ? "org-text-default" : `org-text-${c}`);
 
-export function BlockRow({ id, html, onChange, onSplit, onKeyDown, autoFocus, onFocusDone }: BlockRowProps) {
+export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, autoFocus, autoFocusAtEnd, onFocusDone }: BlockRowProps) {
   const ref = useRef<HTMLDivElement | null>(null);
 
   // Sync external html into the editor only when not focused to preserve caret position
@@ -58,20 +60,24 @@ export function BlockRow({ id, html, onChange, onSplit, onKeyDown, autoFocus, on
     el.innerHTML = sanitizeBidi(html || "");
   }, []);
 
-  // Autofocus newly created row at start
+  // Autofocus newly created row at start or end
   useEffect(() => {
     if (!autoFocus) return;
     const el = ref.current;
     if (!el) return;
     el.focus();
     const range = document.createRange();
-    range.setStart(el, 0);
-    range.collapse(true);
+    range.selectNodeContents(el);
+    if (autoFocusAtEnd) {
+      range.collapse(false); // end
+    } else {
+      range.collapse(true); // start
+    }
     const sel = window.getSelection();
     sel?.removeAllRanges();
     sel?.addRange(range);
     onFocusDone?.();
-  }, [autoFocus, onFocusDone]);
+  }, [autoFocus, autoFocusAtEnd, onFocusDone]);
 
   const withinEditor = () => {
     const el = ref.current;
@@ -117,10 +123,26 @@ export function BlockRow({ id, html, onChange, onSplit, onKeyDown, autoFocus, on
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const el = ref.current;
+    const sel = window.getSelection();
+    if (e.key === "Backspace" || e.key === "Delete") {
+      if (!el || !sel || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+      const pre = range.cloneRange();
+      pre.selectNodeContents(el);
+      pre.setEnd(range.startContainer, range.startOffset);
+      const atStart = pre.toString().length === 0;
+      const isEmpty = (el.textContent || "").length === 0 || el.innerHTML === "<br>";
+      if ((e.key === "Backspace" && atStart) || (e.key === "Delete" && atStart && isEmpty)) {
+        e.preventDefault();
+        (el as HTMLElement).blur();
+        onJoinPrev?.(id, el.innerHTML || "");
+        return;
+      }
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      const el = ref.current;
-      const sel = window.getSelection();
       if (!el || !sel || sel.rangeCount === 0) return;
       const caret = sel.getRangeAt(0);
       const beforeRange = caret.cloneRange();
@@ -142,6 +164,7 @@ export function BlockRow({ id, html, onChange, onSplit, onKeyDown, autoFocus, on
       onSplit?.(id, beforeHtml, afterHtml);
       return;
     }
+
     onKeyDown?.(e);
   };
 
