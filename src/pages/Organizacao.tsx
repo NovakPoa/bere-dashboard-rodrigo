@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Star, StarOff, FilePlus2, ChevronRight } from "lucide-react";
 import { setPageSEO } from "@/lib/seo";
 import { useToast } from "@/components/ui/use-toast";
-import RichNoteEditor from "@/components/organizacao/RichNoteEditor";
+import BlockListEditor from "@/components/organizacao/BlockListEditor";
 import PageTree from "@/components/organizacao/PageTree";
 // Types aligning to our org tables
 type OrgPage = {
@@ -97,7 +97,6 @@ export default function Organizacao() {
     fetchBlocks();
   }, [currentPageId, toast]);
 
-  // Auto-create a single text block for freeform editor
   useEffect(() => {
     if (currentPageId && !loading && blocks.length === 0) {
       addBlock("text");
@@ -144,7 +143,7 @@ export default function Organizacao() {
 
   const addBlock = async (type: BlockType) => {
     if (!currentPageId) return;
-    const nextIndex = blocks.length;
+    const nextIndex = blocks.length * 100;
     const { data, error } = await supabase
       .from("org_blocks")
       .insert({ page_id: currentPageId, type, order_index: nextIndex, content: type === "text" ? "" : null })
@@ -165,7 +164,93 @@ export default function Organizacao() {
     setBlocks(prev => prev.map(b => (b.id === id ? (data as OrgBlock) : b)));
   };
 
+  // Reorder blocks within the current page
+  const reorderBlocks = async (sourceId: string, targetId: string, position: 'before' | 'after' = 'before') => {
+    if (!currentPageId) return;
+    const siblings = [...blocks]
+      .filter(b => b.page_id === currentPageId)
+      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
 
+    const srcIdx = siblings.findIndex(b => b.id === sourceId);
+    const tgtIdx = siblings.findIndex(b => b.id === targetId);
+    if (srcIdx === -1 || tgtIdx === -1) return;
+
+    const arr = siblings.filter(b => b.id !== sourceId);
+    const insertAt = Math.max(0, arr.findIndex(b => b.id === targetId) + (position === 'after' ? 1 : 0));
+    const [moved] = siblings.splice(srcIdx, 1);
+    arr.splice(insertAt, 0, moved);
+
+    const withOrder = arr.map((b, i) => ({ id: b.id, order_index: i * 100 }));
+
+    // persist
+    await Promise.all(
+      withOrder.map(({ id, order_index }) =>
+        supabase.from('org_blocks').update({ order_index }).eq('id', id)
+      )
+    );
+
+    setBlocks(prev => prev.map(b => {
+      const n = withOrder.find(x => x.id === b.id);
+      return n ? { ...b, order_index: n.order_index } as any : b;
+    }));
+  };
+
+  // Move a block to another page (append to end)
+  const moveBlock = async (blockId: string, targetPageId: string) => {
+    const block = blocks.find(b => b.id === blockId);
+    if (!block) return;
+
+    // Determine new order at the end of target page
+    const { data: targetBlocks } = await supabase
+      .from('org_blocks')
+      .select('id, order_index')
+      .eq('page_id', targetPageId)
+      .order('order_index', { ascending: true });
+    const nextOrder = ((targetBlocks || []).length) * 100;
+
+    const { error, data } = await supabase
+      .from('org_blocks')
+      .update({ page_id: targetPageId, order_index: nextOrder })
+      .eq('id', blockId)
+      .select('*')
+      .single();
+    if (error) { toast({ title: 'Erro', description: 'Não foi possível mover o bloco' }); return; }
+
+    // Update local state: remove from current page if moved away
+    setBlocks(prev => prev.filter(b => b.id !== blockId || targetPageId === currentPageId).map(b => (b.id === blockId ? (data as any) : b)));
+  };
+
+  // Create a new empty block after a given one
+  const createBlockAfter = async (afterId: string) => {
+    if (!currentPageId) return;
+    const siblings = [...blocks]
+      .filter(b => b.page_id === currentPageId)
+      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+
+    const idx = siblings.findIndex(b => b.id === afterId);
+    const insertAt = idx === -1 ? siblings.length : idx + 1;
+
+    const { data: inserted, error } = await supabase
+      .from('org_blocks')
+      .insert({ page_id: currentPageId, type: 'text', order_index: 0, content: '' })
+      .select('*')
+      .single();
+    if (error || !inserted) { toast({ title: 'Erro', description: 'Não foi possível criar a linha' }); return; }
+
+    const arr = [...siblings];
+    arr.splice(insertAt, 0, inserted as any);
+    const withOrder = arr.map((b, i) => ({ id: b.id, order_index: i * 100 }));
+
+    await Promise.all(withOrder.map(({ id, order_index }) => supabase.from('org_blocks').update({ order_index }).eq('id', id)));
+
+    // Update local
+    setBlocks(prev => {
+      // remove any existing instance and re-add ordered ones for current page
+      const others = prev.filter(b => b.page_id !== currentPageId);
+      const updatedSiblings = arr.map((b, i) => ({ ...b, order_index: i * 100 } as any));
+      return [...others, ...updatedSiblings];
+    });
+  };
   const movePage = async (sourceId: string, newParentId: string | null) => {
     const { data, error } = await supabase
       .from("org_pages")
@@ -257,8 +342,15 @@ export default function Organizacao() {
                   onDragLeave={() => setDropOverId(prev => prev === p.id ? null : prev)}
                   onDrop={async (e) => {
                     e.preventDefault();
-                    const sourceId = e.dataTransfer.getData('text/plain');
-                    if (sourceId && sourceId !== p.id) await reorderFavorites(sourceId, p.id);
+                    const raw = e.dataTransfer.getData('text/plain');
+                    if (!raw) return;
+                    const blockMatch = raw.match(/^block:(.+)$/);
+                    if (blockMatch) {
+                      await moveBlock(blockMatch[1], p.id);
+                      return;
+                    }
+                    const pageId = raw.startsWith('page:') ? raw.slice(5) : raw;
+                    if (pageId && pageId !== p.id) await reorderFavorites(pageId, p.id);
                   }}
                   onClick={() => openPage(p.id)}
                   className={`w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth ${currentPageId===p.id? 'bg-muted' : ''} ${dropOverId===p.id ? 'ring-2 ring-primary' : ''}`}
@@ -295,6 +387,7 @@ export default function Organizacao() {
                   setDraggingId={setDraggingId}
                   dropOverId={dropOverId}
                   setDropOverId={setDropOverId}
+                  moveBlock={moveBlock}
                 />
               </div>
             </CardContent>

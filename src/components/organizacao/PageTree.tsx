@@ -19,6 +19,7 @@ interface PageTreeProps {
   setDraggingId: (id: string | null) => void;
   dropOverId: string | null;
   setDropOverId: (id: string | null) => void;
+  moveBlock?: (blockId: string, targetPageId: string) => Promise<void> | void;
 }
 
 export default function PageTree({
@@ -31,6 +32,7 @@ export default function PageTree({
   setDraggingId,
   dropOverId,
   setDropOverId,
+  moveBlock,
 }: PageTreeProps) {
   const childrenMap = useMemo(() => {
     const m = new Map<string | null, OrgPageRef[]>();
@@ -71,7 +73,7 @@ export default function PageTree({
           <button
             draggable
             onDragStart={(e) => {
-              e.dataTransfer.setData("text/plain", p.id);
+              e.dataTransfer.setData("text/plain", `page:${p.id}`);
               setDraggingId(p.id);
             }}
             onDragEnd={() => {
@@ -85,20 +87,37 @@ export default function PageTree({
             onDragLeave={() => { if (dropOverId === p.id) setDropOverId(null); }}
             onDrop={async (e) => {
               e.preventDefault();
-              const sourceId = e.dataTransfer.getData("text/plain");
-              if (!sourceId || sourceId === p.id) return;
+              const raw = e.dataTransfer.getData("text/plain");
+              if (!raw) return;
+
+              // Support both page and block drags
+              const blockMatch = raw.match(/^block:(.+)$/);
+              const pageMatch = raw.match(/^page:(.+)$/);
+              const sourcePageId = pageMatch ? pageMatch[1] : (!blockMatch ? raw : null);
+
               const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
               const y = e.clientY - rect.top;
               const h = rect.height;
               const topZone = h * 0.33;
               const bottomZone = h * 0.66;
 
+              if (blockMatch) {
+                // Dropping a block: middle nests block into this page
+                if (y >= topZone && y <= bottomZone) {
+                  await moveBlock?.(blockMatch[1], p.id);
+                }
+                // Ignore top/bottom for blocks to avoid ambiguity
+                return;
+              }
+
+              if (!sourcePageId || sourcePageId === p.id) return;
+
               if (y < topZone) {
-                await reorderSibling(sourceId, p.id, 'before');
+                await reorderSibling(sourcePageId, p.id, 'before');
               } else if (y > bottomZone) {
-                await reorderSibling(sourceId, p.id, 'after');
+                await reorderSibling(sourcePageId, p.id, 'after');
               } else {
-                await movePage(sourceId, p.id); // nest under target
+                await movePage(sourcePageId, p.id); // nest under target page
               }
             }}
             onClick={() => openPage(p.id)}
