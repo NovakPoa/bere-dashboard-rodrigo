@@ -284,25 +284,31 @@ export type Database = {
       org_pages: {
         Row: {
           created_at: string
+          favorite_order: number
           id: string
           is_favorite: boolean
           parent_id: string | null
+          sort_index: number
           title: string
           updated_at: string
         }
         Insert: {
           created_at?: string
+          favorite_order?: number
           id?: string
           is_favorite?: boolean
           parent_id?: string | null
+          sort_index?: number
           title: string
           updated_at?: string
         }
         Update: {
           created_at?: string
+          favorite_order?: number
           id?: string
           is_favorite?: boolean
           parent_id?: string | null
+          sort_index?: number
           title?: string
           updated_at?: string
         }

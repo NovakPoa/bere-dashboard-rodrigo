@@ -13,6 +13,7 @@ interface PageTreeProps {
   currentPageId: string | null;
   openPage: (id: string) => void;
   movePage: (sourceId: string, newParentId: string | null) => Promise<void> | void;
+  reorderSibling: (sourceId: string, targetId: string, position?: 'before'|'after') => Promise<void> | void;
   draggingId: string | null;
   setDraggingId: (id: string | null) => void;
   dropOverId: string | null;
@@ -24,6 +25,7 @@ export default function PageTree({
   currentPageId,
   openPage,
   movePage,
+  reorderSibling,
   draggingId,
   setDraggingId,
   dropOverId,
@@ -31,15 +33,11 @@ export default function PageTree({
 }: PageTreeProps) {
   const childrenMap = useMemo(() => {
     const m = new Map<string | null, OrgPageRef[]>();
+    // Keep insertion order from parent array (already ordered by sort_index)
     for (const p of pages) {
       const key = p.parent_id ?? null;
       if (!m.has(key)) m.set(key, []);
       m.get(key)!.push(p);
-    }
-    // Optional: sort alphabetically
-    for (const [k, arr] of m) {
-      arr.sort((a, b) => a.title.localeCompare(b.title));
-      m.set(k, arr);
     }
     return m;
   }, [pages]);
@@ -83,7 +81,11 @@ export default function PageTree({
             onDrop={async (e) => {
               e.preventDefault();
               const sourceId = e.dataTransfer.getData("text/plain");
-              if (sourceId && sourceId !== p.id) await movePage(sourceId, p.id);
+              if (!sourceId || sourceId === p.id) return;
+              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              const before = e.clientY < rect.top + rect.height / 2;
+              if (before) await reorderSibling(sourceId, p.id, 'before');
+              else await movePage(sourceId, p.id);
             }}
             onClick={() => openPage(p.id)}
             className={`w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth ${

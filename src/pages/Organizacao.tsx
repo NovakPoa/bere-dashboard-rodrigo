@@ -19,6 +19,9 @@ type OrgPage = {
   is_favorite: boolean;
   created_at: string;
   updated_at: string;
+  // ordering
+  sort_index?: number;
+  favorite_order?: number;
 };
 
 type BlockType = "title" | "text" | "page";
@@ -62,7 +65,10 @@ export default function Organizacao() {
 
   useEffect(() => {
     const fetchPages = async () => {
-      const { data, error } = await supabase.from("org_pages").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("org_pages").select("*")
+        .order("parent_id", { ascending: true, nullsFirst: true as any })
+        .order("sort_index", { ascending: true })
+        .order("created_at", { ascending: true });
       if (error) {
         toast({ title: "Erro", description: "Falha ao carregar páginas" });
         return;
@@ -98,7 +104,7 @@ export default function Organizacao() {
     }
   }, [currentPageId, loading, blocks.length]);
 
-  const favorites = useMemo(() => pages.filter(p => p.is_favorite), [pages]);
+  const favorites = useMemo(() => pages.filter(p => p.is_favorite).sort((a,b)=> (a.favorite_order??0)-(b.favorite_order??0)), [pages]);
   const rootPages = useMemo(() => pages.filter(p => !p.parent_id), [pages]);
   const currentPage = useMemo(() => pages.find(p => p.id === currentPageId) || null, [pages, currentPageId]);
 
@@ -173,6 +179,39 @@ export default function Organizacao() {
     setDropOverId(null);
   };
 
+  const reorderFavorites = async (sourceId: string, targetId: string) => {
+    const favs = pages.filter(p => p.is_favorite).sort((a,b)=> (a.favorite_order??0)-(b.favorite_order??0));
+    const srcIdx = favs.findIndex(p=>p.id===sourceId);
+    const tgtIdx = favs.findIndex(p=>p.id===targetId);
+    if (srcIdx === -1 || tgtIdx === -1) return;
+    const [moved] = favs.splice(srcIdx,1);
+    favs.splice(tgtIdx,0,moved);
+    // persist with gaps of 100
+    await Promise.all(favs.map((p,i)=> supabase.from('org_pages').update({ favorite_order: i*100 }).eq('id', p.id)));
+    setPages(prev => prev.map(p=>{
+      const n = favs.find(f=>f.id===p.id);
+      return n ? { ...p, favorite_order: n.favorite_order } as any : p;
+    }));
+  };
+
+  const reorderSibling = async (sourceId: string, targetId: string, position: 'before'|'after'='before') => {
+    const target = pages.find(p=>p.id===targetId);
+    const source = pages.find(p=>p.id===sourceId);
+    if (!target || !source) return;
+    const parentId = target.parent_id ?? null;
+    let siblings = pages.filter(p=> (p.parent_id ?? null) === parentId)
+      .sort((a,b)=> (a.sort_index??0)-(b.sort_index??0));
+    // remove source if present
+    siblings = siblings.filter(p=>p.id!==sourceId);
+    const insertAt = Math.max(0, siblings.findIndex(p=>p.id===targetId) + (position==='after'?1:0));
+    siblings.splice(insertAt,0,{...source, parent_id: parentId});
+    await Promise.all(siblings.map((p,i)=> supabase.from('org_pages').update({ sort_index: i*100, parent_id: parentId }).eq('id', p.id)));
+    setPages(prev => prev.map(p=>{
+      const n = siblings.find(s=>s.id===p.id);
+      return n ? { ...p, sort_index: n.sort_index, parent_id: n.parent_id } as any : p;
+    }));
+  };
+
   const openPage = (pageId: string) => setCurrentPageId(pageId);
 
   const createRootPage = async () => {
@@ -180,7 +219,6 @@ export default function Organizacao() {
     const p = await createPage(creatingTitle.trim(), null);
     if (p) { setCreatingTitle(""); setCurrentPageId(p.id); }
   };
-
   return (
     <div className="container py-6">
       <header className="flex items-center justify-between mb-6">
@@ -199,9 +237,22 @@ export default function Organizacao() {
               <CardTitle className="text-base">Favoritos</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {favorites.length === 0 && <p className="text-sm text-muted-foreground">Sem favoritos</p>}
               {favorites.map(p => (
-                <button key={p.id} onClick={() => openPage(p.id)} className="w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth">
+                <button
+                  key={p.id}
+                  draggable
+                  onDragStart={(e) => { e.dataTransfer.setData('text/plain', p.id); setDraggingId(p.id); }}
+                  onDragEnd={() => { setDraggingId(null); setDropOverId(null); }}
+                  onDragOver={(e) => { e.preventDefault(); setDropOverId(p.id); }}
+                  onDragLeave={() => setDropOverId(prev => prev === p.id ? null : prev)}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    const sourceId = e.dataTransfer.getData('text/plain');
+                    if (sourceId && sourceId !== p.id) await reorderFavorites(sourceId, p.id);
+                  }}
+                  onClick={() => openPage(p.id)}
+                  className={`w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth ${currentPageId===p.id? 'bg-muted' : ''} ${dropOverId===p.id ? 'ring-2 ring-primary' : ''}`}
+                >
                   <div className="flex items-center gap-2">
                     <Star className="h-4 w-4 text-yellow-500" />
                     <span className="truncate">{p.title}</span>
@@ -231,7 +282,7 @@ export default function Organizacao() {
                   if (sourceId) await movePage(sourceId, null);
                 }}
               >
-                Soltar aqui para mover para a raiz
+                Soltar aqui para mover para a raiz (arraste para a metade inferior de uma página para aninhar; metade superior para reordenar)
               </div>
               <div className="space-y-1 max-h-[360px] overflow-auto">
                 <PageTree
@@ -239,6 +290,7 @@ export default function Organizacao() {
                   currentPageId={currentPageId}
                   openPage={openPage}
                   movePage={movePage}
+                  reorderSibling={reorderSibling}
                   draggingId={draggingId}
                   setDraggingId={setDraggingId}
                   dropOverId={dropOverId}
