@@ -12,7 +12,7 @@ interface BlockRowProps {
   id: string;
   html: string | null;
   onChange: (id: string, html: string) => void;
-  onSplit?: (id: string, beforeHtml: string, afterHtml: string) => void;
+  onSplit?: (id: string, beforeHtml: string, afterHtml: string) => Promise<string | null>;
   onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   autoFocus?: boolean;
   onFocusDone?: () => void;
@@ -37,7 +37,7 @@ const COLORS = [
 type ColorName = typeof COLORS[number];
 const colorClass = (c: ColorName) => (c === "default" ? "org-text-default" : `org-text-${c}`);
 
-export function BlockRow({ id, html, onChange, onSplit, onKeyDown }: BlockRowProps) {
+export function BlockRow({ id, html, onChange, onSplit, onKeyDown, autoFocus, onFocusDone }: BlockRowProps) {
   const ref = useRef<HTMLDivElement | null>(null);
 
   // Sync external html into the editor only when not focused to preserve caret position
@@ -57,6 +57,21 @@ export function BlockRow({ id, html, onChange, onSplit, onKeyDown }: BlockRowPro
     if (!el) return;
     el.innerHTML = sanitizeBidi(html || "");
   }, []);
+
+  // Autofocus newly created row at start
+  useEffect(() => {
+    if (!autoFocus) return;
+    const el = ref.current;
+    if (!el) return;
+    el.focus();
+    const range = document.createRange();
+    range.setStart(el, 0);
+    range.collapse(true);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    onFocusDone?.();
+  }, [autoFocus, onFocusDone]);
 
   const withinEditor = () => {
     const el = ref.current;

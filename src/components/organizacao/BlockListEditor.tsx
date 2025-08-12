@@ -31,6 +31,7 @@ export default function BlockListEditor({
   );
 
   const [dropOver, setDropOver] = useState<{ id: string; zone: "before" | "after" | null } | null>(null);
+  const [focusId, setFocusId] = useState<string | null>(null);
 
   const handleDragStart = (id: string, e: React.DragEvent) => {
     e.dataTransfer.setData("text/plain", `block:${id}`);
@@ -87,7 +88,19 @@ export default function BlockListEditor({
             >
               <GripVertical className="h-4 w-4" />
             </button>
-            <BlockRow id={b.id} html={b.content} onChange={onChangeContent} onKeyDown={(e) => handleKeyDown(b.id, e)} onSplit={onSplit} />
+            <BlockRow
+              id={b.id}
+              html={b.content}
+              onChange={onChangeContent}
+              onKeyDown={(e) => handleKeyDown(b.id, e)}
+              onSplit={async (id, before, after) => {
+                const newId = await onSplit?.(id, before, after);
+                if (newId) setFocusId(newId);
+                return newId ?? null;
+              }}
+              autoFocus={focusId === b.id}
+              onFocusDone={() => setFocusId(null)}
+            />
           </div>
         </div>
       ))}
