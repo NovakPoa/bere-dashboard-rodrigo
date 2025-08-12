@@ -421,17 +421,17 @@ export default function Organizacao() {
 
               <div className="space-y-3 animate-fade-in">
                 {loading && <p className="text-sm text-muted-foreground">Carregando…</p>}
-                {blocks[0] && (
-                  <Card key={blocks[0].id} className="shadow-none border-0 bg-transparent">
+                {blocks.length > 0 && (
+                  <Card key={"blocks"} className="shadow-none border-0 bg-transparent">
                     <CardContent className="pt-4 px-0">
-                      <RichNoteEditor
-                        html={blocks[0].content ?? ""}
-                        onChange={(html) => updateBlock(blocks[0].id, { content: html })}
-                        onConvertToPage={async (title) => {
-                          const newPage = await createPage(title, currentPageId);
-                          return newPage?.id || null;
-                        }}
-                        onOpenPage={(pageId) => openPage(pageId)}
+                      <BlockListEditor
+                        blocks={blocks
+                          .filter(b => b.page_id === currentPageId)
+                          .map(b => ({ id: b.id, content: b.content, order_index: b.order_index }))}
+                        onChangeContent={(id, html) => updateBlock(id, { content: html })}
+                        onReorder={reorderBlocks}
+                        onMoveToPage={moveBlock}
+                        onCreateAfter={createBlockAfter}
                       />
                     </CardContent>
                   </Card>
