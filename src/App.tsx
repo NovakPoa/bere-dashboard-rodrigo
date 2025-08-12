@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AppLayout from "./layouts/AppLayout";
 import Home from "./pages/Home";
+import Landing from "./pages/Landing";
 import Atividades from "./pages/Atividades";
 import Alimentacao from "./pages/Alimentacao";
 
@@ -50,9 +51,10 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />
+          <Route path="/" element={<Landing />} />
           <Route element={<RequireAuth />}>
             <Route element={<AppLayout />}>
-              <Route path="/" element={<Home />} />
+              <Route path="/app" element={<Home />} />
               <Route path="/financeira" element={<Index />} />
               <Route path="/atividades" element={<Atividades />} />
               <Route path="/alimentacao" element={<Alimentacao />} />
