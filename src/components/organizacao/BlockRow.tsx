@@ -137,6 +137,8 @@ export function BlockRow({ id, html, onChange, onSplit, onKeyDown, autoFocus, on
       const afterHtml = sanitizeBidi(afterDiv.innerHTML);
       // Optimistically update current line to show split immediately
       el.innerHTML = beforeHtml;
+      // Release focus so the new row can grab it
+      (el as HTMLElement).blur();
       onSplit?.(id, beforeHtml, afterHtml);
       return;
     }
