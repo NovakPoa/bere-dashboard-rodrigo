@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Star, StarOff, FilePlus2, ChevronRight } from "lucide-react";
+import { Star, FilePlus2, ChevronRight } from "lucide-react";
 import { setPageSEO } from "@/lib/seo";
 import { useToast } from "@/components/ui/use-toast";
 import BlockListEditor from "@/components/organizacao/BlockListEditor";
@@ -394,11 +394,6 @@ export default function Organizacao() {
     <div className="container py-6">
       <header className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Organização</h1>
-        {currentPage && (
-          <Button variant="secondary" onClick={() => toggleFavorite(currentPage)}>
-            {currentPage.is_favorite ? <Star className="h-4 w-4 mr-2" /> : <StarOff className="h-4 w-4 mr-2" />} Favorito
-          </Button>
-        )}
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -432,7 +427,6 @@ export default function Organizacao() {
                   className={`w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth ${currentPageId===p.id? 'bg-muted' : ''} ${dropOverId===p.id ? 'ring-2 ring-primary' : ''}`}
                 >
                   <div className="flex items-center gap-2">
-                    <Star className="h-4 w-4 text-yellow-500" />
                     <span className="truncate">{p.title}</span>
                   </div>
                 </button>
@@ -447,7 +441,7 @@ export default function Organizacao() {
             <CardContent className="space-y-3">
                 <div className="flex gap-2">
                   <Input placeholder="Nome da nova página" value={creatingTitle} onChange={e => setCreatingTitle(e.target.value)} />
-                  <Button onClick={createRootPage} variant="ghost" size="icon" aria-label="Criar página" className="text-[hsl(var(--org-green))] hover:text-[hsl(var(--org-green))]">
+                  <Button onClick={createRootPage} variant="ghost" size="icon" aria-label="Criar página" className="org-text-green">
                     <FilePlus2 />
                   </Button>
                 </div>
@@ -481,16 +475,29 @@ export default function Organizacao() {
             <div className="space-y-4">
               <Card className="shadow-none border-0 bg-transparent">
                 <CardContent className="pt-6 space-y-2">
-                  <Input
-                    value={currentPage.title}
-                    onChange={async (e) => {
-                      const title = e.target.value;
-                      setPages(prev => prev.map(p => p.id===currentPage.id ? { ...p, title } : p));
-                      const { error } = await supabase.from("org_pages").update({ title }).eq("id", currentPage.id);
-                      if (error) toast({ title: "Erro", description: "Não foi possível renomear a página" });
-                    }}
-                    className="text-3xl md:text-4xl font-semibold bg-transparent border-0 focus-visible:ring-0 px-0"
-                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={currentPage.title}
+                      onChange={async (e) => {
+                        const title = e.target.value;
+                        setPages(prev => prev.map(p => p.id===currentPage.id ? { ...p, title } : p));
+                        const { error } = await supabase.from("org_pages").update({ title }).eq("id", currentPage.id);
+                        if (error) toast({ title: "Erro", description: "Não foi possível renomear a página" });
+                      }}
+                      className="text-3xl md:text-4xl font-semibold bg-transparent border-0 focus-visible:ring-0 px-0 flex-1"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={currentPage.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                      aria-pressed={currentPage.is_favorite}
+                      onClick={() => toggleFavorite(currentPage)}
+                      className="org-text-green"
+                      title={currentPage.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                    >
+                      <Star className="h-6 w-6" fill={currentPage.is_favorite ? "currentColor" : "none"} />
+                    </Button>
+                  </div>
                   <Separator />
                 </CardContent>
               </Card>

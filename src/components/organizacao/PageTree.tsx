@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronRight, Star } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 export type OrgPageRef = {
   id: string;
@@ -140,9 +140,6 @@ export default function PageTree({
                 <ChevronRight className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
               </span>
               <span className="truncate flex-1">{p.title}</span>
-              {p.is_favorite && (
-                <span title="Favorito" className="text-yellow-500"><Star className="h-3.5 w-3.5" /></span>
-              )}
             </div>
           </button>
           {hasChildren && isExpanded && (
