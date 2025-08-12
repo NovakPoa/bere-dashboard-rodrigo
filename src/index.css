@@ -144,4 +144,7 @@ All colors MUST be HSL.
   .org-text-purple { color: hsl(var(--org-purple)); }
   .org-text-pink { color: hsl(var(--org-pink)); }
   .org-text-red { color: hsl(var(--org-red)); }
-}
++
++  /* Force left-to-right editing inside organization editors */
++  .org-ltr, .org-ltr * { direction: ltr !important; unicode-bidi: isolate-override !important; text-align: start; }
+ }
