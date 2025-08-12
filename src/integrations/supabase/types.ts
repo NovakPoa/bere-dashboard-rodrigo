@@ -14,7 +14,52 @@ export type Database = {
   }
   public: {
     Tables: {
-      bereproject: {
+      alimentacao: {
+        Row: {
+          calorias_kcal: number | null
+          carbo_g: number | null
+          data: string | null
+          descricao: string | null
+          gordura_g: number | null
+          id: number
+          origem: string | null
+          proteina_g: number | null
+          refeicao: string | null
+          texto: string | null
+          ts: string | null
+          wa_id: string | null
+        }
+        Insert: {
+          calorias_kcal?: number | null
+          carbo_g?: number | null
+          data?: string | null
+          descricao?: string | null
+          gordura_g?: number | null
+          id?: number
+          origem?: string | null
+          proteina_g?: number | null
+          refeicao?: string | null
+          texto?: string | null
+          ts?: string | null
+          wa_id?: string | null
+        }
+        Update: {
+          calorias_kcal?: number | null
+          carbo_g?: number | null
+          data?: string | null
+          descricao?: string | null
+          gordura_g?: number | null
+          id?: number
+          origem?: string | null
+          proteina_g?: number | null
+          refeicao?: string | null
+          texto?: string | null
+          ts?: string | null
+          wa_id?: string | null
+        }
+        Relationships: []
+      }
+      atividade_fisica: {
         Row: {
           calorias: number | null
           created_at: string
@@ -58,6 +103,212 @@ export type Database = {
           wa_id?: string | null
         }
         Relationships: []
+      }
+      cultura: {
+        Row: {
+          data: string | null
+          id: number
+          nota: number | null
+          origem: string | null
+          status: string | null
+          texto: string | null
+          tipo_item: string | null
+          titulo: string | null
+          ts: string | null
+          wa_id: string | null
+        }
+        Insert: {
+          data?: string | null
+          id?: number
+          nota?: number | null
+          origem?: string | null
+          status?: string | null
+          texto?: string | null
+          tipo_item?: string | null
+          titulo?: string | null
+          ts?: string | null
+          wa_id?: string | null
+        }
+        Update: {
+          data?: string | null
+          id?: number
+          nota?: number | null
+          origem?: string | null
+          status?: string | null
+          texto?: string | null
+          tipo_item?: string | null
+          titulo?: string | null
+          ts?: string | null
+          wa_id?: string | null
+        }
+        Relationships: []
+      }
+      financeiro: {
+        Row: {
+          categoria: string | null
+          data: string | null
+          descricao: string | null
+          forma_pagamento: string | null
+          id: number
+          origem: string | null
+          texto: string | null
+          tipo: string | null
+          ts: string | null
+          valor: number | null
+          wa_id: string | null
+        }
+        Insert: {
+          categoria?: string | null
+          data?: string | null
+          descricao?: string | null
+          forma_pagamento?: string | null
+          id?: number
+          origem?: string | null
+          texto?: string | null
+          tipo?: string | null
+          ts?: string | null
+          valor?: number | null
+          wa_id?: string | null
+        }
+        Update: {
+          categoria?: string | null
+          data?: string | null
+          descricao?: string | null
+          forma_pagamento?: string | null
+          id?: number
+          origem?: string | null
+          texto?: string | null
+          tipo?: string | null
+          ts?: string | null
+          valor?: number | null
+          wa_id?: string | null
+        }
+        Relationships: []
+      }
+      habitos: {
+        Row: {
+          data: string | null
+          id: number
+          nome: string | null
+          origem: string | null
+          quantidade_sessoes: number | null
+          tempo_total_min: number | null
+          texto: string | null
+          ts: string | null
+          wa_id: string | null
+        }
+        Insert: {
+          data?: string | null
+          id?: number
+          nome?: string | null
+          origem?: string | null
+          quantidade_sessoes?: number | null
+          tempo_total_min?: number | null
+          texto?: string | null
+          ts?: string | null
+          wa_id?: string | null
+        }
+        Update: {
+          data?: string | null
+          id?: number
+          nome?: string | null
+          origem?: string | null
+          quantidade_sessoes?: number | null
+          tempo_total_min?: number | null
+          texto?: string | null
+          ts?: string | null
+          wa_id?: string | null
+        }
+        Relationships: []
+      }
+      org_blocks: {
+        Row: {
+          bold: boolean
+          child_page_id: string | null
+          color: string
+          content: string | null
+          created_at: string
+          id: string
+          order_index: number
+          page_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          bold?: boolean
+          child_page_id?: string | null
+          color?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          order_index?: number
+          page_id: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          bold?: boolean
+          child_page_id?: string | null
+          color?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          order_index?: number
+          page_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_blocks_child_page_id_fkey"
+            columns: ["child_page_id"]
+            isOneToOne: false
+            referencedRelation: "org_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_blocks_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "org_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_pages: {
+        Row: {
+          created_at: string
+          id: string
+          is_favorite: boolean
+          parent_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_favorite?: boolean
+          parent_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_favorite?: boolean
+          parent_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_pages_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "org_pages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
