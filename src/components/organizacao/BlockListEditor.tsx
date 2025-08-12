@@ -76,9 +76,9 @@ export default function BlockListEditor({
           onDrop={(e) => handleDrop(b.id, e)}
           className={`group rounded-md transition-smooth border border-transparent ${dropOver && dropOver.id === b.id && dropOver.zone === "before" ? "border-t-primary" : ""} ${dropOver && dropOver.id === b.id && dropOver.zone === "after" ? "border-b-primary" : ""}`}
         >
-          <div className="flex items-start gap-2">
+          <div className="flex items-start gap-2 group/row">
             <button
-              className="opacity-60 hover:opacity-100 mt-1 cursor-grab active:cursor-grabbing text-muted-foreground"
+              className="opacity-0 group-hover/row:opacity-100 focus:opacity-100 mt-1 cursor-grab active:cursor-grabbing text-muted-foreground transition-opacity"
               draggable
               onDragStart={(e) => handleDragStart(b.id, e)}
               aria-label="Arrastar bloco"
