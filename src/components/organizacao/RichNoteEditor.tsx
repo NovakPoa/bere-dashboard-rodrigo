@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -36,11 +36,11 @@ const colorClass = (c: ColorName) => (c === "default" ? "org-text-default" : `or
 
 export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpenPage }: RichNoteEditorProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
-  const [localHtml, setLocalHtml] = useState<string>(html || "");
   const saveTimer = useRef<number | null>(null);
-
   useEffect(() => {
-    setLocalHtml(html || "");
+    if (editorRef.current) {
+      editorRef.current.innerHTML = html || "";
+    }
   }, [html]);
 
   // Debounced save
@@ -65,9 +65,7 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
   const applyBold = () => {
     if (!withinEditor()) return;
     document.execCommand("bold", false);
-    // sync HTML
     const next = editorRef.current?.innerHTML || "";
-    setLocalHtml(next);
     scheduleSave(next);
   };
 
@@ -97,7 +95,6 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
       range.insertNode(span);
     }
     const next = editorRef.current?.innerHTML || "";
-    setLocalHtml(next);
     scheduleSave(next);
   };
 
@@ -119,13 +116,11 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
     range.insertNode(link);
 
     const next = editorRef.current?.innerHTML || "";
-    setLocalHtml(next);
     scheduleSave(next);
   };
 
   const handleInput = () => {
     const next = editorRef.current?.innerHTML || "";
-    setLocalHtml(next);
     scheduleSave(next);
   };
 
@@ -147,7 +142,6 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
           className="min-h-[320px] whitespace-pre-wrap rounded-none border-0 bg-transparent px-0 py-2 focus:outline-none"
           onInput={handleInput}
           onClick={handleClick}
-          dangerouslySetInnerHTML={{ __html: localHtml }}
         />
       </ContextMenuTrigger>
       <ContextMenuContent className="z-50">
