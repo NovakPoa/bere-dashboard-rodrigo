@@ -89,8 +89,18 @@ export default function PageTree({
               if (!sourceId || sourceId === p.id) return;
               const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
               const before = e.clientY < rect.top + rect.height / 2;
-              if (before) await reorderSibling(sourceId, p.id, 'before');
-              else await movePage(sourceId, p.id);
+
+              if (before) {
+                await reorderSibling(sourceId, p.id, 'before');
+              } else {
+                const source = pages.find(x => x.id === sourceId);
+                const sameParent = source && ((source.parent_id ?? null) === (p.parent_id ?? null));
+                if (sameParent) {
+                  await reorderSibling(sourceId, p.id, 'after');
+                } else {
+                  await movePage(sourceId, p.id); // nest under target
+                }
+              }
             }}
             onClick={() => openPage(p.id)}
             className={`w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth ${

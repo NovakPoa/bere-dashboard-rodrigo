@@ -198,16 +198,27 @@ export default function Organizacao() {
     const source = pages.find(p=>p.id===sourceId);
     if (!target || !source) return;
     const parentId = target.parent_id ?? null;
-    let siblings = pages.filter(p=> (p.parent_id ?? null) === parentId)
+    let siblings = pages
+      .filter(p=> (p.parent_id ?? null) === parentId)
       .sort((a,b)=> (a.sort_index??0)-(b.sort_index??0));
-    // remove source if present
+    // remove source if present (it may come from another parent)
     siblings = siblings.filter(p=>p.id!==sourceId);
     const insertAt = Math.max(0, siblings.findIndex(p=>p.id===targetId) + (position==='after'?1:0));
-    siblings.splice(insertAt,0,{...source, parent_id: parentId});
-    await Promise.all(siblings.map((p,i)=> supabase.from('org_pages').update({ sort_index: i*100, parent_id: parentId }).eq('id', p.id)));
-    setPages(prev => prev.map(p=>{
-      const n = siblings.find(s=>s.id===p.id);
-      return n ? { ...p, sort_index: n.sort_index, parent_id: n.parent_id } as any : p;
+    siblings.splice(insertAt, 0, { ...source, parent_id: parentId });
+
+    // assign new local sort_index values so UI updates immediately
+    const siblingsWithOrder = siblings.map((p, i) => ({ ...p, sort_index: i*100, parent_id: parentId }));
+
+    // persist
+    await Promise.all(
+      siblingsWithOrder.map((p) =>
+        supabase.from('org_pages').update({ sort_index: p.sort_index, parent_id: parentId }).eq('id', p.id)
+      )
+    );
+
+    setPages(prev => prev.map(p => {
+      const n = siblingsWithOrder.find(s => s.id === p.id);
+      return n ? ({ ...p, sort_index: n.sort_index, parent_id: n.parent_id } as any) : p;
     }));
   };
 
