@@ -89,7 +89,9 @@ export default function BlockListEditor({
               ref={(el) => (editorsRef.current[b.id] = el)}
               contentEditable
               suppressContentEditableWarning
-              className="min-h-[24px] w-full whitespace-pre-wrap px-0 py-1 focus:outline-none"
+              dir="ltr"
+              className="min-h-[24px] w-full whitespace-pre-wrap px-0 py-1 focus:outline-none text-left"
+              style={{ unicodeBidi: "plaintext" }}
               onInput={(e) => onChangeContent(b.id, (e.currentTarget.innerHTML || ""))}
               onKeyDown={(e) => handleKeyDown(b.id, e)}
               dangerouslySetInnerHTML={{ __html: b.content || "" }}
