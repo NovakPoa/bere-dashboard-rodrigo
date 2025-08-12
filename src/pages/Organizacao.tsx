@@ -325,6 +325,22 @@ export default function Organizacao() {
 
     return prev.id;
   };
+  // Move a page under a new parent (or to root when null)
+  const movePage = async (sourceId: string, newParentId: string | null) => {
+    const { data, error } = await supabase
+      .from("org_pages")
+      .update({ parent_id: newParentId })
+      .eq("id", sourceId)
+      .select("*")
+      .single();
+    if (error) { toast({ title: "Erro", description: "Não foi possível mover a página" }); return; }
+    setPages(prev => prev.map(p => (p.id === sourceId ? (data as OrgPage) : p)));
+    setDraggingId(null);
+    setDropOverId(null);
+  };
+
+  // Reorder favorites list locally and persist favorite_order
+  const reorderFavorites = async (sourceId: string, targetId: string) => {
     const favs = pages.filter(p => p.is_favorite).sort((a,b)=> (a.favorite_order??0)-(b.favorite_order??0));
     const srcIdx = favs.findIndex(p=>p.id===sourceId);
     const tgtIdx = favs.findIndex(p=>p.id===targetId);
