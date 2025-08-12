@@ -46,6 +46,8 @@ export default function Organizacao() {
   const [blocks, setBlocks] = useState<OrgBlock[]>([]);
   const [loading, setLoading] = useState(false);
   const [creatingTitle, setCreatingTitle] = useState("");
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropOverId, setDropOverId] = useState<string | null>(null);
 
   useEffect(() => {
     setPageSEO("Organização | notas e páginas", "Organização minimalista com páginas, blocos e favoritos");
@@ -157,6 +159,19 @@ export default function Organizacao() {
   };
 
 
+  const movePage = async (sourceId: string, newParentId: string | null) => {
+    const { data, error } = await supabase
+      .from("org_pages")
+      .update({ parent_id: newParentId })
+      .eq("id", sourceId)
+      .select("*")
+      .single();
+    if (error) { toast({ title: "Erro", description: "Não foi possível mover a página" }); return; }
+    setPages(prev => prev.map(p => (p.id === sourceId ? (data as OrgPage) : p)));
+    setDraggingId(null);
+    setDropOverId(null);
+  };
+
   const openPage = (pageId: string) => setCurrentPageId(pageId);
 
   const createRootPage = async () => {
@@ -205,9 +220,35 @@ export default function Organizacao() {
                 <Button onClick={createRootPage}><FilePlus2 className="h-4 w-4 mr-2"/>Criar</Button>
               </div>
               <Separator />
+              <div
+                className={`text-xs text-muted-foreground rounded-md border border-dashed p-2 hover-scale ${dropOverId==="__root__" ? 'ring-2 ring-primary' : ''}`}
+                onDragOver={(e) => { e.preventDefault(); setDropOverId("__root__"); }}
+                onDragLeave={() => setDropOverId(prev => prev === "__root__" ? null : prev)}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  const sourceId = e.dataTransfer.getData('text/plain');
+                  if (sourceId) await movePage(sourceId, null);
+                }}
+              >
+                Soltar aqui para mover para a raiz
+              </div>
               <div className="space-y-1 max-h-[360px] overflow-auto">
                 {rootPages.map(p => (
-                  <button key={p.id} onClick={() => openPage(p.id)} className={`w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth ${currentPageId===p.id? 'bg-muted' : ''}`}>
+                  <button
+                    key={p.id}
+                    draggable
+                    onDragStart={(e) => { e.dataTransfer.setData('text/plain', p.id); setDraggingId(p.id); }}
+                    onDragEnd={() => { setDraggingId(null); setDropOverId(null); }}
+                    onDragOver={(e) => { e.preventDefault(); setDropOverId(p.id); }}
+                    onDragLeave={() => setDropOverId(prev => prev === p.id ? null : prev)}
+                    onDrop={async (e) => {
+                      e.preventDefault();
+                      const sourceId = e.dataTransfer.getData('text/plain');
+                      if (sourceId && sourceId !== p.id) await movePage(sourceId, p.id);
+                    }}
+                    onClick={() => openPage(p.id)}
+                    className={`w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth ${currentPageId===p.id? 'bg-muted' : ''} ${dropOverId===p.id ? 'ring-2 ring-primary' : ''}`}
+                  >
                     <div className="flex items-center gap-2">
                       <ChevronRight className="h-4 w-4" />
                       <span className="truncate">{p.title}</span>
@@ -229,7 +270,7 @@ export default function Organizacao() {
 
           {currentPage && (
             <div className="space-y-4">
-              <Card>
+              <Card className="shadow-none border-0 bg-transparent">
                 <CardContent className="pt-6 space-y-2">
                   <Input
                     value={currentPage.title}
@@ -239,16 +280,17 @@ export default function Organizacao() {
                       const { error } = await supabase.from("org_pages").update({ title }).eq("id", currentPage.id);
                       if (error) toast({ title: "Erro", description: "Não foi possível renomear a página" });
                     }}
-                    className="text-xl font-medium"
+                    className="text-2xl font-semibold bg-transparent border-0 focus-visible:ring-0 px-0"
                   />
+                  <Separator />
                 </CardContent>
               </Card>
 
-              <div className="space-y-3">
+              <div className="space-y-3 animate-fade-in">
                 {loading && <p className="text-sm text-muted-foreground">Carregando…</p>}
                 {blocks[0] && (
-                  <Card key={blocks[0].id}>
-                    <CardContent className="pt-4">
+                  <Card key={blocks[0].id} className="shadow-none border-0 bg-transparent">
+                    <CardContent className="pt-4 px-0">
                       <RichNoteEditor
                         html={blocks[0].content ?? ""}
                         onChange={(html) => updateBlock(blocks[0].id, { content: html })}

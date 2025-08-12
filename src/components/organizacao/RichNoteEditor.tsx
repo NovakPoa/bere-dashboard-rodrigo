@@ -144,7 +144,7 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
-          className="min-h-[320px] whitespace-pre-wrap rounded-md border bg-background px-4 py-3 focus:outline-none"
+          className="min-h-[320px] whitespace-pre-wrap rounded-none border-0 bg-transparent px-0 py-2 focus:outline-none"
           onInput={handleInput}
           onClick={handleClick}
           dangerouslySetInnerHTML={{ __html: localHtml }}
