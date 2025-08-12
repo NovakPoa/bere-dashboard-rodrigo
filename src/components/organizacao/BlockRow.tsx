@@ -15,7 +15,7 @@ interface BlockRowProps {
   onSplit?: (id: string, beforeHtml: string, afterHtml: string) => Promise<string | null>;
   onJoinPrev?: (id: string, currentHtml: string) => Promise<string | null>;
   onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void;
-  onArrowNavigate?: (dir: 'prev' | 'next') => void;
+  onArrowNavigate?: (dir: 'prev' | 'next', place: 'start' | 'end') => void;
   autoFocus?: boolean;
   autoFocusAtEnd?: boolean;
   onFocusDone?: () => void;
@@ -166,33 +166,30 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
       return;
     }
 
-    // Arrow navigation across rows
-    if (e.key === 'ArrowUp') {
+    // Arrow navigation across rows with precise caret placement
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       if (!el || !sel || sel.rangeCount === 0) return;
       const range = sel.getRangeAt(0);
+
+      // Determine caret position relative to the line
       const pre = range.cloneRange();
       pre.selectNodeContents(el);
       pre.setEnd(range.startContainer, range.startOffset);
       const atStart = pre.toString().length === 0;
-      if (atStart) {
-        e.preventDefault();
-        (el as HTMLElement).blur();
-        onArrowNavigate?.('prev');
-        return;
-      }
-    }
 
-    if (e.key === 'ArrowDown') {
-      if (!el || !sel || sel.rangeCount === 0) return;
-      const range = sel.getRangeAt(0);
       const post = range.cloneRange();
       post.selectNodeContents(el);
       post.setStart(range.endContainer, range.endOffset);
       const atEnd = post.toString().length === 0;
-      if (atEnd) {
+
+      if (atStart || atEnd) {
         e.preventDefault();
         (el as HTMLElement).blur();
-        onArrowNavigate?.('next');
+        if (e.key === 'ArrowUp') {
+          onArrowNavigate?.('prev', atEnd ? 'end' : 'start');
+        } else {
+          onArrowNavigate?.('next', atEnd ? 'end' : 'start');
+        }
         return;
       }
     }
