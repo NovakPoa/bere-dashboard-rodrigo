@@ -4,19 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Star, StarOff, Plus, Bold, Palette, FilePlus2, ArrowRight, ChevronRight } from "lucide-react";
+import { Star, StarOff, FilePlus2, ChevronRight } from "lucide-react";
 import { setPageSEO } from "@/lib/seo";
 import { useToast } from "@/components/ui/use-toast";
-
+import RichNoteEditor from "@/components/organizacao/RichNoteEditor";
 // Types aligning to our org tables
 type OrgPage = {
   id: string;
@@ -42,22 +35,6 @@ type OrgBlock = {
   updated_at: string;
 };
 
-const COLORS = [
-  "default",
-  "gray",
-  "brown",
-  "orange",
-  "yellow",
-  "green",
-  "blue",
-  "purple",
-  "pink",
-  "red",
-] as const;
-
-type ColorName = typeof COLORS[number];
-
-const colorClass = (c: ColorName) => (c === "default" ? "org-text-default" : `org-text-${c}`);
 
 export default function Organizacao() {
   const { id } = useParams();
@@ -111,6 +88,13 @@ export default function Organizacao() {
     fetchBlocks();
   }, [currentPageId, toast]);
 
+  // Auto-create a single text block for freeform editor
+  useEffect(() => {
+    if (currentPageId && !loading && blocks.length === 0) {
+      addBlock("text");
+    }
+  }, [currentPageId, loading, blocks.length]);
+
   const favorites = useMemo(() => pages.filter(p => p.is_favorite), [pages]);
   const rootPages = useMemo(() => pages.filter(p => !p.parent_id), [pages]);
   const currentPage = useMemo(() => pages.find(p => p.id === currentPageId) || null, [pages, currentPageId]);
@@ -125,9 +109,7 @@ export default function Organizacao() {
     const page = data as OrgPage;
     setPages(prev => [page, ...prev]);
 
-    // create initial title block
-    await supabase.from("org_blocks").insert({ page_id: page.id, type: "title", content: title, order_index: 0 });
-    if (currentPageId === page.id) await reloadBlocks(page.id);
+    // do not create initial blocks; editor will auto-add
     return page;
   };
 
@@ -174,13 +156,6 @@ export default function Organizacao() {
     setBlocks(prev => prev.map(b => (b.id === id ? (data as OrgBlock) : b)));
   };
 
-  const convertTextToPage = async (block: OrgBlock) => {
-    if (block.type !== "text") return;
-    const title = (block.content || "Nova página").toString().slice(0, 80) || "Nova página";
-    const newPage = await createPage(title, currentPageId);
-    if (!newPage) return;
-    await updateBlock(block.id, { type: "page", child_page_id: newPage.id });
-  };
 
   const openPage = (pageId: string) => setCurrentPageId(pageId);
 
@@ -266,70 +241,26 @@ export default function Organizacao() {
                     }}
                     className="text-xl font-medium"
                   />
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => addBlock("title")}><Plus className="h-4 w-4 mr-1"/>Título</Button>
-                    <Button size="sm" variant="outline" onClick={() => addBlock("text")}><Plus className="h-4 w-4 mr-1"/>Texto</Button>
-                    <Button size="sm" variant="outline" onClick={() => addBlock("page")}><Plus className="h-4 w-4 mr-1"/>Página</Button>
-                  </div>
                 </CardContent>
               </Card>
 
               <div className="space-y-3">
                 {loading && <p className="text-sm text-muted-foreground">Carregando…</p>}
-                {blocks.map((b) => (
-                  <Card key={b.id}>
+                {blocks[0] && (
+                  <Card key={blocks[0].id}>
                     <CardContent className="pt-4">
-                      {b.type === "title" && (
-                        <Input
-                          value={b.content ?? ""}
-                          onChange={(e) => updateBlock(b.id, { content: e.target.value })}
-                          className={`text-lg font-semibold ${colorClass(b.color as ColorName)}`}
-                        />
-                      )}
-
-                      {b.type === "text" && (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Button size="sm" variant="ghost" onClick={() => updateBlock(b.id, { bold: !b.bold })}><Bold className="h-4 w-4"/></Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button size="sm" variant="ghost"><Palette className="h-4 w-4"/></Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="start">
-                                {COLORS.map(c => (
-                                  <DropdownMenuItem key={c} onClick={() => updateBlock(b.id, { color: c })}>
-                                    <span className={`${colorClass(c)}`}>{c}</span>
-                                  </DropdownMenuItem>
-                                ))}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                            <Button size="sm" variant="outline" onClick={() => convertTextToPage(b)}>
-                              Converter em página <ArrowRight className="h-4 w-4 ml-2"/>
-                            </Button>
-                          </div>
-                          <Textarea
-                            value={b.content ?? ""}
-                            onChange={(e) => updateBlock(b.id, { content: e.target.value })}
-                            className={`${b.bold ? 'font-semibold' : ''} ${colorClass(b.color as ColorName)}`}
-                            placeholder="Digite seu texto…"
-                          />
-                        </div>
-                      )}
-
-                      {b.type === "page" && (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary">Página</Badge>
-                            <span className="truncate">{b.content || "Subpágina"}</span>
-                          </div>
-                          <Button size="sm" onClick={() => b.child_page_id && openPage(b.child_page_id)}>
-                            Abrir página
-                          </Button>
-                        </div>
-                      )}
+                      <RichNoteEditor
+                        html={blocks[0].content ?? ""}
+                        onChange={(html) => updateBlock(blocks[0].id, { content: html })}
+                        onConvertToPage={async (title) => {
+                          const newPage = await createPage(title, currentPageId);
+                          return newPage?.id || null;
+                        }}
+                        onOpenPage={(pageId) => openPage(pageId)}
+                      />
                     </CardContent>
                   </Card>
-                ))}
+                )}
               </div>
             </div>
           )}
