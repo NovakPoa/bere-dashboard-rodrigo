@@ -16,7 +16,7 @@ import Cultura from "./pages/Cultura";
 import Calendario from "./pages/Calendario";
 
 import Habitos from "./pages/Habitos";
-
+import Organizacao from "./pages/Organizacao";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -35,6 +35,8 @@ const App = () => (
             
             <Route path="/cultura" element={<Cultura />} />
             <Route path="/calendario" element={<Calendario />} />
+            <Route path="/organizacao" element={<Organizacao />} />
+            <Route path="/organizacao/:id" element={<Organizacao />} />
             
             <Route path="/habitos" element={<Habitos />} />
           </Route>

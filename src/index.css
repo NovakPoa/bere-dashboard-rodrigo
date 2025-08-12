@@ -54,6 +54,17 @@ All colors MUST be HSL.
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(145 32% 30%));
     --shadow-elegant: 0 18px 40px -12px hsl(var(--primary) / 0.35);
     --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Organização (Notion-like) colors */
+    --org-gray: 215 16% 46%;
+    --org-brown: 24 16% 32%;
+    --org-orange: 28 90% 55%;
+    --org-yellow: 45 93% 47%;
+    --org-green: 145 45% 35%;
+    --org-blue: 213 94% 45%;
+    --org-purple: 270 50% 45%;
+    --org-pink: 330 70% 50%;
+    --org-red: 0 84% 60%;
   }
 
   .dark {
@@ -92,6 +103,17 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Dark variants (slightly lighter for contrast) */
+    --org-gray: 215 16% 70%;
+    --org-brown: 24 16% 65%;
+    --org-orange: 28 90% 62%;
+    --org-yellow: 45 93% 60%;
+    --org-green: 145 45% 60%;
+    --org-blue: 213 94% 70%;
+    --org-purple: 270 50% 70%;
+    --org-pink: 330 70% 72%;
+    --org-red: 0 84% 68%;
   }
 }
 
@@ -107,13 +129,19 @@ All colors MUST be HSL.
 
 /* Utilities for design system tokens */
 @layer utilities {
-  .bg-gradient-primary {
-    background-image: var(--gradient-primary);
-  }
-  .shadow-elegant {
-    box-shadow: var(--shadow-elegant);
-  }
-  .transition-smooth {
-    transition: var(--transition-smooth);
-  }
+  .bg-gradient-primary { background-image: var(--gradient-primary); }
+  .shadow-elegant { box-shadow: var(--shadow-elegant); }
+  .transition-smooth { transition: var(--transition-smooth); }
+
+  /* Organização text color utilities using tokens */
+  .org-text-default { color: inherit; }
+  .org-text-gray { color: hsl(var(--org-gray)); }
+  .org-text-brown { color: hsl(var(--org-brown)); }
+  .org-text-orange { color: hsl(var(--org-orange)); }
+  .org-text-yellow { color: hsl(var(--org-yellow)); }
+  .org-text-green { color: hsl(var(--org-green)); }
+  .org-text-blue { color: hsl(var(--org-blue)); }
+  .org-text-purple { color: hsl(var(--org-purple)); }
+  .org-text-pink { color: hsl(var(--org-pink)); }
+  .org-text-red { color: hsl(var(--org-red)); }
 }

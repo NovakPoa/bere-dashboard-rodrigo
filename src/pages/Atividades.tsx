@@ -74,24 +74,24 @@ export default function Atividades() {
   const queryClient = useQueryClient();
   useEffect(() => {
     const channel = supabase
-      .channel("bereproject-changes")
+      .channel("atividade_fisica-changes")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "bereproject" },
+        { event: "INSERT", schema: "public", table: "atividade_fisica" },
         () => {
           queryClient.invalidateQueries({ queryKey: ["activities"] });
         }
       )
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "bereproject" },
+        { event: "UPDATE", schema: "public", table: "atividade_fisica" },
         () => {
           queryClient.invalidateQueries({ queryKey: ["activities"] });
         }
       )
       .on(
         "postgres_changes",
-        { event: "DELETE", schema: "public", table: "bereproject" },
+        { event: "DELETE", schema: "public", table: "atividade_fisica" },
         () => {
           queryClient.invalidateQueries({ queryKey: ["activities"] });
         }
@@ -223,7 +223,7 @@ export default function Atividades() {
                   data: when.toISOString().slice(0, 10),
                   ts: when.toISOString(),
                 };
-                const { error } = await supabase.from('bereproject').insert([payload]);
+                const { error } = await supabase.from('atividade_fisica').insert([payload]);
                 if (error) {
                   toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
                   return;

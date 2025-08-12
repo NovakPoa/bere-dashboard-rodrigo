@@ -1,0 +1,340 @@
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Star, StarOff, Plus, Bold, Palette, FilePlus2, ArrowRight, ChevronRight } from "lucide-react";
+import { setPageSEO } from "@/lib/seo";
+import { useToast } from "@/components/ui/use-toast";
+
+// Types aligning to our org tables
+type OrgPage = {
+  id: string;
+  parent_id: string | null;
+  title: string;
+  is_favorite: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+type BlockType = "title" | "text" | "page";
+
+type OrgBlock = {
+  id: string;
+  page_id: string;
+  type: BlockType;
+  content: string | null;
+  bold: boolean;
+  color: string; // notion names
+  order_index: number;
+  child_page_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+const COLORS = [
+  "default",
+  "gray",
+  "brown",
+  "orange",
+  "yellow",
+  "green",
+  "blue",
+  "purple",
+  "pink",
+  "red",
+] as const;
+
+type ColorName = typeof COLORS[number];
+
+const colorClass = (c: ColorName) => (c === "default" ? "org-text-default" : `org-text-${c}`);
+
+export default function Organizacao() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const [pages, setPages] = useState<OrgPage[]>([]);
+  const [currentPageId, setCurrentPageId] = useState<string | null>(id ?? null);
+  const [blocks, setBlocks] = useState<OrgBlock[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [creatingTitle, setCreatingTitle] = useState("");
+
+  useEffect(() => {
+    setPageSEO("Organização | notas e páginas", "Organização minimalista com páginas, blocos e favoritos");
+  }, []);
+
+  useEffect(() => {
+    // keep route in sync
+    if (currentPageId) navigate(`/organizacao/${currentPageId}`, { replace: true });
+    else navigate(`/organizacao`, { replace: true });
+  }, [currentPageId, navigate]);
+
+  useEffect(() => {
+    const fetchPages = async () => {
+      const { data, error } = await supabase.from("org_pages").select("*").order("created_at", { ascending: false });
+      if (error) {
+        toast({ title: "Erro", description: "Falha ao carregar páginas" });
+        return;
+      }
+      setPages(data as OrgPage[]);
+    };
+    fetchPages();
+  }, [toast]);
+
+  useEffect(() => {
+    const fetchBlocks = async () => {
+      if (!currentPageId) { setBlocks([]); return; }
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("org_blocks")
+        .select("*")
+        .eq("page_id", currentPageId)
+        .order("order_index", { ascending: true });
+      setLoading(false);
+      if (error) {
+        toast({ title: "Erro", description: "Falha ao carregar blocos" });
+        return;
+      }
+      setBlocks(data as OrgBlock[]);
+    };
+    fetchBlocks();
+  }, [currentPageId, toast]);
+
+  const favorites = useMemo(() => pages.filter(p => p.is_favorite), [pages]);
+  const rootPages = useMemo(() => pages.filter(p => !p.parent_id), [pages]);
+  const currentPage = useMemo(() => pages.find(p => p.id === currentPageId) || null, [pages, currentPageId]);
+
+  const createPage = async (title: string, parentId?: string | null) => {
+    const { data, error } = await supabase
+      .from("org_pages")
+      .insert({ title, parent_id: parentId ?? null })
+      .select("*")
+      .single();
+    if (error) { toast({ title: "Erro", description: "Não foi possível criar a página" }); return null; }
+    const page = data as OrgPage;
+    setPages(prev => [page, ...prev]);
+
+    // create initial title block
+    await supabase.from("org_blocks").insert({ page_id: page.id, type: "title", content: title, order_index: 0 });
+    if (currentPageId === page.id) await reloadBlocks(page.id);
+    return page;
+  };
+
+  const reloadBlocks = async (pageId: string) => {
+    const { data } = await supabase
+      .from("org_blocks")
+      .select("*")
+      .eq("page_id", pageId)
+      .order("order_index", { ascending: true });
+    setBlocks((data || []) as OrgBlock[]);
+  };
+
+  const toggleFavorite = async (page: OrgPage) => {
+    const { data, error } = await supabase
+      .from("org_pages")
+      .update({ is_favorite: !page.is_favorite })
+      .eq("id", page.id)
+      .select("*")
+      .single();
+    if (error) { toast({ title: "Erro", description: "Falha ao favoritar" }); return; }
+    setPages(prev => prev.map(p => (p.id === page.id ? (data as OrgPage) : p)));
+  };
+
+  const addBlock = async (type: BlockType) => {
+    if (!currentPageId) return;
+    const nextIndex = blocks.length;
+    const { data, error } = await supabase
+      .from("org_blocks")
+      .insert({ page_id: currentPageId, type, order_index: nextIndex, content: type === "text" ? "" : null })
+      .select("*")
+      .single();
+    if (error) { toast({ title: "Erro", description: "Não foi possível adicionar bloco" }); return; }
+    setBlocks(prev => [...prev, data as OrgBlock]);
+  };
+
+  const updateBlock = async (id: string, patch: Partial<OrgBlock>) => {
+    const { data, error } = await supabase
+      .from("org_blocks")
+      .update(patch)
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error) { toast({ title: "Erro", description: "Falha ao atualizar bloco" }); return; }
+    setBlocks(prev => prev.map(b => (b.id === id ? (data as OrgBlock) : b)));
+  };
+
+  const convertTextToPage = async (block: OrgBlock) => {
+    if (block.type !== "text") return;
+    const title = (block.content || "Nova página").toString().slice(0, 80) || "Nova página";
+    const newPage = await createPage(title, currentPageId);
+    if (!newPage) return;
+    await updateBlock(block.id, { type: "page", child_page_id: newPage.id });
+  };
+
+  const openPage = (pageId: string) => setCurrentPageId(pageId);
+
+  const createRootPage = async () => {
+    if (!creatingTitle.trim()) return;
+    const p = await createPage(creatingTitle.trim(), null);
+    if (p) { setCreatingTitle(""); setCurrentPageId(p.id); }
+  };
+
+  return (
+    <div className="container py-6">
+      <header className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold">Organização</h1>
+        {currentPage && (
+          <Button variant="secondary" onClick={() => toggleFavorite(currentPage)}>
+            {currentPage.is_favorite ? <Star className="h-4 w-4 mr-2" /> : <StarOff className="h-4 w-4 mr-2" />} Favorito
+          </Button>
+        )}
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <aside className="lg:col-span-3 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Favoritos</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {favorites.length === 0 && <p className="text-sm text-muted-foreground">Sem favoritos</p>}
+              {favorites.map(p => (
+                <button key={p.id} onClick={() => openPage(p.id)} className="w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth">
+                  <div className="flex items-center gap-2">
+                    <Star className="h-4 w-4 text-yellow-500" />
+                    <span className="truncate">{p.title}</span>
+                  </div>
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Todas as páginas</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex gap-2">
+                <Input placeholder="Nome da nova página" value={creatingTitle} onChange={e => setCreatingTitle(e.target.value)} />
+                <Button onClick={createRootPage}><FilePlus2 className="h-4 w-4 mr-2"/>Criar</Button>
+              </div>
+              <Separator />
+              <div className="space-y-1 max-h-[360px] overflow-auto">
+                {rootPages.map(p => (
+                  <button key={p.id} onClick={() => openPage(p.id)} className={`w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth ${currentPageId===p.id? 'bg-muted' : ''}`}>
+                    <div className="flex items-center gap-2">
+                      <ChevronRight className="h-4 w-4" />
+                      <span className="truncate">{p.title}</span>
+                      {p.is_favorite && <Badge variant="secondary">★</Badge>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </aside>
+
+        <main className="lg:col-span-9">
+          {!currentPage && (
+            <Card>
+              <CardContent className="py-10 text-center text-muted-foreground">Selecione ou crie uma página para começar.</CardContent>
+            </Card>
+          )}
+
+          {currentPage && (
+            <div className="space-y-4">
+              <Card>
+                <CardContent className="pt-6 space-y-2">
+                  <Input
+                    value={currentPage.title}
+                    onChange={async (e) => {
+                      const title = e.target.value;
+                      setPages(prev => prev.map(p => p.id===currentPage.id ? { ...p, title } : p));
+                      const { error } = await supabase.from("org_pages").update({ title }).eq("id", currentPage.id);
+                      if (error) toast({ title: "Erro", description: "Não foi possível renomear a página" });
+                    }}
+                    className="text-xl font-medium"
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => addBlock("title")}><Plus className="h-4 w-4 mr-1"/>Título</Button>
+                    <Button size="sm" variant="outline" onClick={() => addBlock("text")}><Plus className="h-4 w-4 mr-1"/>Texto</Button>
+                    <Button size="sm" variant="outline" onClick={() => addBlock("page")}><Plus className="h-4 w-4 mr-1"/>Página</Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-3">
+                {loading && <p className="text-sm text-muted-foreground">Carregando…</p>}
+                {blocks.map((b) => (
+                  <Card key={b.id}>
+                    <CardContent className="pt-4">
+                      {b.type === "title" && (
+                        <Input
+                          value={b.content ?? ""}
+                          onChange={(e) => updateBlock(b.id, { content: e.target.value })}
+                          className={`text-lg font-semibold ${colorClass(b.color as ColorName)}`}
+                        />
+                      )}
+
+                      {b.type === "text" && (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="ghost" onClick={() => updateBlock(b.id, { bold: !b.bold })}><Bold className="h-4 w-4"/></Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button size="sm" variant="ghost"><Palette className="h-4 w-4"/></Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start">
+                                {COLORS.map(c => (
+                                  <DropdownMenuItem key={c} onClick={() => updateBlock(b.id, { color: c })}>
+                                    <span className={`${colorClass(c)}`}>{c}</span>
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                            <Button size="sm" variant="outline" onClick={() => convertTextToPage(b)}>
+                              Converter em página <ArrowRight className="h-4 w-4 ml-2"/>
+                            </Button>
+                          </div>
+                          <Textarea
+                            value={b.content ?? ""}
+                            onChange={(e) => updateBlock(b.id, { content: e.target.value })}
+                            className={`${b.bold ? 'font-semibold' : ''} ${colorClass(b.color as ColorName)}`}
+                            placeholder="Digite seu texto…"
+                          />
+                        </div>
+                      )}
+
+                      {b.type === "page" && (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">Página</Badge>
+                            <span className="truncate">{b.content || "Subpágina"}</span>
+                          </div>
+                          <Button size="sm" onClick={() => b.child_page_id && openPage(b.child_page_id)}>
+                            Abrir página
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}

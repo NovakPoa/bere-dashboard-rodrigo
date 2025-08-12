@@ -128,7 +128,7 @@ export function mapDbRowToFitnessEntry(r: DbActivityRow): FitnessEntry {
 
 export async function fetchActivitiesFromSupabase(from?: Date, to?: Date): Promise<FitnessEntry[]> {
   let query = supabase
-    .from("bereproject")
+    .from("atividade_fisica")
     .select("modalidade, distancia_km, duracao_min, calorias, data, ts, tipo")
     .order("data", { ascending: false });
 

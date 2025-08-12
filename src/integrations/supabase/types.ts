@@ -17,43 +17,43 @@ export type Database = {
       alimentacao: {
         Row: {
           calorias_kcal: number | null
-          carbo_g: number | null
+          carboidrato_g: number | null
           data: string | null
-          descricao: string | null
           gordura_g: number | null
           id: number
           origem: string | null
           proteina_g: number | null
           refeicao: string | null
           texto: string | null
+          tipo: string | null
           ts: string | null
           wa_id: string | null
         }
         Insert: {
           calorias_kcal?: number | null
-          carbo_g?: number | null
+          carboidrato_g?: number | null
           data?: string | null
-          descricao?: string | null
           gordura_g?: number | null
           id?: number
           origem?: string | null
           proteina_g?: number | null
           refeicao?: string | null
           texto?: string | null
+          tipo?: string | null
           ts?: string | null
           wa_id?: string | null
         }
         Update: {
           calorias_kcal?: number | null
-          carbo_g?: number | null
+          carboidrato_g?: number | null
           data?: string | null
-          descricao?: string | null
           gordura_g?: number | null
           id?: number
           origem?: string | null
           proteina_g?: number | null
           refeicao?: string | null
           texto?: string | null
+          tipo?: string | null
           ts?: string | null
           wa_id?: string | null
         }
@@ -112,6 +112,7 @@ export type Database = {
           origem: string | null
           status: string | null
           texto: string | null
+          tipo: string | null
           tipo_item: string | null
           titulo: string | null
           ts: string | null
@@ -124,6 +125,7 @@ export type Database = {
           origem?: string | null
           status?: string | null
           texto?: string | null
+          tipo?: string | null
           tipo_item?: string | null
           titulo?: string | null
           ts?: string | null
@@ -136,6 +138,7 @@ export type Database = {
           origem?: string | null
           status?: string | null
           texto?: string | null
+          tipo?: string | null
           tipo_item?: string | null
           titulo?: string | null
           ts?: string | null
@@ -192,8 +195,9 @@ export type Database = {
           nome: string | null
           origem: string | null
           quantidade_sessoes: number | null
-          tempo_total_min: number | null
+          tempo_total_sessoes: number | null
           texto: string | null
+          tipo: string | null
           ts: string | null
           wa_id: string | null
         }
@@ -203,8 +207,9 @@ export type Database = {
           nome?: string | null
           origem?: string | null
           quantidade_sessoes?: number | null
-          tempo_total_min?: number | null
+          tempo_total_sessoes?: number | null
           texto?: string | null
+          tipo?: string | null
           ts?: string | null
           wa_id?: string | null
         }
@@ -214,8 +219,9 @@ export type Database = {
           nome?: string | null
           origem?: string | null
           quantidade_sessoes?: number | null
-          tempo_total_min?: number | null
+          tempo_total_sessoes?: number | null
           texto?: string | null
+          tipo?: string | null
           ts?: string | null
           wa_id?: string | null
         }
