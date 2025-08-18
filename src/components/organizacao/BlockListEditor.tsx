@@ -74,56 +74,63 @@ export default function BlockListEditor({
 
   return (
     <div className="space-y-1" style={{ userSelect: "text", WebkitUserSelect: "text" }}>
-      {sorted.map((b) => (
-        <div
-          key={b.id}
-          onDragOver={(e) => handleDragOver(b.id, e)}
-          onDragLeave={() => handleDragLeave(b.id)}
-          onDrop={(e) => handleDrop(b.id, e)}
-          className={`group rounded-md transition-smooth border border-transparent ${dropOver && dropOver.id === b.id && dropOver.zone === "before" ? "border-t-primary" : ""} ${dropOver && dropOver.id === b.id && dropOver.zone === "after" ? "border-b-primary" : ""}`}
-          style={{ userSelect: "text", WebkitUserSelect: "text" }}
-        >
-          <div className="flex items-start gap-2 group/row" style={{ userSelect: "text", WebkitUserSelect: "text" }}>
-            <button
-              className="opacity-0 group-hover/row:opacity-100 focus:opacity-100 mt-1 cursor-grab active:cursor-grabbing text-muted-foreground transition-opacity"
-              draggable
-              onDragStart={(e) => handleDragStart(b.id, e)}
-              onMouseDown={(e) => e.stopPropagation()}
-              aria-label="Arrastar bloco"
-              style={{ userSelect: "none", WebkitUserSelect: "none" }}
-            >
-              <GripVertical className="h-4 w-4" />
-            </button>
-            <BlockRow
-              id={b.id}
-              html={b.content}
-              onChange={onChangeContent}
-              onKeyDown={(e) => handleKeyDown(b.id, e)}
-              onSplit={async (id, before, after) => {
-                const newId = await onSplit?.(id, before, after);
-                if (newId) { setFocusId(newId); setFocusAtEnd(false); }
-                return newId ?? null;
-              }}
-              onJoinPrev={async (id, html) => {
-                const prevId = await (typeof onJoinPrev === 'function' ? onJoinPrev(id, html) : Promise.resolve(null));
-                if (prevId) { setFocusId(prevId); setFocusAtEnd(true); }
-                return prevId ?? null;
-              }}
-              onArrowNavigate={(dir, place) => {
-                const idx = sorted.findIndex((x) => x.id === b.id);
-                if (idx === -1) return;
-                const target = dir === 'prev' ? sorted[idx - 1] : sorted[idx + 1];
-                if (!target) return;
-                setFocusId(target.id);
-                setFocusAtEnd(place === 'end');
-              }}
-              autoFocus={focusId === b.id}
-              autoFocusAtEnd={focusId === b.id ? focusAtEnd : false}
-              onFocusDone={() => setFocusId(null)}
-            />
+      <div
+        contentEditable
+        suppressContentEditableWarning
+        className="space-y-1"
+        style={{ userSelect: "text", WebkitUserSelect: "text" }}
+      >
+        {sorted.map((b) => (
+          <div
+            key={b.id}
+            onDragOver={(e) => handleDragOver(b.id, e)}
+            onDragLeave={() => handleDragLeave(b.id)}
+            onDrop={(e) => handleDrop(b.id, e)}
+            className={`group rounded-md transition-smooth border border-transparent ${dropOver && dropOver.id === b.id && dropOver.zone === "before" ? "border-t-primary" : ""} ${dropOver && dropOver.id === b.id && dropOver.zone === "after" ? "border-b-primary" : ""}`}
+            style={{ userSelect: "text", WebkitUserSelect: "text" }}
+          >
+            <div className="flex items-start gap-2 group/row" style={{ userSelect: "text", WebkitUserSelect: "text" }}>
+              <button
+                className="opacity-0 group-hover/row:opacity-100 focus:opacity-100 mt-1 cursor-grab active:cursor-grabbing text-muted-foreground transition-opacity"
+                draggable
+                onDragStart={(e) => handleDragStart(b.id, e)}
+                onMouseDown={(e) => e.stopPropagation()}
+                aria-label="Arrastar bloco"
+                style={{ userSelect: "none", WebkitUserSelect: "none" }}
+              >
+                <GripVertical className="h-4 w-4" />
+              </button>
+              <BlockRow
+                id={b.id}
+                html={b.content}
+                onChange={onChangeContent}
+                onKeyDown={(e) => handleKeyDown(b.id, e)}
+                onSplit={async (id, before, after) => {
+                  const newId = await onSplit?.(id, before, after);
+                  if (newId) { setFocusId(newId); setFocusAtEnd(false); }
+                  return newId ?? null;
+                }}
+                onJoinPrev={async (id, html) => {
+                  const prevId = await (typeof onJoinPrev === 'function' ? onJoinPrev(id, html) : Promise.resolve(null));
+                  if (prevId) { setFocusId(prevId); setFocusAtEnd(true); }
+                  return prevId ?? null;
+                }}
+                onArrowNavigate={(dir, place) => {
+                  const idx = sorted.findIndex((x) => x.id === b.id);
+                  if (idx === -1) return;
+                  const target = dir === 'prev' ? sorted[idx - 1] : sorted[idx + 1];
+                  if (!target) return;
+                  setFocusId(target.id);
+                  setFocusAtEnd(place === 'end');
+                }}
+                autoFocus={focusId === b.id}
+                autoFocusAtEnd={focusId === b.id ? focusAtEnd : false}
+                onFocusDone={() => setFocusId(null)}
+              />
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
       {sorted.length === 0 && (
         <div className="text-sm text-muted-foreground">Sem linhas ainda.</div>
       )}

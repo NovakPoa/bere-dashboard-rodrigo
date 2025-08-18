@@ -212,8 +212,6 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
       <ContextMenuTrigger asChild>
         <div
           ref={ref}
-          contentEditable
-          suppressContentEditableWarning
           className="org-ltr min-h-[24px] w-full whitespace-pre-wrap px-0 py-1 focus:outline-none text-left"
           style={{ 
             direction: "ltr", 
