@@ -87,9 +87,8 @@ export default function Auth() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-1">
                 <TabsTrigger value="login">Entrar</TabsTrigger>
-                <TabsTrigger value="signup">Cadastrar</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login" className="mt-4">
@@ -124,40 +123,6 @@ export default function Auth() {
                 </form>
               </TabsContent>
 
-              <TabsContent value="signup" className="mt-4">
-                <form onSubmit={handleSignup} className="grid gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="signup-email">E-mail</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      autoComplete="email"
-                      required
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                      placeholder="voce@exemplo.com"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="signup-password">Senha</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      autoComplete="new-password"
-                      required
-                      value={signupPassword}
-                      onChange={(e) => setSignupPassword(e.target.value)}
-                      placeholder="Mínimo 6 caracteres"
-                    />
-                  </div>
-                  <Button type="submit" disabled={loading} className="w-full">
-                    {loading ? "Cadastrando…" : "Criar conta"}
-                  </Button>
-                </form>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Ao continuar, você concorda com nossos termos de uso e política de privacidade.
-                </p>
-              </TabsContent>
             </Tabs>
 
             <div className="mt-6 text-center text-sm">
