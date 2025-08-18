@@ -25,10 +25,10 @@ export default function Auth() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) navigate("/", { replace: true });
+      if (session) navigate("/app", { replace: true });
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/", { replace: true });
+      if (session) navigate("/app", { replace: true });
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -43,7 +43,7 @@ export default function Auth() {
       });
       if (error) throw error;
       toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
-      navigate("/", { replace: true });
+      navigate("/app", { replace: true });
     } catch (err: any) {
       toast({ title: "Erro ao entrar", description: err?.message ?? "Tente novamente." });
     } finally {
@@ -87,8 +87,9 @@ export default function Auth() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-1">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Entrar</TabsTrigger>
+                <TabsTrigger value="signup">Cadastrar</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login" className="mt-4">
@@ -119,6 +120,39 @@ export default function Auth() {
                   </div>
                   <Button type="submit" disabled={loading} className="w-full">
                     {loading ? "Entrando…" : "Entrar"}
+                  </Button>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="signup" className="mt-4">
+                <form onSubmit={handleSignup} className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="signup-email">E-mail</Label>
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      placeholder="voce@exemplo.com"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="signup-password">Senha</Label>
+                    <Input
+                      id="signup-password"
+                      type="password"
+                      autoComplete="new-password"
+                      required
+                      minLength={6}
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
+                  </div>
+                  <Button type="submit" disabled={loading} className="w-full">
+                    {loading ? "Criando conta…" : "Criar conta"}
                   </Button>
                 </form>
               </TabsContent>
