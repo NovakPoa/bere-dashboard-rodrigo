@@ -131,7 +131,7 @@ export default function PageTree({
           >
             <button 
               onClick={() => openPage(p.id)}
-              className="flex items-center gap-2 flex-1 min-w-0"
+              className="flex items-center gap-2 flex-1 min-w-0 text-left"
             >
               <span
                 onClick={(e) => {

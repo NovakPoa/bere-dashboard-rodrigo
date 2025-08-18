@@ -109,12 +109,20 @@ export default function Organizacao() {
   const currentPage = useMemo(() => pages.find(p => p.id === currentPageId) || null, [pages, currentPageId]);
 
   const createPage = async (title: string, parentId?: string | null) => {
+    console.log('createPage called with:', { title, parentId });
     const { data, error } = await supabase
       .from("org_pages")
-      .insert({ title, parent_id: parentId ?? null, user_id: '' })  // user_id will be set by trigger
+      .insert({ title, parent_id: parentId ?? null, user_id: '' })  // Empty string will be replaced by trigger
       .select("*")
       .single();
-    if (error) { toast({ title: "Erro", description: "Não foi possível criar a página" }); return null; }
+    
+    console.log('Insert result:', { data, error });
+    
+    if (error) { 
+      console.error('Error creating page:', error);
+      toast({ title: "Erro", description: "Não foi possível criar a página: " + error.message }); 
+      return null; 
+    }
     const page = data as OrgPage;
     setPages(prev => [page, ...prev]);
 
@@ -411,9 +419,17 @@ export default function Organizacao() {
   const openPage = (pageId: string) => setCurrentPageId(pageId);
 
   const createRootPage = async () => {
-    if (!creatingTitle.trim()) return;
+    console.log('createRootPage called, title:', creatingTitle);
+    if (!creatingTitle.trim()) {
+      toast({ title: "Aviso", description: "Digite o nome da página" });
+      return;
+    }
     const p = await createPage(creatingTitle.trim(), null);
-    if (p) { setCreatingTitle(""); setCurrentPageId(p.id); }
+    if (p) { 
+      setCreatingTitle(""); 
+      setCurrentPageId(p.id);
+      toast({ title: "Sucesso", description: "Página criada" });
+    }
   };
   return (
     <div className="container py-6">
@@ -431,6 +447,7 @@ export default function Organizacao() {
               {favorites.map(p => (
                 <div
                   key={p.id}
+                  className={`group flex items-center justify-between w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth ${currentPageId===p.id? 'bg-muted' : ''} ${dropOverId===p.id ? 'ring-2 ring-primary' : ''}`}
                   draggable
                   onDragStart={(e) => { e.dataTransfer.setData('text/plain', p.id); setDraggingId(p.id); }}
                   onDragEnd={() => { setDraggingId(null); setDropOverId(null); }}
@@ -448,11 +465,10 @@ export default function Organizacao() {
                     const pageId = raw.startsWith('page:') ? raw.slice(5) : raw;
                     if (pageId && pageId !== p.id) await reorderFavorites(pageId, p.id);
                   }}
-                  className={`flex items-center justify-between w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth ${currentPageId===p.id? 'bg-muted' : ''} ${dropOverId===p.id ? 'ring-2 ring-primary' : ''}`}
                 >
                   <button 
                     onClick={() => openPage(p.id)}
-                    className="flex items-center gap-2 flex-1 min-w-0"
+                    className="flex items-center gap-2 flex-1 min-w-0 text-left"
                   >
                     <span className="truncate">{p.title}</span>
                   </button>
