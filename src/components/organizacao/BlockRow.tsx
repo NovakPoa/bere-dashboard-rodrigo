@@ -198,13 +198,11 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Allow natural text selection to extend beyond this block
-    e.stopPropagation();
-  };
-
-  const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Ensure selection events can bubble up for cross-block selection
-    e.stopPropagation();
+    // Allow selection to start and extend beyond this element
+    const container = e.currentTarget.closest('[data-block-container]');
+    if (container) {
+      (container as HTMLElement).style.userSelect = 'text';
+    }
   };
 
   return (
@@ -212,6 +210,8 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
       <ContextMenuTrigger asChild>
         <div
           ref={ref}
+          contentEditable
+          suppressContentEditableWarning
           className="org-ltr min-h-[24px] w-full whitespace-pre-wrap px-0 py-1 focus:outline-none text-left"
           style={{ 
             direction: "ltr", 
@@ -222,7 +222,6 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
           onInput={(e) => onChange(id, sanitizeBidi((e.currentTarget as HTMLDivElement).innerHTML || ""))}
           onKeyDown={handleKeyDown}
           onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
         />
       </ContextMenuTrigger>
       <ContextMenuContent className="z-50">
