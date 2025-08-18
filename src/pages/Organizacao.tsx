@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Star, FilePlus2, ChevronRight } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Star, FilePlus2, ChevronRight, MoreVertical, Trash2 } from "lucide-react";
 import { setPageSEO } from "@/lib/seo";
 import { useToast } from "@/components/ui/use-toast";
 import BlockListEditor from "@/components/organizacao/BlockListEditor";
@@ -139,6 +140,30 @@ export default function Organizacao() {
       .single();
     if (error) { toast({ title: "Erro", description: "Falha ao favoritar" }); return; }
     setPages(prev => prev.map(p => (p.id === page.id ? (data as OrgPage) : p)));
+  };
+
+  const deletePage = async (pageId: string) => {
+    // Check if this page has children
+    const hasChildren = pages.some(p => p.parent_id === pageId);
+    if (hasChildren) {
+      toast({ title: "Erro", description: "Não é possível deletar uma página que tem páginas filhas" });
+      return;
+    }
+
+    const { error } = await supabase.from("org_pages").delete().eq("id", pageId);
+    if (error) { 
+      toast({ title: "Erro", description: "Não foi possível deletar a página" }); 
+      return; 
+    }
+    
+    setPages(prev => prev.filter(p => p.id !== pageId));
+    
+    // If we're deleting the current page, navigate away
+    if (currentPageId === pageId) {
+      setCurrentPageId(null);
+    }
+    
+    toast({ title: "Sucesso", description: "Página deletada" });
   };
 
   const addBlock = async (type: BlockType) => {
@@ -404,7 +429,7 @@ export default function Organizacao() {
             </CardHeader>
             <CardContent className="space-y-2">
               {favorites.map(p => (
-                <button
+                <div
                   key={p.id}
                   draggable
                   onDragStart={(e) => { e.dataTransfer.setData('text/plain', p.id); setDraggingId(p.id); }}
@@ -423,13 +448,36 @@ export default function Organizacao() {
                     const pageId = raw.startsWith('page:') ? raw.slice(5) : raw;
                     if (pageId && pageId !== p.id) await reorderFavorites(pageId, p.id);
                   }}
-                  onClick={() => openPage(p.id)}
-                  className={`w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth ${currentPageId===p.id? 'bg-muted' : ''} ${dropOverId===p.id ? 'ring-2 ring-primary' : ''}`}
+                  className={`flex items-center justify-between w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth ${currentPageId===p.id? 'bg-muted' : ''} ${dropOverId===p.id ? 'ring-2 ring-primary' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => openPage(p.id)}
+                    className="flex items-center gap-2 flex-1 min-w-0"
+                  >
                     <span className="truncate">{p.title}</span>
-                  </div>
-                </button>
+                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 flex-shrink-0"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="h-3 w-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem 
+                        onClick={() => deletePage(p.id)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Deletar página
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               ))}
             </CardContent>
           </Card>
@@ -458,6 +506,7 @@ export default function Organizacao() {
                   dropOverId={dropOverId}
                   setDropOverId={setDropOverId}
                   moveBlock={moveBlock}
+                  deletePage={deletePage}
                 />
               </div>
             </CardContent>

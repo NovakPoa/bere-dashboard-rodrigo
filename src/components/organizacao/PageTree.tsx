@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, MoreVertical, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export type OrgPageRef = {
   id: string;
@@ -20,6 +22,7 @@ interface PageTreeProps {
   dropOverId: string | null;
   setDropOverId: (id: string | null) => void;
   moveBlock?: (blockId: string, targetPageId: string) => Promise<void> | void;
+  deletePage?: (pageId: string) => Promise<void> | void;
 }
 
 export default function PageTree({
@@ -33,6 +36,7 @@ export default function PageTree({
   dropOverId,
   setDropOverId,
   moveBlock,
+  deletePage,
 }: PageTreeProps) {
   const childrenMap = useMemo(() => {
     const m = new Map<string | null, OrgPageRef[]>();
@@ -69,8 +73,8 @@ export default function PageTree({
       const hasChildren = (childrenMap.get(p.id) || []).length > 0;
       const isExpanded = expanded.has(p.id);
       return (
-        <div key={p.id} className="w-full">
-          <button
+        <div key={p.id} className="w-full group">
+          <div
             draggable
             onDragStart={(e) => {
               e.dataTransfer.setData("text/plain", `page:${p.id}`);
@@ -120,13 +124,15 @@ export default function PageTree({
                 await movePage(sourcePageId, p.id); // nest under target page
               }
             }}
-            onClick={() => openPage(p.id)}
-            className={`w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth ${
+            className={`flex items-center justify-between w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth ${
               currentPageId === p.id ? "bg-muted" : ""
             } ${dropOverId === p.id ? "ring-2 ring-primary" : ""}`}
             style={{ paddingLeft: 8 + depth * 14 }}
           >
-            <div className="flex items-center gap-2">
+            <button 
+              onClick={() => openPage(p.id)}
+              className="flex items-center gap-2 flex-1 min-w-0"
+            >
               <span
                 onClick={(e) => {
                   e.stopPropagation();
@@ -140,8 +146,31 @@ export default function PageTree({
                 <ChevronRight className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
               </span>
               <span className="truncate flex-1">{p.title}</span>
-            </div>
-          </button>
+            </button>
+            {deletePage && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100 flex-shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreVertical className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem 
+                    onClick={() => deletePage(p.id)}
+                    className="text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Deletar página
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
           {hasChildren && isExpanded && (
             <div className="space-y-1">{renderNodes(p.id, depth + 1)}</div>
           )}
