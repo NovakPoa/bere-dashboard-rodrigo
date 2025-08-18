@@ -133,6 +133,12 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
     if (e.key === "Backspace" || e.key === "Delete") {
       if (!el || !sel || sel.rangeCount === 0) return;
       const range = sel.getRangeAt(0);
+      
+      // If there's a selection (not just a cursor), let the default behavior handle it
+      if (!range.collapsed) {
+        return; // Allow default delete/backspace to work on selection
+      }
+      
       const pre = range.cloneRange();
       pre.selectNodeContents(el);
       pre.setEnd(range.startContainer, range.startOffset);
