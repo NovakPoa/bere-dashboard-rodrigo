@@ -78,20 +78,61 @@ export default function BlockListEditor({
     const container = containerRef.current;
     if (!container) return;
     try {
+      // If already in cross-select mode, don't reinitialize
+      const already = container.getAttribute("data-cross-select") === "1";
+      if (already) return;
+
       container.setAttribute("contenteditable", "true");
       container.setAttribute("suppresscontenteditablewarning", "true");
+      container.setAttribute("data-cross-select", "1");
+
       // Temporarily remove contentEditable from rows so container becomes the only editing host
-      const rows = container.querySelectorAll('[data-org-row]');
-      rows.forEach((el) => (el as HTMLElement).removeAttribute("contenteditable"));
+      const rows = Array.from(container.querySelectorAll('[data-org-row]')) as HTMLElement[];
+      rows.forEach((el) => el.removeAttribute("contenteditable"));
+
       // Focus container so selection is managed at the root
       (container as HTMLElement).focus();
+
       const finish = () => {
-        rows.forEach((el) => (el as HTMLElement).setAttribute("contenteditable", "true"));
+        if (container.getAttribute("data-cross-select") !== "1") return;
+        rows.forEach((el) => el.setAttribute("contenteditable", "true"));
         container.removeAttribute("contenteditable");
         container.removeAttribute("suppresscontenteditablewarning");
-        window.removeEventListener('mouseup', finish);
+        container.removeAttribute("data-cross-select");
+        window.removeEventListener('selectionchange', onSelectionChange);
+        container.removeEventListener('keydown', onKeyDown as any);
+        container.removeEventListener('mousedown', onMouseDown as any);
       };
-      window.addEventListener('mouseup', finish, { once: true });
+
+      const onSelectionChange = () => {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return;
+        const anchor = sel.anchorNode;
+        const within = !!anchor && container.contains(anchor);
+        if (!within || sel.isCollapsed) {
+          finish();
+        }
+      };
+
+      const onKeyDown = (ev: KeyboardEvent) => {
+        if (ev.key === 'Escape') {
+          ev.preventDefault();
+          finish();
+        }
+        // For Backspace/Delete/Enter, allow native edit first, then exit mode once selection collapses
+        if (ev.key === 'Backspace' || ev.key === 'Delete' || ev.key === 'Enter') {
+          setTimeout(onSelectionChange, 0);
+        }
+      };
+
+      const onMouseDown = () => {
+        // After a click, selection may collapse; check next tick
+        setTimeout(onSelectionChange, 0);
+      };
+
+      window.addEventListener('selectionchange', onSelectionChange);
+      container.addEventListener('keydown', onKeyDown as any);
+      container.addEventListener('mousedown', onMouseDown as any);
     } catch {}
   };
   return (
