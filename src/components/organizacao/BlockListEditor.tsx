@@ -73,7 +73,7 @@ export default function BlockListEditor({
   };
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1" style={{ userSelect: "text", WebkitUserSelect: "text" }}>
       {sorted.map((b) => (
         <div
           key={b.id}
@@ -81,13 +81,16 @@ export default function BlockListEditor({
           onDragLeave={() => handleDragLeave(b.id)}
           onDrop={(e) => handleDrop(b.id, e)}
           className={`group rounded-md transition-smooth border border-transparent ${dropOver && dropOver.id === b.id && dropOver.zone === "before" ? "border-t-primary" : ""} ${dropOver && dropOver.id === b.id && dropOver.zone === "after" ? "border-b-primary" : ""}`}
+          style={{ userSelect: "text", WebkitUserSelect: "text" }}
         >
-          <div className="flex items-start gap-2 group/row">
+          <div className="flex items-start gap-2 group/row" style={{ userSelect: "text", WebkitUserSelect: "text" }}>
             <button
               className="opacity-0 group-hover/row:opacity-100 focus:opacity-100 mt-1 cursor-grab active:cursor-grabbing text-muted-foreground transition-opacity"
               draggable
               onDragStart={(e) => handleDragStart(b.id, e)}
+              onMouseDown={(e) => e.stopPropagation()}
               aria-label="Arrastar bloco"
+              style={{ userSelect: "none", WebkitUserSelect: "none" }}
             >
               <GripVertical className="h-4 w-4" />
             </button>
