@@ -186,8 +186,9 @@ export default function BlockListEditor({
           <button
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-smooth"
             onClick={() => onCreateAfter(sorted[sorted.length - 1].id)}
+            aria-label="Adicionar nova linha"
           >
-            <Plus className="h-4 w-4" /> Nova linha
+            <Plus className="h-4 w-4" />
           </button>
         </div>
       )}
