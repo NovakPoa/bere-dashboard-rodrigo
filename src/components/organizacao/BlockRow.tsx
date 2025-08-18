@@ -168,6 +168,7 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
 
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      e.stopPropagation();
       if (!el || !sel || sel.rangeCount === 0) return;
       const caret = sel.getRangeAt(0);
       const beforeRange = caret.cloneRange();
