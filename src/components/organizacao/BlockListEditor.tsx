@@ -80,8 +80,11 @@ export default function BlockListEditor({
     try {
       container.setAttribute("contenteditable", "true");
       container.setAttribute("suppresscontenteditablewarning", "true");
+      // Temporarily remove contentEditable from rows so container becomes the only editing host
       const rows = container.querySelectorAll('[data-org-row]');
-      rows.forEach((el) => (el as HTMLElement).setAttribute("contenteditable", "false"));
+      rows.forEach((el) => (el as HTMLElement).removeAttribute("contenteditable"));
+      // Focus container so selection is managed at the root
+      (container as HTMLElement).focus();
       const finish = () => {
         rows.forEach((el) => (el as HTMLElement).setAttribute("contenteditable", "true"));
         container.removeAttribute("contenteditable");
@@ -91,7 +94,6 @@ export default function BlockListEditor({
       window.addEventListener('mouseup', finish, { once: true });
     } catch {}
   };
-
   return (
     <div 
       ref={containerRef}

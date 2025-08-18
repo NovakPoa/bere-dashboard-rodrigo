@@ -43,6 +43,7 @@ const colorClass = (c: ColorName) => (c === "default" ? "org-text-default" : `or
 
 export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, onArrowNavigate, autoFocus, autoFocusAtEnd, onFocusDone, onBeginCrossSelect }: BlockRowProps) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const anchorRef = useRef<Range | null>(null);
 
   // Sync external html into the editor only when not focused to preserve caret position
   useEffect(() => {
@@ -198,9 +199,70 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
     onKeyDown?.(e);
   };
 
-  const handleMouseDown = (_e: React.MouseEvent<HTMLDivElement>) => {
-    // Begin cross-line selection mode in parent
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return; // only left-click
+    e.preventDefault();
     onBeginCrossSelect?.();
+
+    // Defer to ensure container becomes the editing host
+    setTimeout(() => {
+      const doc: any = document as any;
+      let range: Range | null = null;
+      if (typeof doc.caretRangeFromPoint === 'function') {
+        range = doc.caretRangeFromPoint(e.clientX, e.clientY);
+      } else if (typeof (doc as any).caretPositionFromPoint === 'function') {
+        const pos = (doc as any).caretPositionFromPoint(e.clientX, e.clientY);
+        if (pos) {
+          range = document.createRange();
+          range.setStart(pos.offsetNode, pos.offset);
+          range.collapse(true);
+        }
+      }
+      if (range) {
+        anchorRef.current = range;
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }
+    }, 0);
+
+    const onMove = (ev: MouseEvent) => {
+      if (!anchorRef.current) return;
+      const doc: any = document as any;
+      let focusRange: Range | null = null;
+      if (typeof doc.caretRangeFromPoint === 'function') {
+        focusRange = doc.caretRangeFromPoint(ev.clientX, ev.clientY);
+      } else if (typeof (doc as any).caretPositionFromPoint === 'function') {
+        const pos = (doc as any).caretPositionFromPoint(ev.clientX, ev.clientY);
+        if (pos) {
+          focusRange = document.createRange();
+          focusRange.setStart(pos.offsetNode, pos.offset);
+          focusRange.collapse(true);
+        }
+      }
+      const sel = window.getSelection();
+      if (!sel || !focusRange) return;
+
+      const a = anchorRef.current as Range;
+      const cmp = a.compareBoundaryPoints(Range.START_TO_START, focusRange);
+      const newRange = document.createRange();
+      if (cmp <= 0) {
+        newRange.setStart(a.startContainer, a.startOffset);
+        newRange.setEnd(focusRange.startContainer, focusRange.startOffset);
+      } else {
+        newRange.setStart(focusRange.startContainer, focusRange.startOffset);
+        newRange.setEnd(a.startContainer, a.startOffset);
+      }
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+    };
+
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp, { once: true });
   };
 
   return (
