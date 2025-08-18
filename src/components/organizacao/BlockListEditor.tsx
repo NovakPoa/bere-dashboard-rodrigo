@@ -124,7 +124,7 @@ export default function BlockListEditor({
   return (
     <div 
       ref={containerRef}
-      className="space-y-0.5" 
+      className="space-y-0" 
       style={{ userSelect: "text", WebkitUserSelect: "text" }}
       data-block-container
     >

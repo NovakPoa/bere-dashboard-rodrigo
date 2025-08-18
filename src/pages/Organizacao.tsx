@@ -110,7 +110,7 @@ export default function Organizacao() {
   const createPage = async (title: string, parentId?: string | null) => {
     const { data, error } = await supabase
       .from("org_pages")
-      .insert({ title, parent_id: parentId ?? null })
+      .insert({ title, parent_id: parentId ?? null, user_id: '' })  // user_id will be set by trigger
       .select("*")
       .single();
     if (error) { toast({ title: "Erro", description: "Não foi possível criar a página" }); return null; }
