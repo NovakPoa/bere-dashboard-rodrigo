@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { GripVertical, Plus } from "lucide-react";
 import { BlockRow } from "./BlockRow";
 
@@ -32,6 +32,7 @@ export default function BlockListEditor({
     [blocks]
   );
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const [dropOver, setDropOver] = useState<{ id: string; zone: "before" | "after" | null } | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [focusAtEnd, setFocusAtEnd] = useState(false);
@@ -72,8 +73,28 @@ export default function BlockListEditor({
     }
   };
 
+  // Enable temporary single editing host for cross-line selection
+  const beginCrossSelect = () => {
+    const container = containerRef.current;
+    if (!container) return;
+    try {
+      container.setAttribute("contenteditable", "true");
+      container.setAttribute("suppresscontenteditablewarning", "true");
+      const rows = container.querySelectorAll('[data-org-row]');
+      rows.forEach((el) => (el as HTMLElement).setAttribute("contenteditable", "false"));
+      const finish = () => {
+        rows.forEach((el) => (el as HTMLElement).setAttribute("contenteditable", "true"));
+        container.removeAttribute("contenteditable");
+        container.removeAttribute("suppresscontenteditablewarning");
+        window.removeEventListener('mouseup', finish);
+      };
+      window.addEventListener('mouseup', finish, { once: true });
+    } catch {}
+  };
+
   return (
     <div 
+      ref={containerRef}
       className="space-y-1" 
       style={{ userSelect: "text", WebkitUserSelect: "text" }}
       data-block-container
@@ -123,6 +144,7 @@ export default function BlockListEditor({
               autoFocus={focusId === b.id}
               autoFocusAtEnd={focusId === b.id ? focusAtEnd : false}
               onFocusDone={() => setFocusId(null)}
+              onBeginCrossSelect={beginCrossSelect}
             />
           </div>
         </div>

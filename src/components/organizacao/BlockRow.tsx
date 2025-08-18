@@ -19,6 +19,7 @@ interface BlockRowProps {
   autoFocus?: boolean;
   autoFocusAtEnd?: boolean;
   onFocusDone?: () => void;
+  onBeginCrossSelect?: () => void;
 }
 
 // Remove Unicode BiDi control characters that can flip text direction
@@ -40,7 +41,7 @@ const COLORS = [
 type ColorName = typeof COLORS[number];
 const colorClass = (c: ColorName) => (c === "default" ? "org-text-default" : `org-text-${c}`);
 
-export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, onArrowNavigate, autoFocus, autoFocusAtEnd, onFocusDone }: BlockRowProps) {
+export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, onArrowNavigate, autoFocus, autoFocusAtEnd, onFocusDone, onBeginCrossSelect }: BlockRowProps) {
   const ref = useRef<HTMLDivElement | null>(null);
 
   // Sync external html into the editor only when not focused to preserve caret position
@@ -197,12 +198,9 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
     onKeyDown?.(e);
   };
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Allow selection to start and extend beyond this element
-    const container = e.currentTarget.closest('[data-block-container]');
-    if (container) {
-      (container as HTMLElement).style.userSelect = 'text';
-    }
+  const handleMouseDown = (_e: React.MouseEvent<HTMLDivElement>) => {
+    // Begin cross-line selection mode in parent
+    onBeginCrossSelect?.();
   };
 
   return (
@@ -210,6 +208,7 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
       <ContextMenuTrigger asChild>
         <div
           ref={ref}
+          data-org-row
           contentEditable
           suppressContentEditableWarning
           className="org-ltr min-h-[24px] w-full whitespace-pre-wrap px-0 py-1 focus:outline-none text-left"
