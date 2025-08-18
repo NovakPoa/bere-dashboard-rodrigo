@@ -213,6 +213,13 @@ export default function Atividades() {
               placeholder="Ex.: Corrida 30min 5km"
               parse={parseFitness}
               onConfirm={async (data) => {
+                // Get current user session
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session?.user) {
+                  toast({ title: 'Erro', description: 'Você precisa estar logado para registrar atividades.', variant: 'destructive' });
+                  return;
+                }
+
                 const when = data?.data ? new Date(data.data) : new Date();
                 const payload = {
                   modalidade: data.tipo,
@@ -222,6 +229,7 @@ export default function Atividades() {
                   calorias: typeof data.calorias === 'number' ? data.calorias : estimateCalories(data),
                   data: when.toISOString().slice(0, 10),
                   ts: when.toISOString(),
+                  user_id: session.user.id, // Include user_id for RLS
                 };
                 const { error } = await supabase.from('atividade_fisica').insert([payload]);
                 if (error) {
