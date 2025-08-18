@@ -73,31 +73,18 @@ export default function BlockListEditor({
     }
   };
 
-  // Enable temporary single editing host for cross-line selection
+  // Cross-select mode without changing contentEditable on container to avoid React DOM issues
   const beginCrossSelect = () => {
     const container = containerRef.current;
     if (!container) return;
     try {
-      // If already in cross-select mode, don't reinitialize
       const already = container.getAttribute("data-cross-select") === "1";
       if (already) return;
 
-      container.setAttribute("contenteditable", "true");
-      container.setAttribute("suppresscontenteditablewarning", "true");
       container.setAttribute("data-cross-select", "1");
-
-      // Temporarily remove contentEditable from rows so container becomes the only editing host
-      const rows = Array.from(container.querySelectorAll('[data-org-row]')) as HTMLElement[];
-      rows.forEach((el) => el.removeAttribute("contenteditable"));
-
-      // Focus container so selection is managed at the root
-      (container as HTMLElement).focus();
 
       const finish = () => {
         if (container.getAttribute("data-cross-select") !== "1") return;
-        rows.forEach((el) => el.setAttribute("contenteditable", "true"));
-        container.removeAttribute("contenteditable");
-        container.removeAttribute("suppresscontenteditablewarning");
         container.removeAttribute("data-cross-select");
         window.removeEventListener('selectionchange', onSelectionChange);
         container.removeEventListener('keydown', onKeyDown as any);
@@ -119,14 +106,13 @@ export default function BlockListEditor({
           ev.preventDefault();
           finish();
         }
-        // For Backspace/Delete/Enter, allow native edit first, then exit mode once selection collapses
+        // Let Delete/Backspace be handled by each row; when selection collapses, we'll exit.
         if (ev.key === 'Backspace' || ev.key === 'Delete' || ev.key === 'Enter') {
           setTimeout(onSelectionChange, 0);
         }
       };
 
       const onMouseDown = () => {
-        // After a click, selection may collapse; check next tick
         setTimeout(onSelectionChange, 0);
       };
 
