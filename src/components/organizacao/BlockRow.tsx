@@ -47,13 +47,15 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
   const isSelectingRef = useRef(false);
   const startRef = useRef<{ x: number; y: number } | null>(null);
 
+  const suppressSyncRef = useRef(false);
+
   // Sync external html into the editor only when not focused to preserve caret position
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const isActive = document.activeElement === el;
     const sanitized = sanitizeBidi(html || "");
-    if (!isActive && el.innerHTML !== sanitized) {
+    if (!isActive && !suppressSyncRef.current && el.innerHTML !== sanitized) {
       el.innerHTML = sanitized;
     }
   }, [html]);
@@ -184,10 +186,12 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
       const beforeHtml = sanitizeBidi(beforeDiv.innerHTML);
       const afterHtml = sanitizeBidi(afterDiv.innerHTML);
       // Optimistically update current line to show split immediately
+      suppressSyncRef.current = true;
       el.innerHTML = beforeHtml;
       // Release focus so the new row can grab it
       (el as HTMLElement).blur();
       onSplit?.(id, beforeHtml, afterHtml);
+      setTimeout(() => { suppressSyncRef.current = false; }, 200);
       return;
     }
 

@@ -67,6 +67,7 @@ export default function BlockListEditor({
   };
 
   const handleKeyDown = (id: string, e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.defaultPrevented) return;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onCreateAfter?.(id);
