@@ -44,6 +44,8 @@ const colorClass = (c: ColorName) => (c === "default" ? "org-text-default" : `or
 export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, onArrowNavigate, autoFocus, autoFocusAtEnd, onFocusDone, onBeginCrossSelect }: BlockRowProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const anchorRef = useRef<Range | null>(null);
+  const isSelectingRef = useRef(false);
+  const startRef = useRef<{ x: number; y: number } | null>(null);
 
   // Sync external html into the editor only when not focused to preserve caret position
   useEffect(() => {
@@ -201,39 +203,45 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0) return; // only left-click
-    e.preventDefault();
-    onBeginCrossSelect?.();
 
-    // Defer to ensure container becomes the editing host
-    setTimeout(() => {
-      const doc: any = document as any;
-      let range: Range | null = null;
-      if (typeof doc.caretRangeFromPoint === 'function') {
-        range = doc.caretRangeFromPoint(e.clientX, e.clientY);
-      } else if (typeof (doc as any).caretPositionFromPoint === 'function') {
-        const pos = (doc as any).caretPositionFromPoint(e.clientX, e.clientY);
-        if (pos) {
-          range = document.createRange();
-          range.setStart(pos.offsetNode, pos.offset);
-          range.collapse(true);
-        }
+    // Record starting point and anchor caret without blocking default caret placement
+    startRef.current = { x: e.clientX, y: e.clientY };
+    const doc: any = document as any;
+    let range: Range | null = null;
+    if (typeof doc.caretRangeFromPoint === 'function') {
+      range = doc.caretRangeFromPoint(e.clientX, e.clientY);
+    } else if (typeof (doc as any).caretPositionFromPoint === 'function') {
+      const pos = (doc as any).caretPositionFromPoint(e.clientX, e.clientY);
+      if (pos) {
+        range = document.createRange();
+        range.setStart(pos.offsetNode, pos.offset);
+        range.collapse(true);
       }
-      if (range) {
-        anchorRef.current = range;
-        const sel = window.getSelection();
-        sel?.removeAllRanges();
-        sel?.addRange(range);
-      }
-    }, 0);
+    }
+    if (range) {
+      anchorRef.current = range;
+    }
 
     const onMove = (ev: MouseEvent) => {
-      if (!anchorRef.current) return;
-      const doc: any = document as any;
+      if (!startRef.current) return;
+      const dx = ev.clientX - startRef.current.x;
+      const dy = ev.clientY - startRef.current.y;
+      const dist = Math.hypot(dx, dy);
+
+      // Enter cross-select mode only after small drag threshold
+      if (!isSelectingRef.current && dist > 4) {
+        onBeginCrossSelect?.();
+        isSelectingRef.current = true;
+      }
+
+      if (!isSelectingRef.current) return;
+
+      const docAny: any = document as any;
       let focusRange: Range | null = null;
-      if (typeof doc.caretRangeFromPoint === 'function') {
-        focusRange = doc.caretRangeFromPoint(ev.clientX, ev.clientY);
-      } else if (typeof (doc as any).caretPositionFromPoint === 'function') {
-        const pos = (doc as any).caretPositionFromPoint(ev.clientX, ev.clientY);
+      if (typeof docAny.caretRangeFromPoint === 'function') {
+        focusRange = docAny.caretRangeFromPoint(ev.clientX, ev.clientY);
+      } else if (typeof (docAny as any).caretPositionFromPoint === 'function') {
+        const pos = (docAny as any).caretPositionFromPoint(ev.clientX, ev.clientY);
         if (pos) {
           focusRange = document.createRange();
           focusRange.setStart(pos.offsetNode, pos.offset);
@@ -241,7 +249,7 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
         }
       }
       const sel = window.getSelection();
-      if (!sel || !focusRange) return;
+      if (!sel || !focusRange || !anchorRef.current) return;
 
       const a = anchorRef.current as Range;
       const cmp = a.compareBoundaryPoints(Range.START_TO_START, focusRange);
@@ -259,6 +267,8 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
 
     const onUp = () => {
       window.removeEventListener('mousemove', onMove);
+      isSelectingRef.current = false;
+      startRef.current = null;
     };
 
     window.addEventListener('mousemove', onMove);
