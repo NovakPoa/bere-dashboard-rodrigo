@@ -112,7 +112,7 @@ export default function Organizacao() {
     console.log('createPage called with:', { title, parentId });
     const { data, error } = await supabase
       .from("org_pages")
-      .insert({ title, parent_id: parentId ?? null, user_id: '' })  // Empty string will be replaced by trigger
+      .insert({ title, parent_id: parentId ?? null, user_id: (await supabase.auth.getUser()).data.user?.id })
       .select("*")
       .single();
     
