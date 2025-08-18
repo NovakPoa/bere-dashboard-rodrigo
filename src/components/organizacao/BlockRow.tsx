@@ -127,6 +127,61 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
     onChange(id, sanitizeBidi(next));
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    const lines = text.split('\n');
+    
+    if (lines.length <= 1) {
+      // Single line paste - insert normally
+      document.execCommand('insertText', false, text);
+      const next = ref.current?.innerHTML || "";
+      onChange(id, sanitizeBidi(next));
+      return;
+    }
+    
+    // Multi-line paste - handle as splits
+    const el = ref.current;
+    if (!el) return;
+    
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    
+    const caret = sel.getRangeAt(0);
+    const beforeRange = caret.cloneRange();
+    beforeRange.setStart(el, 0);
+    const afterRange = caret.cloneRange();
+    afterRange.setEnd(el, el.childNodes.length);
+    
+    const beforeFrag = beforeRange.cloneContents();
+    const afterFrag = afterRange.cloneContents();
+    const beforeDiv = document.createElement('div');
+    const afterDiv = document.createElement('div');
+    beforeDiv.appendChild(beforeFrag);
+    afterDiv.appendChild(afterFrag);
+    
+    const beforeHtml = sanitizeBidi(beforeDiv.innerHTML);
+    const afterHtml = sanitizeBidi(afterDiv.innerHTML);
+    
+    // Insert first line
+    const firstLineHtml = beforeHtml + lines[0];
+    el.innerHTML = firstLineHtml;
+    onChange(id, firstLineHtml);
+    
+    // Create new blocks for remaining lines
+    let currentAfterHtml = afterHtml;
+    for (let i = 1; i < lines.length; i++) {
+      const lineContent = i === lines.length - 1 ? lines[i] + currentAfterHtml : lines[i];
+      currentAfterHtml = '';
+      
+      setTimeout(() => {
+        onSplit?.(id, firstLineHtml, lineContent);
+      }, 0);
+    }
+    
+    (el as HTMLElement).blur();
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const el = ref.current;
     const sel = window.getSelection();
@@ -298,6 +353,7 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
           }}
           onInput={(e) => onChange(id, sanitizeBidi((e.currentTarget as HTMLDivElement).innerHTML || ""))}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           onMouseDown={handleMouseDown}
         />
       </ContextMenuTrigger>
