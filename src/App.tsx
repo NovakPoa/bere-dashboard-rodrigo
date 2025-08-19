@@ -53,19 +53,17 @@ const App = () => (
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<Landing />} />
-          <Route element={<RequireAuth />}>
-            <Route element={<AppLayout />}>
-              <Route path="/app" element={<Home />} />
-              <Route path="/financeira" element={<Index />} />
-              <Route path="/atividades" element={<Atividades />} />
-              <Route path="/alimentacao" element={<Alimentacao />} />
-              <Route path="/cultura" element={<Cultura />} />
-              <Route path="/calendario" element={<Calendario />} />
-              <Route path="/organizacao" element={<Organizacao />} />
-              <Route path="/organizacao/:id" element={<Organizacao />} />
-              <Route path="/organizacao2" element={<Organizacao2 />} />
-              <Route path="/habitos" element={<Habitos />} />
-            </Route>
+          <Route element={<AppLayout />}>
+            <Route path="/app" element={<Home />} />
+            <Route path="/financeira" element={<Index />} />
+            <Route path="/atividades" element={<Atividades />} />
+            <Route path="/alimentacao" element={<Alimentacao />} />
+            <Route path="/cultura" element={<Cultura />} />
+            <Route path="/calendario" element={<Calendario />} />
+            <Route path="/organizacao" element={<Organizacao />} />
+            <Route path="/organizacao/:id" element={<Organizacao />} />
+            <Route path="/organizacao2" element={<Organizacao2 />} />
+            <Route path="/habitos" element={<Habitos />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
