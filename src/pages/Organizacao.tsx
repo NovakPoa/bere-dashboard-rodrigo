@@ -480,6 +480,30 @@ export default function Organizacao() {
           }}
         >
           <div role="list" className="max-w-3xl mx-auto">
+            {/* Drop zone antes da primeira linha */}
+            {page.blocks.length > 0 && (
+              <div
+                className={`h-2 -mb-1 rounded transition-colors ${
+                  state.ui.isDraggingBlocks ? 'hover:bg-primary/20 border-2 border-dashed border-transparent hover:border-primary/40' : ''
+                }`}
+                onDragOver={(e) => {
+                  if (state.ui.isDraggingBlocks && (state.ui.draggedBlockIds?.length ?? 0) > 0) {
+                    e.preventDefault();
+                    e.currentTarget.classList.add('bg-primary/20', 'border-primary/40');
+                  }
+                }}
+                onDragLeave={(e) => {
+                  e.currentTarget.classList.remove('bg-primary/20', 'border-primary/40');
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove('bg-primary/20', 'border-primary/40');
+                  if (state.ui.isDraggingBlocks && (state.ui.draggedBlockIds?.length ?? 0) > 0) {
+                    reorderBlocksInPage(state.ui.draggedBlockIds!, page.blocks[0].id, 'before');
+                  }
+                }}
+              />
+            )}
             {page.blocks.map((b, idx) => {
               const selected = state.ui.selectedBlockIds.includes(b.id);
               const focused = state.ui.focusedBlockId === b.id;
@@ -544,30 +568,10 @@ export default function Organizacao() {
                     isDragging ? "opacity-50" : ""
                   }`}
                 >
-                  {/* handle */}
+                  {/* handle - apenas para mover */}
                   <div
-                    className="shrink-0 w-4 self-stretch cursor-pointer flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                    onPointerDown={(e) => {
-                      (e.target as HTMLElement).setPointerCapture?.((e as any).pointerId);
-                      selectionSnapshotAtDragStart.current = state.ui.selectedBlockIds;
-                      const additive = (e.ctrlKey || e.metaKey);
-                      setState((s) => ({
-                        ...s,
-                        ui: {
-                          ...s.ui,
-                          isDragSelecting: true,
-                          dragAnchorId: b.id,
-                          dragAdditive: additive,
-                          anchorBlockId: b.id,
-                          focusedBlockId: b.id,
-                          selectedBlockIds: additive
-                            ? uniq([...s.ui.selectedBlockIds, b.id])
-                            : [b.id],
-                        },
-                      }));
-                      e.preventDefault();
-                    }}
-                    title="Arraste para selecionar"
+                    className="shrink-0 w-4 self-stretch cursor-grab active:cursor-grabbing flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                    title="Arraste para mover"
                   >
                     ⋮⋮
                   </div>
@@ -578,6 +582,55 @@ export default function Organizacao() {
                     value={b.content}
                     onChange={(e) => updateBlockContent(b.id, e.target.value)}
                     onFocus={() => setState((s) => ({ ...s, ui: { ...s.ui, focusedBlockId: b.id, anchorBlockId: b.id } }))}
+                    onPointerDown={(e) => {
+                      // Só inicia seleção múltipla se clicar e arrastar fora do texto
+                      // Verifica se o input não tem seleção de texto
+                      if (e.currentTarget.selectionStart !== e.currentTarget.selectionEnd) {
+                        return; // Tem seleção de texto, não interfere
+                      }
+                      
+                      const startX = e.clientX;
+                      const startY = e.clientY;
+                      let isDragSelecting = false;
+
+                      function onPointerMove(moveEvent: PointerEvent) {
+                        const distance = Math.sqrt(
+                          Math.pow(moveEvent.clientX - startX, 2) + 
+                          Math.pow(moveEvent.clientY - startY, 2)
+                        );
+                        
+                        // Só inicia seleção múltipla se arrastar mais de 5px
+                        if (distance > 5 && !isDragSelecting) {
+                          isDragSelecting = true;
+                          (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+                          selectionSnapshotAtDragStart.current = state.ui.selectedBlockIds;
+                          const additive = (e.ctrlKey || e.metaKey);
+                          
+                          setState((s) => ({
+                            ...s,
+                            ui: {
+                              ...s.ui,
+                              isDragSelecting: true,
+                              dragAnchorId: b.id,
+                              dragAdditive: additive,
+                              anchorBlockId: b.id,
+                              focusedBlockId: b.id,
+                              selectedBlockIds: additive
+                                ? uniq([...s.ui.selectedBlockIds, b.id])
+                                : [b.id],
+                            },
+                          }));
+                        }
+                      }
+
+                      function onPointerUp() {
+                        window.removeEventListener('pointermove', onPointerMove);
+                        window.removeEventListener('pointerup', onPointerUp);
+                      }
+
+                      window.addEventListener('pointermove', onPointerMove);
+                      window.addEventListener('pointerup', onPointerUp);
+                    }}
                     onKeyDown={(e) => {
                       const input = e.currentTarget;
 
@@ -625,7 +678,7 @@ export default function Organizacao() {
             })}
           </div>
           
-          {/* Selection feedback */}
+                  {/* Selection feedback */}
           {state.ui.selectedBlockIds.length > 1 && (
             <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-background border border-border rounded-lg px-4 py-2 shadow-lg z-50">
               <div className="flex items-center gap-3 text-sm text-foreground">
@@ -633,6 +686,8 @@ export default function Organizacao() {
                   {state.ui.selectedBlockIds.length} blocos selecionados
                 </span>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>⋮⋮: mover</span>
+                  <span>•</span>
                   <span>Delete: limpar</span>
                   <span>•</span>
                   <span>Shift+Delete: excluir</span>
