@@ -23,6 +23,10 @@ interface AppState {
   ui: {
     activePageId: string | null;
     selectedBlockIds: string[];
+    focusedBlockId: string | null;
+    anchorBlockId: string | null;
+    isDragSelecting: boolean;
+    dragAnchorId: string | null;
   };
 }
 
@@ -36,9 +40,21 @@ const saveToStorage = (state: AppState) => {
 };
 
 const loadFromStorage = (): AppState => {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) {
-    return JSON.parse(stored);
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Ensure new UI fields exist
+      if (parsed.ui) {
+        parsed.ui.focusedBlockId = parsed.ui.focusedBlockId || null;
+        parsed.ui.anchorBlockId = parsed.ui.anchorBlockId || null;
+        parsed.ui.isDragSelecting = parsed.ui.isDragSelecting || false;
+        parsed.ui.dragAnchorId = parsed.ui.dragAnchorId || null;
+      }
+      return parsed;
+    }
+  } catch (e) {
+    console.warn('Error loading from storage:', e);
   }
   
   // Default state with one empty page
@@ -52,28 +68,64 @@ const loadFromStorage = (): AppState => {
     pages: [firstPage],
     ui: {
       activePageId: firstPage.id,
-      selectedBlockIds: []
+      selectedBlockIds: [],
+      focusedBlockId: null,
+      anchorBlockId: null,
+      isDragSelecting: false,
+      dragAnchorId: null
     }
   };
+};
+
+// Utility functions
+const getBlockIndex = (page: Page, blockId: string): number => {
+  return page.blocks.findIndex(b => b.id === blockId);
+};
+
+const focusBlockById = (blockId: string, atEnd = false) => {
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`[data-block-id="${blockId}"] textarea`);
+    if (el && el instanceof HTMLTextAreaElement) {
+      el.focus({ preventScroll: true });
+      el.scrollIntoView?.({ block: 'nearest' });
+      if (atEnd) {
+        el.setSelectionRange(el.value.length, el.value.length);
+      } else {
+        el.setSelectionRange(0, 0);
+      }
+    }
+  });
+};
+
+const isCaretAtStart = (inputEl: HTMLTextAreaElement): boolean => {
+  return inputEl.selectionStart === 0;
+};
+
+const isCaretAtEnd = (inputEl: HTMLTextAreaElement): boolean => {
+  return inputEl.selectionStart === inputEl.value.length;
 };
 
 // Block Component
 interface BlockEditorProps {
   block: Block;
   isSelected: boolean;
+  isFocused: boolean;
   onContentChange: (id: string, content: string) => void;
   onEnter: (id: string) => void;
   onBackspace: (id: string) => void;
   onArrowUp: (id: string) => void;
   onArrowDown: (id: string) => void;
-  onSelect: (id: string, additive: boolean) => void;
+  onSelect: (id: string, additive: boolean, shift?: boolean) => void;
   onDragStart: (id: string, e: React.DragEvent) => void;
-  onFocus: (ref: HTMLTextAreaElement) => void;
+  onFocus: (id: string, ref: HTMLTextAreaElement) => void;
+  onHandlePointerDown: (id: string, e: React.PointerEvent) => void;
+  onHandlePointerEnter: (id: string, e: React.PointerEvent) => void;
 }
 
 const BlockEditor = ({ 
   block, 
-  isSelected, 
+  isSelected,
+  isFocused,
   onContentChange, 
   onEnter, 
   onBackspace, 
@@ -81,17 +133,25 @@ const BlockEditor = ({
   onArrowDown, 
   onSelect,
   onDragStart,
-  onFocus
+  onFocus,
+  onHandlePointerDown,
+  onHandlePointerEnter
 }: BlockEditorProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Auto focus when marked as focused
+  useEffect(() => {
+    if (isFocused && textareaRef.current) {
+      focusBlockById(block.id);
+    }
+  }, [isFocused, block.id]);
   
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
     
-    const cursorPos = textarea.selectionStart;
-    const isAtStart = cursorPos === 0;
-    const isAtEnd = cursorPos === textarea.value.length;
+    const isAtStart = isCaretAtStart(textarea);
+    const isAtEnd = isCaretAtEnd(textarea);
     
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -102,34 +162,52 @@ const BlockEditor = ({
         onBackspace(block.id);
       }
     } else if (e.key === 'ArrowUp' && isAtStart) {
-      e.preventDefault();
-      onArrowUp(block.id);
+      if (e.shiftKey) {
+        e.preventDefault();
+        onSelect(block.id, false, true);
+      } else {
+        e.preventDefault();
+        onArrowUp(block.id);
+      }
     } else if (e.key === 'ArrowDown' && isAtEnd) {
-      e.preventDefault();
-      onArrowDown(block.id);
+      if (e.shiftKey) {
+        e.preventDefault();
+        onSelect(block.id, false, true);
+      } else {
+        e.preventDefault();
+        onArrowDown(block.id);
+      }
     }
   };
   
   const handleClick = (e: React.MouseEvent) => {
-    onSelect(block.id, e.ctrlKey || e.metaKey);
+    if (e.target === e.currentTarget || (e.target as Element).closest('.block-handle')) {
+      onSelect(block.id, e.ctrlKey || e.metaKey, e.shiftKey);
+    }
   };
   
   return (
     <div 
+      data-block-id={block.id}
       className={cn(
         'group flex items-start gap-2 py-1 px-2 rounded-md transition-colors',
         isSelected && 'bg-primary/10 ring-2 ring-primary/20'
       )}
       onClick={handleClick}
+      role="listitem"
+      aria-selected={isSelected}
     >
-      <button
-        className="opacity-0 group-hover:opacity-100 mt-1 cursor-grab active:cursor-grabbing text-muted-foreground transition-opacity"
+      <div
+        className="block-handle opacity-0 group-hover:opacity-100 mt-1 cursor-grab active:cursor-grabbing text-muted-foreground transition-opacity"
         draggable
         onDragStart={(e) => onDragStart(block.id, e)}
+        onPointerDown={(e) => onHandlePointerDown(block.id, e)}
+        onPointerEnter={(e) => onHandlePointerEnter(block.id, e)}
         aria-label="Arrastar bloco"
+        style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
       >
         <GripVertical className="h-4 w-4" />
-      </button>
+      </div>
       
       <Textarea
         ref={textareaRef}
@@ -138,7 +216,7 @@ const BlockEditor = ({
         onKeyDown={handleKeyDown}
         onFocus={() => {
           if (textareaRef.current) {
-            onFocus(textareaRef.current);
+            onFocus(block.id, textareaRef.current);
           }
         }}
         placeholder="Escreva uma linha…"
@@ -234,6 +312,77 @@ export default function Organizacao2() {
     saveToStorage(state);
   }, [state]);
 
+  // Drag selection handlers
+  const handlePointerDown = useCallback((blockId: string, e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setState(prev => ({
+      ...prev,
+      ui: {
+        ...prev.ui,
+        isDragSelecting: true,
+        dragAnchorId: blockId,
+        anchorBlockId: blockId,
+        focusedBlockId: blockId,
+        selectedBlockIds: [blockId]
+      }
+    }));
+    
+    // Capture pointer for drag events
+    const target = e.currentTarget as Element;
+    target.setPointerCapture?.(e.pointerId);
+  }, []);
+
+  const handlePointerEnter = useCallback((blockId: string, e: React.PointerEvent) => {
+    setState(prev => {
+      if (!prev.ui.isDragSelecting || !prev.ui.dragAnchorId || !prev.ui.activePageId) return prev;
+      
+      const page = prev.pages.find(p => p.id === prev.ui.activePageId);
+      if (!page) return prev;
+      
+      // Compute range from anchor to current block
+      const anchorIndex = getBlockIndex(page, prev.ui.dragAnchorId);
+      const currentIndex = getBlockIndex(page, blockId);
+      
+      if (anchorIndex !== -1 && currentIndex !== -1) {
+        const startIndex = Math.min(anchorIndex, currentIndex);
+        const endIndex = Math.max(anchorIndex, currentIndex);
+        const rangeIds = page.blocks.slice(startIndex, endIndex + 1).map(b => b.id);
+        
+        return {
+          ...prev,
+          ui: {
+            ...prev.ui,
+            selectedBlockIds: rangeIds,
+            focusedBlockId: blockId
+          }
+        };
+      }
+      
+      return prev;
+    });
+  }, []);
+
+  // Global pointer up handler
+  useEffect(() => {
+    const handlePointerUp = () => {
+      setState(prev => ({
+        ...prev,
+        ui: {
+          ...prev.ui,
+          isDragSelecting: false,
+          dragAnchorId: null
+        }
+      }));
+    };
+
+    if (state.ui.isDragSelecting) {
+      document.addEventListener('pointerup', handlePointerUp);
+      return () => document.removeEventListener('pointerup', handlePointerUp);
+    }
+  }, [state.ui.isDragSelecting]);
+
   // SEO setup
   useEffect(() => {
     document.title = "Organização 2 - Editor Minimalista | Vida Inteligente";
@@ -297,7 +446,7 @@ export default function Organizacao2() {
   }, []);
   
   // Block actions
-  const createBlockBelow = useCallback((pageId: string, afterBlockId: string) => {
+  const createBlockBelow = useCallback((pageId: string, afterBlockId: string): string => {
     const newBlock: Block = {
       id: generateId(),
       type: 'text',
@@ -317,17 +466,13 @@ export default function Organizacao2() {
       }),
       ui: {
         ...prev.ui,
-        selectedBlockIds: []
+        selectedBlockIds: [],
+        focusedBlockId: newBlock.id,
+        anchorBlockId: newBlock.id
       }
     }));
     
-    // Focus the new block
-    setTimeout(() => {
-      const textarea = blockRefs.current[newBlock.id];
-      if (textarea) {
-        textarea.focus();
-      }
-    }, 0);
+    return newBlock.id;
   }, []);
   
   const deleteBlock = useCallback((pageId: string, blockId: string) => {
@@ -409,10 +554,63 @@ export default function Organizacao2() {
     }));
   }, []);
   
+  // Selection utilities
+  const selectRangeByIds = useCallback((pageId: string, fromId: string, toId: string) => {
+    const page = state.pages.find(p => p.id === pageId);
+    if (!page) return;
+    
+    const fromIndex = getBlockIndex(page, fromId);
+    const toIndex = getBlockIndex(page, toId);
+    
+    if (fromIndex === -1 || toIndex === -1) return;
+    
+    const startIndex = Math.min(fromIndex, toIndex);
+    const endIndex = Math.max(fromIndex, toIndex);
+    
+    const rangeIds = page.blocks
+      .slice(startIndex, endIndex + 1)
+      .map(b => b.id);
+    
+    setState(prev => ({
+      ...prev,
+      ui: {
+        ...prev.ui,
+        selectedBlockIds: rangeIds,
+        focusedBlockId: toId
+      }
+    }));
+  }, [state.pages]);
+
   // Selection
-  const selectBlock = useCallback((blockId: string, additive: boolean) => {
+  const selectBlock = useCallback((blockId: string, additive: boolean, shift = false) => {
     setState(prev => {
-      if (additive) {
+      const pageId = prev.ui.activePageId;
+      if (!pageId) return prev;
+      
+      if (shift && prev.ui.anchorBlockId) {
+        // Shift+click: select range
+        const page = prev.pages.find(p => p.id === pageId);
+        if (page) {
+          const fromIndex = getBlockIndex(page, prev.ui.anchorBlockId);
+          const toIndex = getBlockIndex(page, blockId);
+          
+          if (fromIndex !== -1 && toIndex !== -1) {
+            const startIndex = Math.min(fromIndex, toIndex);
+            const endIndex = Math.max(fromIndex, toIndex);
+            const rangeIds = page.blocks.slice(startIndex, endIndex + 1).map(b => b.id);
+            
+            return {
+              ...prev,
+              ui: {
+                ...prev.ui,
+                selectedBlockIds: rangeIds,
+                focusedBlockId: blockId
+              }
+            };
+          }
+        }
+      } else if (additive) {
+        // Ctrl+click: toggle selection
         const isSelected = prev.ui.selectedBlockIds.includes(blockId);
         return {
           ...prev,
@@ -420,44 +618,60 @@ export default function Organizacao2() {
             ...prev.ui,
             selectedBlockIds: isSelected 
               ? prev.ui.selectedBlockIds.filter(id => id !== blockId)
-              : [...prev.ui.selectedBlockIds, blockId]
+              : [...prev.ui.selectedBlockIds, blockId],
+            focusedBlockId: blockId,
+            anchorBlockId: blockId
           }
         };
       } else {
+        // Normal click: single selection
         return {
           ...prev,
           ui: {
             ...prev.ui,
-            selectedBlockIds: [blockId]
+            selectedBlockIds: [blockId],
+            focusedBlockId: blockId,
+            anchorBlockId: blockId
           }
         };
       }
+      
+      return prev;
     });
   }, []);
   
   // Navigation
-  const focusBlock = useCallback((pageId: string, blockId: string, direction: 'up' | 'down') => {
-    const page = state.pages.find(p => p.id === pageId);
-    if (!page) return;
-    
-    const blockIndex = page.blocks.findIndex(b => b.id === blockId);
-    const targetIndex = direction === 'up' ? blockIndex - 1 : blockIndex + 1;
-    const targetBlock = page.blocks[targetIndex];
-    
-    if (targetBlock) {
-      setTimeout(() => {
-        const textarea = blockRefs.current[targetBlock.id];
-        if (textarea) {
-          textarea.focus();
-          if (direction === 'up') {
-            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-          } else {
-            textarea.setSelectionRange(0, 0);
+  const navigateBlock = useCallback((pageId: string, blockId: string, direction: 'up' | 'down') => {
+    setState(prev => {
+      const page = prev.pages.find(p => p.id === pageId);
+      if (!page) return prev;
+      
+      const blockIndex = getBlockIndex(page, blockId);
+      const targetIndex = direction === 'up' ? blockIndex - 1 : blockIndex + 1;
+      const targetBlock = page.blocks[targetIndex];
+      
+      if (targetBlock) {
+        return {
+          ...prev,
+          ui: {
+            ...prev.ui,
+            focusedBlockId: targetBlock.id,
+            anchorBlockId: targetBlock.id,
+            selectedBlockIds: []
           }
-        }
-      }, 0);
-    }
-  }, [state.pages]);
+        };
+      } else if (direction === 'up' && blockIndex === 0) {
+        // Focus title if at first block
+        setTimeout(() => {
+          if (titleInputRef.current) {
+            titleInputRef.current.focus();
+          }
+        }, 0);
+      }
+      
+      return prev;
+    });
+  }, []);
   
   // Drag and drop
   const handleDragStart = useCallback((blockId: string, e: React.DragEvent) => {
@@ -574,17 +788,31 @@ export default function Organizacao2() {
                 <BlockEditor
                   block={block}
                   isSelected={state.ui.selectedBlockIds.includes(block.id)}
+                  isFocused={state.ui.focusedBlockId === block.id}
                   onContentChange={(id, content) => updateBlockContent(activePage.id, id, content)}
-                  onEnter={(id) => createBlockBelow(activePage.id, id)}
+                  onEnter={(id) => {
+                    const newId = createBlockBelow(activePage.id, id);
+                    // Focus will be handled by the focusedBlockId state
+                  }}
                   onBackspace={(id) => deleteBlock(activePage.id, id)}
-                  onArrowUp={(id) => focusBlock(activePage.id, id, 'up')}
-                  onArrowDown={(id) => focusBlock(activePage.id, id, 'down')}
+                  onArrowUp={(id) => navigateBlock(activePage.id, id, 'up')}
+                  onArrowDown={(id) => navigateBlock(activePage.id, id, 'down')}
                   onSelect={selectBlock}
                   onDragStart={handleDragStart}
-                  onFocus={(ref) => {
-                    // Store ref for focusing
-                    blockRefs.current[block.id] = ref;
+                  onFocus={(id, ref) => {
+                    // Store ref for focusing and update focus state
+                    blockRefs.current[id] = ref;
+                    setState(prev => ({
+                      ...prev,
+                      ui: {
+                        ...prev.ui,
+                        focusedBlockId: id,
+                        anchorBlockId: id
+                      }
+                    }));
                   }}
+                  onHandlePointerDown={handlePointerDown}
+                  onHandlePointerEnter={handlePointerEnter}
                 />
               </div>
             ))}
