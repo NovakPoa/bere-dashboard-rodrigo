@@ -80,10 +80,28 @@ export default function Organizacao() {
   }, []);
 
   const initial = useMemo<AppState>(() => {
-    const saved = localStorage.getItem("lovable-notion-organizacao-v1");
-    if (saved) {
-      try { return JSON.parse(saved) as AppState; } catch {}
-    }
+  const saved = localStorage.getItem("lovable-notion-organizacao-v1");
+  if (saved) {
+    try { 
+      const parsed = JSON.parse(saved) as AppState;
+      const uiDefaults = {
+        isDragSelecting: false,
+        dragAnchorId: null as string | null,
+        dragAdditive: false,
+        isDraggingBlocks: false,
+        draggedBlockIds: [] as string[],
+        dropTargetPageId: null as string | null,
+        focusedBlockId: null as string | null,
+        anchorBlockId: null as string | null,
+        selectedBlockIds: [] as string[],
+        activePageId: parsed.ui?.activePageId ?? parsed.pages?.[0]?.id ?? null,
+      };
+      return { 
+        ...parsed, 
+        ui: { ...uiDefaults, ...parsed.ui, draggedBlockIds: parsed.ui?.draggedBlockIds ?? [] } 
+      } as AppState;
+    } catch {}
+  }
     const firstPageId = uuid();
     return {
       pages: [{ id: firstPageId, title: "Página sem título", blocks: [{ id: uuid(), type: "text", content: "" }] }],
@@ -298,7 +316,7 @@ export default function Organizacao() {
             <li 
               key={p.id}
               onDragOver={(e) => {
-                if (state.ui.isDraggingBlocks && state.ui.draggedBlockIds.length > 0) {
+                if (state.ui.isDraggingBlocks && (state.ui.draggedBlockIds?.length ?? 0) > 0) {
                   e.preventDefault();
                   setState((s) => ({ ...s, ui: { ...s.ui, dropTargetPageId: p.id } }));
                 }
@@ -310,8 +328,8 @@ export default function Organizacao() {
               }}
               onDrop={(e) => {
                 e.preventDefault();
-                if (state.ui.isDraggingBlocks && state.ui.draggedBlockIds.length > 0) {
-                  moveBlocksToPage(state.ui.draggedBlockIds, p.id);
+                if (state.ui.isDraggingBlocks && (state.ui.draggedBlockIds?.length ?? 0) > 0) {
+                  moveBlocksToPage(state.ui.draggedBlockIds!, p.id);
                 }
               }}
               className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer transition-colors ${
@@ -361,9 +379,9 @@ export default function Organizacao() {
           }}
           onDrop={(e) => {
             e.preventDefault();
-            if (state.ui.isDraggingBlocks && state.ui.draggedBlockIds.length > 0) {
+            if (state.ui.isDraggingBlocks && (state.ui.draggedBlockIds?.length ?? 0) > 0) {
               // Drop no final da lista se não houver target específico
-              reorderBlocksInPage(state.ui.draggedBlockIds, null);
+              reorderBlocksInPage(state.ui.draggedBlockIds!, null);
             }
           }}
         >
@@ -371,7 +389,7 @@ export default function Organizacao() {
             {page.blocks.map((b, idx) => {
               const selected = state.ui.selectedBlockIds.includes(b.id);
               const focused = state.ui.focusedBlockId === b.id;
-              const isDragging = state.ui.draggedBlockIds.includes(b.id);
+              const isDragging = state.ui.draggedBlockIds?.includes(b.id) ?? false;
               return (
                 <div
                   key={b.id}
@@ -407,19 +425,19 @@ export default function Organizacao() {
                     }));
                   }}
                   onDragOver={(e) => {
-                    if (state.ui.isDraggingBlocks && !state.ui.draggedBlockIds.includes(b.id)) {
+                    if (state.ui.isDraggingBlocks && !(state.ui.draggedBlockIds?.includes(b.id) ?? false)) {
                       e.preventDefault();
                     }
                   }}
                   onDrop={(e) => {
                     e.preventDefault();
-                    if (state.ui.isDraggingBlocks && !state.ui.draggedBlockIds.includes(b.id)) {
+                    if (state.ui.isDraggingBlocks && !(state.ui.draggedBlockIds?.includes(b.id) ?? false)) {
                       // Determinar posição baseada na coordenada Y do mouse
                       const rect = e.currentTarget.getBoundingClientRect();
                       const y = e.clientY - rect.top;
                       const position = y < rect.height / 2 ? 'before' : 'after';
                       
-                      reorderBlocksInPage(state.ui.draggedBlockIds, b.id, position);
+                      reorderBlocksInPage(state.ui.draggedBlockIds!, b.id, position);
                     }
                   }}
                   className={`group flex items-center gap-2 px-3 py-2 rounded-2xl mb-1 border transition-colors ${
