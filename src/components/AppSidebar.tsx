@@ -21,6 +21,7 @@ const items = [
   { title: "Calendário", url: "/calendario", icon: Calendar },
   { title: "Hábitos", url: "/habitos", icon: CheckCheck },
   { title: "Organização", url: "/organizacao", icon: Notebook },
+  { title: "Organização 2", url: "/organizacao2", icon: Notebook },
 ];
 
 export function AppSidebar() {

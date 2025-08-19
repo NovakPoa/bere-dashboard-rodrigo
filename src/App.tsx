@@ -18,6 +18,7 @@ import Calendario from "./pages/Calendario";
 
 import Habitos from "./pages/Habitos";
 import Organizacao from "./pages/Organizacao";
+import Organizacao2 from "./pages/Organizacao2";
 import Auth from "./pages/Auth";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,6 +63,7 @@ const App = () => (
               <Route path="/calendario" element={<Calendario />} />
               <Route path="/organizacao" element={<Organizacao />} />
               <Route path="/organizacao/:id" element={<Organizacao />} />
+              <Route path="/organizacao2" element={<Organizacao2 />} />
               <Route path="/habitos" element={<Habitos />} />
             </Route>
           </Route>
