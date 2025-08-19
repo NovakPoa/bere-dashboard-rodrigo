@@ -173,23 +173,30 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
       const sel = window.getSelection();
       if (!el || !sel || sel.rangeCount === 0) return;
 
-      // Decide: insert a simple line break vs split into a new block
       const html = el.innerHTML || "";
-      const hasBlockTags = /<(div|p|ul|ol|li|h[1-6]|table|blockquote)/i.test(html);
-      const hasBr = html.includes("<br>");
+      const hasBr = /<br\s*\/?>(?![\s\S]*<br\s*\/?)/i.test(html) ? /<br\s*\/?/i.test(html) : /<br\s*\/?/i.test(html);
       const caret = sel.getRangeAt(0);
 
-      if (!hasBlockTags || hasBr) {
-        // Treat Enter as a soft line break inside this same block
+      if (hasBr) {
+        // Soft line break dentro do mesmo bloco quando já existem quebras de linha
         e.preventDefault();
         e.stopPropagation();
-        document.execCommand('insertHTML', false, '<br>');
+        document.execCommand('insertHTML', false, '<br>&#8203;');
+        // Garantir que o cursor vá para a nova linha
+        try {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          range.collapse(false);
+          const s = window.getSelection();
+          s?.removeAllRanges();
+          s?.addRange(range);
+        } catch {}
         const next = ref.current?.innerHTML || "";
         onChange(id, sanitizeBidi(next));
         return;
       }
 
-      // Split behavior for true block content
+      // Dividir em um novo bloco quando ainda não há quebras de linha
       e.preventDefault();
       e.stopPropagation();
       const beforeRange = caret.cloneRange();
@@ -204,10 +211,9 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
       afterDiv.appendChild(afterFrag);
       const beforeHtml = sanitizeBidi(beforeDiv.innerHTML);
       const afterHtml = sanitizeBidi(afterDiv.innerHTML);
-      // Optimistically update current line to show split immediately
+      // Atualizar otimisticamente a linha atual para mostrar o split imediatamente
       suppressSyncRef.current = true;
       el.innerHTML = beforeHtml;
-      // Release focus so the new row can grab it
       (el as HTMLElement).blur();
       onSplit?.(id, beforeHtml, afterHtml);
       setTimeout(() => { suppressSyncRef.current = false; }, 200);
