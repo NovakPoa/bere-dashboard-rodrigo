@@ -13,6 +13,9 @@ type UIState = {
   isDragSelecting: boolean;
   dragAnchorId: string | null;
   dragAdditive: boolean; // Ctrl/Cmd ao iniciar o arrasto
+  isDraggingBlocks: boolean; // arrastar blocos para mover
+  draggedBlockIds: string[]; // blocos sendo arrastados
+  dropTargetPageId: string | null; // página de destino do drop
 };
 
 type AppState = {
@@ -92,6 +95,9 @@ export default function Organizacao() {
         isDragSelecting: false,
         dragAnchorId: null,
         dragAdditive: false,
+        isDraggingBlocks: false,
+        draggedBlockIds: [],
+        dropTargetPageId: null,
       },
     };
   }, []);
@@ -188,6 +194,58 @@ export default function Organizacao() {
     });
   }
 
+  function moveBlocksToPage(blockIds: string[], targetPageId: string) {
+    setState((s) => {
+      const sourcePage = s.pages.find((p) => p.id === s.ui.activePageId)!;
+      const blocksToMove = sourcePage.blocks.filter((b) => blockIds.includes(b.id));
+      
+      return {
+        ...s,
+        pages: s.pages.map((p) => {
+          if (p.id === sourcePage.id) {
+            // Remove blocos da página origem
+            const remainingBlocks = p.blocks.filter((b) => !blockIds.includes(b.id));
+            return { 
+              ...p, 
+              blocks: remainingBlocks.length ? remainingBlocks : [{ id: uuid(), type: "text", content: "" }] 
+            };
+          }
+          if (p.id === targetPageId) {
+            // Adiciona blocos à página destino
+            return { ...p, blocks: [...p.blocks, ...blocksToMove] };
+          }
+          return p;
+        }),
+        ui: { ...s.ui, selectedBlockIds: [], isDraggingBlocks: false, draggedBlockIds: [], dropTargetPageId: null }
+      };
+    });
+  }
+
+  function reorderBlocksInPage(blockIds: string[], targetBlockId: string | null, position: 'before' | 'after' = 'before') {
+    setState((s) => {
+      const sourcePage = s.pages.find((p) => p.id === s.ui.activePageId)!;
+      const blocksToMove = sourcePage.blocks.filter((b) => blockIds.includes(b.id));
+      const remainingBlocks = sourcePage.blocks.filter((b) => !blockIds.includes(b.id));
+      
+      let insertIndex = remainingBlocks.length;
+      if (targetBlockId) {
+        const targetIndex = remainingBlocks.findIndex((b) => b.id === targetBlockId);
+        insertIndex = targetIndex >= 0 ? (position === 'after' ? targetIndex + 1 : targetIndex) : remainingBlocks.length;
+      }
+      
+      const newBlocks = [...remainingBlocks];
+      newBlocks.splice(insertIndex, 0, ...blocksToMove);
+      
+      return {
+        ...s,
+        pages: s.pages.map((p) => 
+          p.id === sourcePage.id ? { ...p, blocks: newBlocks } : p
+        ),
+        ui: { ...s.ui, selectedBlockIds: blockIds, isDraggingBlocks: false, draggedBlockIds: [] }
+      };
+    });
+  }
+
   // --- Global pointer listeners for drag-select ---
   useEffect(() => {
     function onMove(e: PointerEvent) {
@@ -238,9 +296,28 @@ export default function Organizacao() {
         <ul className="space-y-1 mt-2">
           {state.pages.map((p) => (
             <li 
-              key={p.id} 
+              key={p.id}
+              onDragOver={(e) => {
+                if (state.ui.isDraggingBlocks && state.ui.draggedBlockIds.length > 0) {
+                  e.preventDefault();
+                  setState((s) => ({ ...s, ui: { ...s.ui, dropTargetPageId: p.id } }));
+                }
+              }}
+              onDragLeave={(e) => {
+                if (state.ui.dropTargetPageId === p.id) {
+                  setState((s) => ({ ...s, ui: { ...s.ui, dropTargetPageId: null } }));
+                }
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (state.ui.isDraggingBlocks && state.ui.draggedBlockIds.length > 0) {
+                  moveBlocksToPage(state.ui.draggedBlockIds, p.id);
+                }
+              }}
               className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer transition-colors ${
                 p.id === page.id ? "bg-accent" : "hover:bg-accent/50"
+              } ${
+                state.ui.dropTargetPageId === p.id ? "bg-primary/20 border border-primary" : ""
               }`} 
               onClick={() => setActivePage(p.id)}
             >
@@ -274,22 +351,85 @@ export default function Organizacao() {
         </div>
 
         {/* Blocks list */}
-        <div ref={containerRef} className="flex-1 overflow-auto p-6">
+        <div 
+          ref={containerRef} 
+          className="flex-1 overflow-auto p-6"
+          onDragOver={(e) => {
+            if (state.ui.isDraggingBlocks) {
+              e.preventDefault();
+            }
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            if (state.ui.isDraggingBlocks && state.ui.draggedBlockIds.length > 0) {
+              // Drop no final da lista se não houver target específico
+              reorderBlocksInPage(state.ui.draggedBlockIds, null);
+            }
+          }}
+        >
           <div role="list" className="max-w-3xl mx-auto">
             {page.blocks.map((b, idx) => {
               const selected = state.ui.selectedBlockIds.includes(b.id);
               const focused = state.ui.focusedBlockId === b.id;
+              const isDragging = state.ui.draggedBlockIds.includes(b.id);
               return (
                 <div
                   key={b.id}
                   role="listitem"
                   data-block-id={b.id}
+                  draggable={selected || focused}
+                  onDragStart={(e) => {
+                    const blocksToMove = state.ui.selectedBlockIds.length > 0 && selected 
+                      ? state.ui.selectedBlockIds 
+                      : [b.id];
+                    
+                    setState((s) => ({ 
+                      ...s, 
+                      ui: { 
+                        ...s.ui, 
+                        isDraggingBlocks: true, 
+                        draggedBlockIds: blocksToMove 
+                      } 
+                    }));
+                    
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', JSON.stringify(blocksToMove));
+                  }}
+                  onDragEnd={() => {
+                    setState((s) => ({ 
+                      ...s, 
+                      ui: { 
+                        ...s.ui, 
+                        isDraggingBlocks: false, 
+                        draggedBlockIds: [],
+                        dropTargetPageId: null 
+                      } 
+                    }));
+                  }}
+                  onDragOver={(e) => {
+                    if (state.ui.isDraggingBlocks && !state.ui.draggedBlockIds.includes(b.id)) {
+                      e.preventDefault();
+                    }
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (state.ui.isDraggingBlocks && !state.ui.draggedBlockIds.includes(b.id)) {
+                      // Determinar posição baseada na coordenada Y do mouse
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const y = e.clientY - rect.top;
+                      const position = y < rect.height / 2 ? 'before' : 'after';
+                      
+                      reorderBlocksInPage(state.ui.draggedBlockIds, b.id, position);
+                    }
+                  }}
                   className={`group flex items-center gap-2 px-3 py-2 rounded-2xl mb-1 border transition-colors ${
                     selected 
                       ? "border-primary bg-primary/10" 
                       : focused 
                         ? "border-border bg-accent/50" 
                         : "border-transparent hover:bg-accent/30"
+                  } ${
+                    isDragging ? "opacity-50" : ""
                   }`}
                 >
                   {/* handle */}
