@@ -19,6 +19,7 @@ import Habitos from "./pages/Habitos";
 import Organizacao from "./pages/Organizacao";
 import Organizacao2 from "./pages/Organizacao2";
 import Organizacao3 from "./pages/Organizacao3";
+import Organizacao4 from "./pages/Organizacao4";
 import Auth from "./pages/Auth";
 
 const queryClient = new QueryClient();
@@ -63,6 +64,7 @@ const App = () => (
             <Route path="/organizacao/:id" element={<Organizacao />} />
             <Route path="/organizacao2" element={<Organizacao2 />} />
             <Route path="/organizacao3" element={<Organizacao3 />} />
+            <Route path="/organizacao4" element={<Organizacao4 />} />
             <Route path="/habitos" element={<Habitos />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
