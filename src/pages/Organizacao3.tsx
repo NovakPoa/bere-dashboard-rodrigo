@@ -158,6 +158,35 @@ export default function Organizacao3() {
     setFocusedBlockId(null);
   }
 
+  // Reorder blocks within the current page. If targetId is null, append to end.
+  function reorderBlocks(blockIds: string[], targetId: string | null) {
+    if (!activePage) return;
+    // do nothing if dropping onto one of the dragged blocks
+    if (targetId && blockIds.includes(targetId)) return;
+    setPages((ps) =>
+      ps.map((p) => {
+        if (p.id !== activePageId) return p;
+        // filter out dragged blocks
+        const dragged = p.blocks.filter((b) => blockIds.includes(b.id));
+        const remaining = p.blocks.filter((b) => !blockIds.includes(b.id));
+        // determine insertion index
+        let insertionIndex = remaining.length; // default to end
+        if (targetId) {
+          const idx = remaining.findIndex((b) => b.id === targetId);
+          insertionIndex = idx === -1 ? remaining.length : idx;
+        }
+        const newBlocks = [...remaining];
+        newBlocks.splice(insertionIndex, 0, ...dragged);
+        return { ...p, blocks: newBlocks };
+      }),
+    );
+    // update selection and focus to the first dragged block
+    const firstId = blockIds[0];
+    setSelectedBlockIds(blockIds);
+    setFocusedBlockId(firstId);
+    setAnchorBlockId(firstId);
+  }
+
   // Selection helpers
   function selectSingle(blockId: string) {
     setSelectedBlockIds([blockId]);
@@ -200,7 +229,7 @@ export default function Organizacao3() {
               }}
               onDrop={(e) => {
                 e.preventDefault();
-                const data = e.dataTransfer.getData('text/plain');
+                const data = e.dataTransfer.getData('application/json');
                 if (data) {
                   try {
                     const parsed: DragData = JSON.parse(data);
@@ -277,7 +306,29 @@ export default function Organizacao3() {
             </div>
 
             {/* Blocks */}
-            <div className="flex-1 overflow-auto p-4">
+            <div
+              className="flex-1 overflow-auto p-4"
+              onDragOver={(e) => {
+                // Allow dropping blocks into empty space (append to end)
+                e.preventDefault();
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const data = e.dataTransfer.getData('application/json');
+                if (!data) return;
+                try {
+                  const parsed: DragData = JSON.parse(data);
+                  if (parsed.sourcePageId === activePageId) {
+                    // reorder to end of this page
+                    reorderBlocks(parsed.blockIds, null);
+                  } else {
+                    moveBlocks(parsed, activePageId);
+                  }
+                } catch {
+                  /* ignore */
+                }
+              }}
+            >
               {activePage.blocks.map((block, idx) => {
                 const isSelected = selectedBlockIds.includes(block.id);
                 const isFocused = focusedBlockId === block.id;
@@ -285,13 +336,35 @@ export default function Organizacao3() {
                   <div
                     key={block.id}
                     data-block-id={block.id}
-                    draggable
+                    // When selecting with the cursor, disable dragging so it doesn't interfere.
+                    draggable={!isSelecting}
                     onDragStart={(e) => {
+                      if (isSelecting) return;
                       // set drag data: if selection includes this block, drag selected; else single
                       const dragIds = selectedBlockIds.includes(block.id) ? selectedBlockIds : [block.id];
                       const dragData: DragData = { sourcePageId: activePageId, blockIds: dragIds };
-                      e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
+                      e.dataTransfer.setData('application/json', JSON.stringify(dragData));
                       e.dataTransfer.effectAllowed = 'move';
+                    }}
+                    onDragOver={(e) => {
+                      // allow dropping blocks onto another block
+                      e.preventDefault();
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const data = e.dataTransfer.getData('application/json');
+                      if (!data) return;
+                      try {
+                        const parsed: DragData = JSON.parse(data);
+                        // If source page is current page, reorder within page; otherwise move blocks here
+                        if (parsed.sourcePageId === activePageId) {
+                          reorderBlocks(parsed.blockIds, block.id);
+                        } else {
+                          moveBlocks(parsed, activePageId);
+                        }
+                      } catch {
+                        /* ignore */
+                      }
                     }}
                     className={`flex items-center gap-2 px-2 py-1 rounded mb-1 border transition-colors ${isSelected ? 'bg-accent border-primary' : isFocused ? 'bg-muted border-border' : 'border-transparent hover:bg-muted'
                       }`}
