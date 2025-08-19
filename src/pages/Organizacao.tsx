@@ -264,6 +264,60 @@ export default function Organizacao() {
     });
   }
 
+  function clearSelectedBlocks() {
+    setState((s) => {
+      return {
+        ...s,
+        pages: s.pages.map((p) => 
+          p.id === page.id 
+            ? { 
+                ...p, 
+                blocks: p.blocks.map((b) => 
+                  s.ui.selectedBlockIds.includes(b.id) ? { ...b, content: "" } : b
+                )
+              }
+            : p
+        ),
+        ui: { ...s.ui, selectedBlockIds: [] }
+      };
+    });
+  }
+
+  function deleteSelectedBlocks() {
+    setState((s) => {
+      return {
+        ...s,
+        pages: s.pages.map((p) => {
+          if (p.id !== page.id) return p;
+          const remainingBlocks = p.blocks.filter((b) => !s.ui.selectedBlockIds.includes(b.id));
+          return { 
+            ...p, 
+            blocks: remainingBlocks.length ? remainingBlocks : [{ id: uuid(), type: "text", content: "" }] 
+          };
+        }),
+        ui: { ...s.ui, selectedBlockIds: [], focusedBlockId: null, anchorBlockId: null }
+      };
+    });
+  }
+
+  function selectAllBlocks() {
+    setState((s) => {
+      const p = s.pages.find((pp) => pp.id === s.ui.activePageId)!;
+      const allIds = p.blocks.map((b) => b.id);
+      return {
+        ...s,
+        ui: { ...s.ui, selectedBlockIds: allIds, anchorBlockId: allIds[0] || null }
+      };
+    });
+  }
+
+  function clearSelection() {
+    setState((s) => ({ 
+      ...s, 
+      ui: { ...s.ui, selectedBlockIds: [], anchorBlockId: null, focusedBlockId: null } 
+    }));
+  }
+
   // --- Global pointer listeners for drag-select ---
   useEffect(() => {
     function onMove(e: PointerEvent) {
@@ -300,6 +354,46 @@ export default function Organizacao() {
       window.removeEventListener("pointerup", onUp);
     };
   }, [state.ui.isDragSelecting, state.ui.dragAnchorId, state.ui.activePageId]);
+
+  // --- Global keyboard shortcuts ---
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const hasSelection = state.ui.selectedBlockIds.length > 1;
+      
+      // Ctrl/Cmd+A - Selecionar todos os blocos
+      if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+        e.preventDefault();
+        selectAllBlocks();
+        return;
+      }
+      
+      // Escape - Limpar seleção
+      if (e.key === "Escape") {
+        e.preventDefault();
+        clearSelection();
+        return;
+      }
+      
+      // Delete/Backspace em seleção múltipla - Limpar conteúdo
+      if (hasSelection && (e.key === "Delete" || e.key === "Backspace")) {
+        e.preventDefault();
+        if (e.shiftKey) {
+          // Shift+Delete - Deletar blocos completamente
+          deleteSelectedBlocks();
+        } else {
+          // Delete simples - Limpar conteúdo apenas
+          clearSelectedBlocks();
+        }
+        return;
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [state.ui.selectedBlockIds.length]);
+
 
   // --- Render ---
   return (
@@ -442,7 +536,7 @@ export default function Organizacao() {
                   }}
                   className={`group flex items-center gap-2 px-3 py-2 rounded-2xl mb-1 border transition-colors ${
                     selected 
-                      ? "border-primary bg-primary/10" 
+                      ? "border-primary bg-primary/10 ring-2 ring-primary/20" 
                       : focused 
                         ? "border-border bg-accent/50" 
                         : "border-transparent hover:bg-accent/30"
@@ -530,6 +624,24 @@ export default function Organizacao() {
               );
             })}
           </div>
+          
+          {/* Selection feedback */}
+          {state.ui.selectedBlockIds.length > 1 && (
+            <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-background border border-border rounded-lg px-4 py-2 shadow-lg z-50">
+              <div className="flex items-center gap-3 text-sm text-foreground">
+                <span className="font-medium">
+                  {state.ui.selectedBlockIds.length} blocos selecionados
+                </span>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>Delete: limpar</span>
+                  <span>•</span>
+                  <span>Shift+Delete: excluir</span>
+                  <span>•</span>
+                  <span>Esc: cancelar</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
