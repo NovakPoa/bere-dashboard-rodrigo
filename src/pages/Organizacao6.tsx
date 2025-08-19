@@ -103,6 +103,16 @@ export default function Organizacao6() {
     }));
   }
 
+  // Set editor content when page changes without dangerouslySetInnerHTML
+  useEffect(() => {
+    if (editorRef.current && currentPage) {
+      // Only update if content is different to avoid cursor issues
+      if (editorRef.current.innerHTML !== currentPage.content) {
+        editorRef.current.innerHTML = currentPage.content || "";
+      }
+    }
+  }, [currentId]); // Only when page changes, not on every content update
+
   function handlePaste(e: React.ClipboardEvent) {
     // paste as plain text to avoid messy HTML
     e.preventDefault();
@@ -280,7 +290,6 @@ export default function Organizacao6() {
               onClick={onEditorClick}
               onKeyDown={onEditorKeyDown}
               data-placeholder="Escreva aqui…"
-              dangerouslySetInnerHTML={{ __html: currentPage.content || "" }}
             />
 
             {menu.open && (
