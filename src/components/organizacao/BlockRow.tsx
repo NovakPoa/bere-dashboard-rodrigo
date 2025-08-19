@@ -169,10 +169,29 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
     }
 
     if (e.key === "Enter" && !e.shiftKey) {
+      const el = ref.current;
+      const sel = window.getSelection();
+      if (!el || !sel || sel.rangeCount === 0) return;
+
+      // Decide: insert a simple line break vs split into a new block
+      const html = el.innerHTML || "";
+      const hasBlockTags = /<(div|p|ul|ol|li|h[1-6]|table|blockquote)/i.test(html);
+      const hasBr = html.includes("<br>");
+      const caret = sel.getRangeAt(0);
+
+      if (!hasBlockTags || hasBr) {
+        // Treat Enter as a soft line break inside this same block
+        e.preventDefault();
+        e.stopPropagation();
+        document.execCommand('insertHTML', false, '<br>');
+        const next = ref.current?.innerHTML || "";
+        onChange(id, sanitizeBidi(next));
+        return;
+      }
+
+      // Split behavior for true block content
       e.preventDefault();
       e.stopPropagation();
-      if (!el || !sel || sel.rangeCount === 0) return;
-      const caret = sel.getRangeAt(0);
       const beforeRange = caret.cloneRange();
       beforeRange.setStart(el, 0);
       const afterRange = caret.cloneRange();
