@@ -10,12 +10,6 @@ type UIState = {
   focusedBlockId: string | null;
   anchorBlockId: string | null; // início lógico da seleção
   selectedBlockIds: string[];
-  isDragSelecting: boolean;
-  dragAnchorId: string | null;
-  dragAdditive: boolean; // Ctrl/Cmd ao iniciar o arrasto
-  isDraggingBlocks: boolean; // arrastar blocos para mover
-  draggedBlockIds: string[]; // blocos sendo arrastados
-  dropTargetPageId: string | null; // página de destino do drop
 };
 
 type AppState = {
@@ -84,21 +78,14 @@ export default function Organizacao() {
   if (saved) {
     try { 
       const parsed = JSON.parse(saved) as AppState;
-      const uiDefaults = {
-        isDragSelecting: false,
-        dragAnchorId: null as string | null,
-        dragAdditive: false,
-        isDraggingBlocks: false,
-        draggedBlockIds: [] as string[],
-        dropTargetPageId: null as string | null,
-        focusedBlockId: null as string | null,
-        anchorBlockId: null as string | null,
-        selectedBlockIds: [] as string[],
-        activePageId: parsed.ui?.activePageId ?? parsed.pages?.[0]?.id ?? null,
-      };
       return { 
         ...parsed, 
-        ui: { ...uiDefaults, ...parsed.ui, draggedBlockIds: parsed.ui?.draggedBlockIds ?? [] } 
+        ui: {
+          focusedBlockId: null,
+          anchorBlockId: null,
+          selectedBlockIds: [],
+          activePageId: parsed.ui?.activePageId ?? parsed.pages?.[0]?.id ?? null,
+        }
       } as AppState;
     } catch {}
   }
@@ -110,19 +97,12 @@ export default function Organizacao() {
         focusedBlockId: null,
         anchorBlockId: null,
         selectedBlockIds: [],
-        isDragSelecting: false,
-        dragAnchorId: null,
-        dragAdditive: false,
-        isDraggingBlocks: false,
-        draggedBlockIds: [],
-        dropTargetPageId: null,
       },
     };
   }, []);
 
   const [state, setState] = useState<AppState>(initial);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const selectionSnapshotAtDragStart = useRef<string[]>([]);
 
   // persist
   useEffect(() => {
@@ -234,7 +214,7 @@ export default function Organizacao() {
           }
           return p;
         }),
-        ui: { ...s.ui, selectedBlockIds: [], isDraggingBlocks: false, draggedBlockIds: [], dropTargetPageId: null }
+        ui: { ...s.ui, selectedBlockIds: [] }
       };
     });
   }
@@ -259,7 +239,7 @@ export default function Organizacao() {
         pages: s.pages.map((p) => 
           p.id === sourcePage.id ? { ...p, blocks: newBlocks } : p
         ),
-        ui: { ...s.ui, selectedBlockIds: blockIds, isDraggingBlocks: false, draggedBlockIds: [] }
+        ui: { ...s.ui, selectedBlockIds: blockIds }
       };
     });
   }
@@ -318,42 +298,49 @@ export default function Organizacao() {
     }));
   }
 
-  // --- Global pointer listeners for drag-select ---
-  useEffect(() => {
-    function onMove(e: PointerEvent) {
-      if (!state.ui.isDragSelecting || !state.ui.dragAnchorId) return;
-      const hoveredId = elementBlockIdFromPoint(e.clientX, e.clientY);
-      if (!hoveredId) return;
+  // --- Simple click-based selection ---
+  function handleBlockClick(blockId: string, e: React.MouseEvent) {
+    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+      // Multi-selection
+      e.preventDefault();
       setState((s) => {
-        const p = s.pages.find((pp) => pp.id === s.ui.activePageId)!;
-        const range = idsInRange(p, s.ui.dragAnchorId!, hoveredId);
-        const base = s.ui.dragAdditive ? selectionSnapshotAtDragStart.current : [];
-        const sel = uniq([...base, ...range]);
-        return { ...s, ui: { ...s.ui, selectedBlockIds: sel, focusedBlockId: hoveredId } };
+        const isSelected = s.ui.selectedBlockIds.includes(blockId);
+        let newSelection: string[];
+        
+        if (e.shiftKey && s.ui.anchorBlockId) {
+          // Range selection from anchor to clicked block
+          const range = idsInRange(page, s.ui.anchorBlockId, blockId);
+          newSelection = uniq([...s.ui.selectedBlockIds, ...range]);
+        } else {
+          // Toggle selection
+          newSelection = isSelected 
+            ? s.ui.selectedBlockIds.filter(id => id !== blockId)
+            : [...s.ui.selectedBlockIds, blockId];
+        }
+        
+        return {
+          ...s,
+          ui: {
+            ...s.ui,
+            selectedBlockIds: newSelection,
+            anchorBlockId: newSelection.length > 0 ? (s.ui.anchorBlockId || blockId) : null,
+            focusedBlockId: blockId,
+          }
+        };
       });
-
-      // auto-scroll container
-      const c = containerRef.current;
-      if (c) {
-        const rect = c.getBoundingClientRect();
-        const threshold = 48;
-        if (e.clientY < rect.top + threshold) c.scrollBy({ top: -12 });
-        else if (e.clientY > rect.bottom - threshold) c.scrollBy({ top: 12 });
-      }
+    } else {
+      // Single selection
+      setState((s) => ({
+        ...s,
+        ui: {
+          ...s.ui,
+          selectedBlockIds: [blockId],
+          anchorBlockId: blockId,
+          focusedBlockId: blockId,
+        }
+      }));
     }
-
-    function onUp() {
-      if (!state.ui.isDragSelecting) return;
-      setState((s) => ({ ...s, ui: { ...s.ui, isDragSelecting: false, dragAnchorId: null, dragAdditive: false } }));
-    }
-
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-    };
-  }, [state.ui.isDragSelecting, state.ui.dragAnchorId, state.ui.activePageId]);
+  }
 
   // --- Global keyboard shortcuts ---
   useEffect(() => {
@@ -409,27 +396,8 @@ export default function Organizacao() {
           {state.pages.map((p) => (
             <li 
               key={p.id}
-              onDragOver={(e) => {
-                if (state.ui.isDraggingBlocks && (state.ui.draggedBlockIds?.length ?? 0) > 0) {
-                  e.preventDefault();
-                  setState((s) => ({ ...s, ui: { ...s.ui, dropTargetPageId: p.id } }));
-                }
-              }}
-              onDragLeave={(e) => {
-                if (state.ui.dropTargetPageId === p.id) {
-                  setState((s) => ({ ...s, ui: { ...s.ui, dropTargetPageId: null } }));
-                }
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                if (state.ui.isDraggingBlocks && (state.ui.draggedBlockIds?.length ?? 0) > 0) {
-                  moveBlocksToPage(state.ui.draggedBlockIds!, p.id);
-                }
-              }}
               className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer transition-colors ${
                 p.id === page.id ? "bg-accent" : "hover:bg-accent/50"
-              } ${
-                state.ui.dropTargetPageId === p.id ? "bg-primary/20 border border-primary" : ""
               }`} 
               onClick={() => setActivePage(p.id)}
             >
@@ -466,171 +434,31 @@ export default function Organizacao() {
         <div 
           ref={containerRef} 
           className="flex-1 overflow-auto p-6"
-          onDragOver={(e) => {
-            if (state.ui.isDraggingBlocks) {
-              e.preventDefault();
-            }
-          }}
-          onDrop={(e) => {
-            e.preventDefault();
-            if (state.ui.isDraggingBlocks && (state.ui.draggedBlockIds?.length ?? 0) > 0) {
-              // Drop no final da lista se não houver target específico
-              reorderBlocksInPage(state.ui.draggedBlockIds!, null);
-            }
-          }}
         >
           <div role="list" className="max-w-3xl mx-auto">
-            {/* Drop zone antes da primeira linha */}
-            {page.blocks.length > 0 && (
-              <div
-                className={`h-2 -mb-1 rounded transition-colors ${
-                  state.ui.isDraggingBlocks ? 'hover:bg-primary/20 border-2 border-dashed border-transparent hover:border-primary/40' : ''
-                }`}
-                onDragOver={(e) => {
-                  if (state.ui.isDraggingBlocks && (state.ui.draggedBlockIds?.length ?? 0) > 0) {
-                    e.preventDefault();
-                    e.currentTarget.classList.add('bg-primary/20', 'border-primary/40');
-                  }
-                }}
-                onDragLeave={(e) => {
-                  e.currentTarget.classList.remove('bg-primary/20', 'border-primary/40');
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.currentTarget.classList.remove('bg-primary/20', 'border-primary/40');
-                  if (state.ui.isDraggingBlocks && (state.ui.draggedBlockIds?.length ?? 0) > 0) {
-                    reorderBlocksInPage(state.ui.draggedBlockIds!, page.blocks[0].id, 'before');
-                  }
-                }}
-              />
-            )}
             {page.blocks.map((b, idx) => {
               const selected = state.ui.selectedBlockIds.includes(b.id);
               const focused = state.ui.focusedBlockId === b.id;
-              const isDragging = state.ui.draggedBlockIds?.includes(b.id) ?? false;
               return (
                 <div
                   key={b.id}
                   role="listitem"
                   data-block-id={b.id}
-                  draggable={selected || focused}
-                  onDragStart={(e) => {
-                    const blocksToMove = state.ui.selectedBlockIds.length > 0 && selected 
-                      ? state.ui.selectedBlockIds 
-                      : [b.id];
-                    
-                    setState((s) => ({ 
-                      ...s, 
-                      ui: { 
-                        ...s.ui, 
-                        isDraggingBlocks: true, 
-                        draggedBlockIds: blocksToMove 
-                      } 
-                    }));
-                    
-                    e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData('text/plain', JSON.stringify(blocksToMove));
-                  }}
-                  onDragEnd={() => {
-                    setState((s) => ({ 
-                      ...s, 
-                      ui: { 
-                        ...s.ui, 
-                        isDraggingBlocks: false, 
-                        draggedBlockIds: [],
-                        dropTargetPageId: null 
-                      } 
-                    }));
-                  }}
-                  onDragOver={(e) => {
-                    if (state.ui.isDraggingBlocks && !(state.ui.draggedBlockIds?.includes(b.id) ?? false)) {
-                      e.preventDefault();
-                    }
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    if (state.ui.isDraggingBlocks && !(state.ui.draggedBlockIds?.includes(b.id) ?? false)) {
-                      // Determinar posição baseada na coordenada Y do mouse
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const y = e.clientY - rect.top;
-                      const position = y < rect.height / 2 ? 'before' : 'after';
-                      
-                      reorderBlocksInPage(state.ui.draggedBlockIds!, b.id, position);
-                    }
-                  }}
-                  className={`group flex items-center gap-2 px-3 py-2 rounded-2xl mb-1 border transition-colors ${
+                  onClick={(e) => handleBlockClick(b.id, e)}
+                  className={`group flex items-center gap-2 px-3 py-1 rounded-lg transition-colors ${
                     selected 
-                      ? "border-primary bg-primary/10 ring-2 ring-primary/20" 
+                      ? "bg-muted/20" 
                       : focused 
-                        ? "border-border bg-accent/50" 
-                        : "border-transparent hover:bg-accent/30"
-                  } ${
-                    isDragging ? "opacity-50" : ""
+                        ? "bg-muted/10" 
+                        : "hover:bg-muted/10"
                   }`}
                 >
-                  {/* handle - apenas para mover */}
-                  <div
-                    className="shrink-0 w-4 self-stretch cursor-grab active:cursor-grabbing flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                    title="Arraste para mover"
-                  >
-                    ⋮⋮
-                  </div>
-
                   {/* input */}
                   <input
                     className="w-full bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
                     value={b.content}
                     onChange={(e) => updateBlockContent(b.id, e.target.value)}
                     onFocus={() => setState((s) => ({ ...s, ui: { ...s.ui, focusedBlockId: b.id, anchorBlockId: b.id } }))}
-                    onPointerDown={(e) => {
-                      // Só inicia seleção múltipla se clicar e arrastar fora do texto
-                      // Verifica se o input não tem seleção de texto
-                      if (e.currentTarget.selectionStart !== e.currentTarget.selectionEnd) {
-                        return; // Tem seleção de texto, não interfere
-                      }
-                      
-                      const startX = e.clientX;
-                      const startY = e.clientY;
-                      let isDragSelecting = false;
-
-                      function onPointerMove(moveEvent: PointerEvent) {
-                        const distance = Math.sqrt(
-                          Math.pow(moveEvent.clientX - startX, 2) + 
-                          Math.pow(moveEvent.clientY - startY, 2)
-                        );
-                        
-                        // Só inicia seleção múltipla se arrastar mais de 5px
-                        if (distance > 5 && !isDragSelecting) {
-                          isDragSelecting = true;
-                          (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-                          selectionSnapshotAtDragStart.current = state.ui.selectedBlockIds;
-                          const additive = (e.ctrlKey || e.metaKey);
-                          
-                          setState((s) => ({
-                            ...s,
-                            ui: {
-                              ...s.ui,
-                              isDragSelecting: true,
-                              dragAnchorId: b.id,
-                              dragAdditive: additive,
-                              anchorBlockId: b.id,
-                              focusedBlockId: b.id,
-                              selectedBlockIds: additive
-                                ? uniq([...s.ui.selectedBlockIds, b.id])
-                                : [b.id],
-                            },
-                          }));
-                        }
-                      }
-
-                      function onPointerUp() {
-                        window.removeEventListener('pointermove', onPointerMove);
-                        window.removeEventListener('pointerup', onPointerUp);
-                      }
-
-                      window.addEventListener('pointermove', onPointerMove);
-                      window.addEventListener('pointerup', onPointerUp);
-                    }}
                     onKeyDown={(e) => {
                       const input = e.currentTarget;
 
@@ -686,8 +514,6 @@ export default function Organizacao() {
                   {state.ui.selectedBlockIds.length} blocos selecionados
                 </span>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>⋮⋮: mover</span>
-                  <span>•</span>
                   <span>Delete: limpar</span>
                   <span>•</span>
                   <span>Shift+Delete: excluir</span>
