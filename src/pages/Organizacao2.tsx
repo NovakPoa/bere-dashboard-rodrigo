@@ -27,6 +27,8 @@ interface AppState {
     anchorBlockId: string | null;
     isDragSelecting: boolean;
     dragAnchorId: string | null;
+    dragAdditive: boolean;
+    selectedBlockIdsSnapshotAtStart: string[];
   };
 }
 
@@ -50,6 +52,8 @@ const loadFromStorage = (): AppState => {
         parsed.ui.anchorBlockId = parsed.ui.anchorBlockId || null;
         parsed.ui.isDragSelecting = parsed.ui.isDragSelecting || false;
         parsed.ui.dragAnchorId = parsed.ui.dragAnchorId || null;
+        parsed.ui.dragAdditive = parsed.ui.dragAdditive || false;
+        parsed.ui.selectedBlockIdsSnapshotAtStart = parsed.ui.selectedBlockIdsSnapshotAtStart || [];
       }
       return parsed;
     }
@@ -72,7 +76,9 @@ const loadFromStorage = (): AppState => {
       focusedBlockId: null,
       anchorBlockId: null,
       isDragSelecting: false,
-      dragAnchorId: null
+      dragAnchorId: null,
+      dragAdditive: false,
+      selectedBlockIdsSnapshotAtStart: []
     }
   };
 };
@@ -105,6 +111,37 @@ const isCaretAtEnd = (inputEl: HTMLTextAreaElement): boolean => {
   return inputEl.selectionStart === inputEl.value.length;
 };
 
+// Helper functions for selection
+const union = (a: string[], b: string[]): string[] => {
+  const set = new Set([...a, ...b]);
+  return Array.from(set);
+};
+
+const toggleIn = (list: string[], id: string): string[] => {
+  const exists = list.includes(id);
+  return exists ? list.filter(x => x !== id) : [...list, id];
+};
+
+const getBlockIdFromPoint = (x: number, y: number): string | null => {
+  const element = document.elementFromPoint(x, y);
+  if (!element) return null;
+  
+  const blockElement = element.closest('[data-block-id]');
+  return blockElement ? blockElement.getAttribute('data-block-id') : null;
+};
+
+const computeRangeIds = (page: Page, fromId: string, toId: string): string[] => {
+  const fromIndex = getBlockIndex(page, fromId);
+  const toIndex = getBlockIndex(page, toId);
+  
+  if (fromIndex === -1 || toIndex === -1) return [];
+  
+  const startIndex = Math.min(fromIndex, toIndex);
+  const endIndex = Math.max(fromIndex, toIndex);
+  
+  return page.blocks.slice(startIndex, endIndex + 1).map(b => b.id);
+};
+
 // Block Component
 interface BlockEditorProps {
   block: Block;
@@ -115,11 +152,12 @@ interface BlockEditorProps {
   onBackspace: (id: string) => void;
   onArrowUp: (id: string) => void;
   onArrowDown: (id: string) => void;
+  onExtendSelectionUp: () => void;
+  onExtendSelectionDown: () => void;
   onSelect: (id: string, additive: boolean, shift?: boolean) => void;
   onDragStart: (id: string, e: React.DragEvent) => void;
   onFocus: (id: string, ref: HTMLTextAreaElement) => void;
   onHandlePointerDown: (id: string, e: React.PointerEvent) => void;
-  onHandlePointerEnter: (id: string, e: React.PointerEvent) => void;
 }
 
 const BlockEditor = ({ 
@@ -130,12 +168,13 @@ const BlockEditor = ({
   onEnter, 
   onBackspace, 
   onArrowUp, 
-  onArrowDown, 
+  onArrowDown,
+  onExtendSelectionUp,
+  onExtendSelectionDown,
   onSelect,
   onDragStart,
   onFocus,
-  onHandlePointerDown,
-  onHandlePointerEnter
+  onHandlePointerDown
 }: BlockEditorProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
@@ -164,7 +203,7 @@ const BlockEditor = ({
     } else if (e.key === 'ArrowUp' && isAtStart) {
       if (e.shiftKey) {
         e.preventDefault();
-        onSelect(block.id, false, true);
+        onExtendSelectionUp();
       } else {
         e.preventDefault();
         onArrowUp(block.id);
@@ -172,7 +211,7 @@ const BlockEditor = ({
     } else if (e.key === 'ArrowDown' && isAtEnd) {
       if (e.shiftKey) {
         e.preventDefault();
-        onSelect(block.id, false, true);
+        onExtendSelectionDown();
       } else {
         e.preventDefault();
         onArrowDown(block.id);
@@ -198,13 +237,12 @@ const BlockEditor = ({
       aria-selected={isSelected}
     >
       <div
-        className="block-handle opacity-0 group-hover:opacity-100 mt-1 cursor-grab active:cursor-grabbing text-muted-foreground transition-opacity"
+        className="block-handle opacity-0 group-hover:opacity-100 mt-1 cursor-grab active:cursor-grabbing text-muted-foreground transition-opacity w-4 h-full flex items-start justify-center"
         draggable
         onDragStart={(e) => onDragStart(block.id, e)}
         onPointerDown={(e) => onHandlePointerDown(block.id, e)}
-        onPointerEnter={(e) => onHandlePointerEnter(block.id, e)}
         aria-label="Arrastar bloco"
-        style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+        style={{ userSelect: 'none', WebkitUserSelect: 'none', minHeight: '2rem' }}
       >
         <GripVertical className="h-4 w-4" />
       </div>
@@ -306,82 +344,116 @@ export default function Organizacao2() {
   const [state, setState] = useState<AppState>(loadFromStorage);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const blockRefs = useRef<{ [key: string]: HTMLTextAreaElement }>({});
+  const containerRef = useRef<HTMLDivElement>(null);
   
   // Save to localStorage whenever state changes
   useEffect(() => {
     saveToStorage(state);
   }, [state]);
 
-  // Drag selection handlers
-  const handlePointerDown = useCallback((blockId: string, e: React.PointerEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  // Auto-scroll during drag selection
+  const autoScroll = useCallback((clientY: number) => {
+    if (!containerRef.current) return;
     
-    setState(prev => ({
-      ...prev,
-      ui: {
-        ...prev.ui,
-        isDragSelecting: true,
-        dragAnchorId: blockId,
-        anchorBlockId: blockId,
-        focusedBlockId: blockId,
-        selectedBlockIds: [blockId]
-      }
-    }));
+    const container = containerRef.current;
+    const rect = container.getBoundingClientRect();
+    const scrollThreshold = 48;
+    const scrollSpeed = 8;
     
-    // Capture pointer for drag events
-    const target = e.currentTarget as Element;
-    target.setPointerCapture?.(e.pointerId);
+    if (clientY < rect.top + scrollThreshold) {
+      // Scroll up
+      container.scrollBy(0, -scrollSpeed);
+    } else if (clientY > rect.bottom - scrollThreshold) {
+      // Scroll down
+      container.scrollBy(0, scrollSpeed);
+    }
   }, []);
 
-  const handlePointerEnter = useCallback((blockId: string, e: React.PointerEvent) => {
-    setState(prev => {
-      if (!prev.ui.isDragSelecting || !prev.ui.dragAnchorId || !prev.ui.activePageId) return prev;
+  // Global pointer handlers
+  useEffect(() => {
+    const handlePointerMove = (e: PointerEvent) => {
+      if (!state.ui.isDragSelecting || !state.ui.activePageId) return;
       
-      const page = prev.pages.find(p => p.id === prev.ui.activePageId);
-      if (!page) return prev;
+      const hoveredBlockId = getBlockIdFromPoint(e.clientX, e.clientY);
+      if (!hoveredBlockId || !state.ui.dragAnchorId) return;
       
-      // Compute range from anchor to current block
-      const anchorIndex = getBlockIndex(page, prev.ui.dragAnchorId);
-      const currentIndex = getBlockIndex(page, blockId);
+      const page = state.pages.find(p => p.id === state.ui.activePageId);
+      if (!page) return;
       
-      if (anchorIndex !== -1 && currentIndex !== -1) {
-        const startIndex = Math.min(anchorIndex, currentIndex);
-        const endIndex = Math.max(anchorIndex, currentIndex);
-        const rangeIds = page.blocks.slice(startIndex, endIndex + 1).map(b => b.id);
-        
+      const range = computeRangeIds(page, state.ui.dragAnchorId, hoveredBlockId);
+      
+      setState(prev => {
+        const nextSelection = prev.ui.dragAdditive 
+          ? union(prev.ui.selectedBlockIdsSnapshotAtStart, range)
+          : range;
+          
         return {
           ...prev,
           ui: {
             ...prev.ui,
-            selectedBlockIds: rangeIds,
-            focusedBlockId: blockId
+            selectedBlockIds: nextSelection,
+            focusedBlockId: hoveredBlockId
           }
         };
-      }
+      });
       
-      return prev;
-    });
-  }, []);
+      // Auto-scroll
+      autoScroll(e.clientY);
+    };
 
-  // Global pointer up handler
-  useEffect(() => {
     const handlePointerUp = () => {
       setState(prev => ({
         ...prev,
         ui: {
           ...prev.ui,
           isDragSelecting: false,
-          dragAnchorId: null
+          dragAnchorId: null,
+          dragAdditive: false,
+          selectedBlockIdsSnapshotAtStart: []
         }
       }));
     };
 
     if (state.ui.isDragSelecting) {
+      document.addEventListener('pointermove', handlePointerMove);
       document.addEventListener('pointerup', handlePointerUp);
-      return () => document.removeEventListener('pointerup', handlePointerUp);
+      
+      return () => {
+        document.removeEventListener('pointermove', handlePointerMove);
+        document.removeEventListener('pointerup', handlePointerUp);
+      };
     }
-  }, [state.ui.isDragSelecting]);
+  }, [state.ui.isDragSelecting, state.ui.activePageId, state.ui.dragAnchorId, state.pages, autoScroll]);
+
+  // Drag selection handlers
+  const handlePointerDown = useCallback((blockId: string, e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const isAdditive = e.ctrlKey || e.metaKey;
+    
+    setState(prev => {
+      const currentSelection = isAdditive ? prev.ui.selectedBlockIds : [blockId];
+      
+      return {
+        ...prev,
+        ui: {
+          ...prev.ui,
+          isDragSelecting: true,
+          dragAnchorId: blockId,
+          anchorBlockId: blockId,
+          focusedBlockId: blockId,
+          dragAdditive: isAdditive,
+          selectedBlockIds: isAdditive ? toggleIn(prev.ui.selectedBlockIds, blockId) : [blockId],
+          selectedBlockIdsSnapshotAtStart: prev.ui.selectedBlockIds
+        }
+      };
+    });
+    
+    // Capture pointer for drag events
+    const target = e.currentTarget as Element;
+    target.setPointerCapture?.(e.pointerId);
+  }, []);
 
   // SEO setup
   useEffect(() => {
@@ -430,7 +502,9 @@ export default function Organizacao2() {
         ui: {
           ...prev.ui,
           activePageId: newActivePageId,
-          selectedBlockIds: []
+          selectedBlockIds: [],
+          focusedBlockId: null,
+          anchorBlockId: null
         }
       };
     });
@@ -554,32 +628,37 @@ export default function Organizacao2() {
     }));
   }, []);
   
-  // Selection utilities
-  const selectRangeByIds = useCallback((pageId: string, fromId: string, toId: string) => {
-    const page = state.pages.find(p => p.id === pageId);
-    if (!page) return;
-    
-    const fromIndex = getBlockIndex(page, fromId);
-    const toIndex = getBlockIndex(page, toId);
-    
-    if (fromIndex === -1 || toIndex === -1) return;
-    
-    const startIndex = Math.min(fromIndex, toIndex);
-    const endIndex = Math.max(fromIndex, toIndex);
-    
-    const rangeIds = page.blocks
-      .slice(startIndex, endIndex + 1)
-      .map(b => b.id);
-    
-    setState(prev => ({
-      ...prev,
-      ui: {
-        ...prev.ui,
-        selectedBlockIds: rangeIds,
-        focusedBlockId: toId
-      }
-    }));
-  }, [state.pages]);
+  // Keyboard selection extension
+  const extendSelectionByKeyboard = useCallback((direction: 'up' | 'down') => {
+    setState(prev => {
+      const pageId = prev.ui.activePageId;
+      if (!pageId || !prev.ui.focusedBlockId) return prev;
+      
+      const page = prev.pages.find(p => p.id === pageId);
+      if (!page) return prev;
+      
+      // Ensure anchor is set
+      const anchorBlockId = prev.ui.anchorBlockId || prev.ui.focusedBlockId;
+      
+      const focusedIndex = getBlockIndex(page, prev.ui.focusedBlockId);
+      const targetIndex = direction === 'up' ? focusedIndex - 1 : focusedIndex + 1;
+      const targetBlock = page.blocks[targetIndex];
+      
+      if (!targetBlock) return prev;
+      
+      const range = computeRangeIds(page, anchorBlockId, targetBlock.id);
+      
+      return {
+        ...prev,
+        ui: {
+          ...prev.ui,
+          selectedBlockIds: range,
+          focusedBlockId: targetBlock.id,
+          anchorBlockId: anchorBlockId
+        }
+      };
+    });
+  }, []);
 
   // Selection
   const selectBlock = useCallback((blockId: string, additive: boolean, shift = false) => {
@@ -769,7 +848,13 @@ export default function Organizacao2() {
         }}
       />
       
-      <div className="flex-1 p-8 overflow-auto">
+      <div 
+        ref={containerRef}
+        className={cn(
+          "flex-1 p-8 overflow-auto",
+          state.ui.isDragSelecting && "select-none"
+        )}
+      >
         <div className="max-w-2xl mx-auto">
           {/* Title */}
           <Input
@@ -797,6 +882,8 @@ export default function Organizacao2() {
                   onBackspace={(id) => deleteBlock(activePage.id, id)}
                   onArrowUp={(id) => navigateBlock(activePage.id, id, 'up')}
                   onArrowDown={(id) => navigateBlock(activePage.id, id, 'down')}
+                  onExtendSelectionUp={() => extendSelectionByKeyboard('up')}
+                  onExtendSelectionDown={() => extendSelectionByKeyboard('down')}
                   onSelect={selectBlock}
                   onDragStart={handleDragStart}
                   onFocus={(id, ref) => {
@@ -807,12 +894,11 @@ export default function Organizacao2() {
                       ui: {
                         ...prev.ui,
                         focusedBlockId: id,
-                        anchorBlockId: id
+                        anchorBlockId: prev.ui.selectedBlockIds.length <= 1 ? id : prev.ui.anchorBlockId
                       }
                     }));
                   }}
                   onHandlePointerDown={handlePointerDown}
-                  onHandlePointerEnter={handlePointerEnter}
                 />
               </div>
             ))}
