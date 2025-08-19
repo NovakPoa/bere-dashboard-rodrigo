@@ -358,22 +358,8 @@ function TreeNode({ id, nodes, currentId, level, onNavigate }: TreeNodeProps) {
         onClick={(e) => { e.preventDefault(); onNavigate(id); }}
         title={node.title}
       >
-        {hasChildren ? "▸" : "•"} <span className="mini-notion-node-title">{node.title || "Sem título"}</span>
+        • <span className="mini-notion-node-title">{node.title || "Sem título"}</span>
       </a>
-      {hasChildren && (
-        <div className="mini-notion-children">
-          {node.children.map((cid: string) => (
-            <TreeNode
-              key={cid}
-              id={cid}
-              nodes={nodes}
-              currentId={currentId}
-              level={level + 1}
-              onNavigate={onNavigate}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -449,24 +435,30 @@ function loadCurrentId() {
 // === Styles (no Tailwind needed) ===
 const styles = `
 :root{
-  --mn-bg: #0b0c0f; /* dark base */
-  --mn-panel: #12141a;
-  --mn-muted: #8b93a1;
-  --mn-text: #e6e9ef;
-  --mn-accent: #7aa2f7;
-  --mn-border: #222635;
+  --mn-bg: #ffffff; /* light base */
+  --mn-panel: #f8f9fa; /* light gray */
+  --mn-muted: #6c757d;
+  --mn-text: #212529; /* dark text for contrast */
+  --mn-accent: #0d6efd;
+  --mn-border: #dee2e6; /* light border */
 }
 .mini-notion-app-shell { display: grid; grid-template-columns: 280px 1fr; height: calc(100vh - 120px); }
 
-.mini-notion-sidebar { background: var(--mn-panel); border-right: 1px solid var(--mn-border); overflow: auto; }
+.mini-notion-sidebar { 
+  background: var(--mn-panel); 
+  border-right: 1px solid var(--mn-border); 
+  border-radius: 12px; 
+  margin: 8px 0 8px 8px;
+  overflow: auto; 
+}
 .mini-notion-sidebar-header { display:flex; align-items:center; justify-content:center; padding: 12px; border-bottom: 1px solid var(--mn-border); }
-.mini-notion-btn { background: #1a1f2b; color: var(--mn-text); border: 1px solid var(--mn-border); border-radius: 10px; padding: 8px 10px; cursor: pointer; transition: .2s ease; }
-.mini-notion-btn:hover { background: #202638; }
+.mini-notion-btn { background: #ffffff; color: var(--mn-text); border: 1px solid var(--mn-border); border-radius: 10px; padding: 8px 10px; cursor: pointer; transition: .2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.mini-notion-btn:hover { background: #f1f3f4; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
 
 .mini-notion-tree { padding: 8px; }
 .mini-notion-tree-link { display:block; color: var(--mn-text); text-decoration: none; padding: 6px 8px; border-radius: 8px; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mini-notion-tree-link:hover { background: #161924; }
-.mini-notion-tree-link.mini-notion-active { background: #1d2230; outline: 1px solid #2a3248; }
+.mini-notion-tree-link:hover { background: #e9ecef; }
+.mini-notion-tree-link.mini-notion-active { background: #dee2e6; border: 1px solid #adb5bd; }
 .mini-notion-node-title { margin-left: 6px; }
 .mini-notion-children { margin-left: 0; }
 .mini-notion-empty { color: var(--mn-muted); font-style: italic; padding: 8px; }
@@ -485,10 +477,10 @@ const styles = `
 .mini-notion-content h1, .mini-notion-content h2, .mini-notion-content h3 { margin: 14px 0 8px; }
 .mini-notion-content a { color: var(--mn-accent); }
 .page-link { cursor: pointer; border-radius: 4px; padding: 0 2px; }
-.page-link:hover { background: #1e2433; }
+.page-link:hover { background: #e9ecef; }
 
-.mini-notion-context-menu { position: fixed; z-index: 1000; background: #0f1220; border: 1px solid var(--mn-border); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.4); min-width: 260px; padding: 6px; }
+.mini-notion-context-menu { position: fixed; z-index: 1000; background: #ffffff; border: 1px solid var(--mn-border); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.15); min-width: 260px; padding: 6px; }
 .mini-notion-ctx-item { width: 100%; background: transparent; border: none; color: var(--mn-text); text-align: left; padding: 10px 12px; border-radius: 8px; cursor: pointer; }
-.mini-notion-ctx-item:hover { background: #1a1f2b; }
+.mini-notion-ctx-item:hover { background: #f8f9fa; }
 .mini-notion-kbd { float: right; color: var(--mn-muted); font-size: 11px; }
 `;
