@@ -1,596 +1,412 @@
-import { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Star, FilePlus2, ChevronRight, MoreVertical, Trash2 } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { setPageSEO } from "@/lib/seo";
-import { useToast } from "@/components/ui/use-toast";
-import BlockListEditor from "@/components/organizacao/BlockListEditor";
-import PageTree from "@/components/organizacao/PageTree";
-// Types aligning to our org tables
-type OrgPage = {
-  id: string;
-  parent_id: string | null;
-  title: string;
-  is_favorite: boolean;
-  created_at: string;
-  updated_at: string;
-  // ordering
-  sort_index?: number;
-  favorite_order?: number;
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+/* ========= Tipos ========= */
+type Block = { id: string; type: "text"; content: string };
+type Page = { id: string; title: string; blocks: Block[] };
+
+type UIState = {
+  activePageId: string | null;
+  focusedBlockId: string | null;
+  anchorBlockId: string | null;       // início lógico da seleção
+  selectedBlockIds: string[];
+  isDragSelecting: boolean;
+  dragAnchorId: string | null;
+  dragAdditive: boolean;               // Ctrl/Cmd ao iniciar arrasto
 };
 
-type BlockType = "title" | "text" | "page";
-
-type OrgBlock = {
-  id: string;
-  page_id: string;
-  type: BlockType;
-  content: string | null;
-  bold: boolean;
-  color: string; // notion names
-  order_index: number;
-  child_page_id: string | null;
-  created_at: string;
-  updated_at: string;
+type AppState = {
+  pages: Page[];
+  ui: UIState;
 };
 
+/* ========= Utils ========= */
+const uuid = () =>
+  (typeof crypto !== "undefined" && (crypto as any).randomUUID?.()) ||
+  Math.random().toString(36).slice(2);
+
+const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+
+const isInputCaretAtStart = (input: HTMLInputElement) =>
+  input.selectionStart === 0 && input.selectionEnd === 0;
+
+const isInputCaretAtEnd = (input: HTMLInputElement) => {
+  const len = input.value?.length ?? 0;
+  return input.selectionStart === len && input.selectionEnd === len;
+};
+
+const getBlockIndex = (page: Page, blockId: string) =>
+  page.blocks.findIndex((b) => b.id === blockId);
+
+const idsInRange = (page: Page, fromId: string, toId: string) => {
+  const a = getBlockIndex(page, fromId);
+  const b = getBlockIndex(page, toId);
+  if (a === -1 || b === -1) return [] as string[];
+  const [i, j] = a <= b ? [a, b] : [b, a];
+  return page.blocks.slice(i, j + 1).map((b) => b.id);
+};
+
+const uniq = (arr: string[]) => Array.from(new Set(arr));
+
+const focusBlockById = (blockId: string) => {
+  requestAnimationFrame(() => {
+    const el = document.querySelector<HTMLInputElement>(
+      `[data-block-id="${blockId}"] input`
+    );
+    if (el) {
+      el.focus({ preventScroll: true });
+      const len = el.value.length;
+      el.setSelectionRange(len, len);
+      el.scrollIntoView?.({ block: "nearest" });
+    }
+  });
+};
+
+const elementBlockIdFromPoint = (x: number, y: number) => {
+  const el = document.elementFromPoint(x, y) as HTMLElement | null;
+  const block = el?.closest?.("[data-block-id]") as HTMLElement | null;
+  return block?.dataset?.blockId ?? null;
+};
 
 export default function Organizacao() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-
-  const [pages, setPages] = useState<OrgPage[]>([]);
-  const [currentPageId, setCurrentPageId] = useState<string | null>(id ?? null);
-  const [blocks, setBlocks] = useState<OrgBlock[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [creatingTitle, setCreatingTitle] = useState("");
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [dropOverId, setDropOverId] = useState<string | null>(null);
-
+  // SEO
   useEffect(() => {
-    setPageSEO("Organização | notas e páginas", "Organização minimalista com páginas, blocos e favoritos");
+    setPageSEO(
+      "Organização - Editor de Notas",
+      "Editor de notas estilo Notion com multi-seleção, drag & drop e navegação por teclado"
+    );
   }, []);
 
-  useEffect(() => {
-    // keep route in sync
-    if (currentPageId) navigate(`/organizacao/${currentPageId}`, { replace: true });
-    else navigate(`/organizacao`, { replace: true });
-  }, [currentPageId, navigate]);
-
-  useEffect(() => {
-    const fetchPages = async () => {
-      const { data, error } = await supabase.from("org_pages").select("*")
-        .order("parent_id", { ascending: true, nullsFirst: true })
-        .order("sort_index", { ascending: true })
-        .order("created_at", { ascending: true });
-      if (error) {
-        toast({ title: "Erro", description: "Falha ao carregar páginas" });
-        return;
-      }
-      setPages(data as OrgPage[]);
+  const initial = useMemo<AppState>(() => {
+    const saved = localStorage.getItem("lovable-notion-organizacao-v1");
+    if (saved) {
+      try {
+        return JSON.parse(saved) as AppState;
+      } catch {}
+    }
+    const firstPageId = uuid();
+    return {
+      pages: [
+        { id: firstPageId, title: "Página sem título", blocks: [{ id: uuid(), type: "text", content: "" }] },
+      ],
+      ui: {
+        activePageId: firstPageId,
+        focusedBlockId: null,
+        anchorBlockId: null,
+        selectedBlockIds: [],
+        isDragSelecting: false,
+        dragAnchorId: null,
+        dragAdditive: false,
+      },
     };
-    fetchPages();
-  }, [toast]);
+  }, []);
 
+  const [state, setState] = useState<AppState>(initial);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const selectionSnapshotAtDragStart = useRef<string[]>([]);
+
+  // persistência
   useEffect(() => {
-    const fetchBlocks = async () => {
-      if (!currentPageId) { setBlocks([]); return; }
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("org_blocks")
-        .select("*")
-        .eq("page_id", currentPageId)
-        .order("order_index", { ascending: true });
-      setLoading(false);
-      if (error) {
-        toast({ title: "Erro", description: "Falha ao carregar blocos" });
-        return;
-      }
-      setBlocks(data as OrgBlock[]);
-    };
-    fetchBlocks();
-  }, [currentPageId, toast]);
+    localStorage.setItem("lovable-notion-organizacao-v1", JSON.stringify(state));
+  }, [state]);
 
-  useEffect(() => {
-    if (currentPageId && !loading && blocks.length === 0) {
-      addBlock("text");
-    }
-  }, [currentPageId, loading, blocks.length]);
+  const page = useMemo(
+    () => state.pages.find((p) => p.id === state.ui.activePageId)!,
+    [state.pages, state.ui.activePageId]
+  );
 
-  const favorites = useMemo(() => pages.filter(p => p.is_favorite).sort((a,b)=> (a.favorite_order??0)-(b.favorite_order??0)), [pages]);
-  const rootPages = useMemo(() => pages.filter(p => !p.parent_id), [pages]);
-  const currentPage = useMemo(() => pages.find(p => p.id === currentPageId) || null, [pages, currentPageId]);
-
-  const createPage = async (title: string, parentId?: string | null) => {
-    console.log('createPage called with:', { title, parentId });
-    const { data, error } = await supabase
-      .from("org_pages")
-      .insert({ title, parent_id: parentId ?? null, user_id: (await supabase.auth.getUser()).data.user?.id })
-      .select("*")
-      .single();
-    
-    console.log('Insert result:', { data, error });
-    
-    if (error) { 
-      console.error('Error creating page:', error);
-      toast({ title: "Erro", description: "Não foi possível criar a página: " + error.message }); 
-      return null; 
-    }
-    const page = data as OrgPage;
-    setPages(prev => [page, ...prev]);
-
-    // do not create initial blocks; editor will auto-add
-    return page;
-  };
-
-  const reloadBlocks = async (pageId: string) => {
-    const { data } = await supabase
-      .from("org_blocks")
-      .select("*")
-      .eq("page_id", pageId)
-      .order("order_index", { ascending: true });
-    setBlocks((data || []) as OrgBlock[]);
-  };
-
-  const toggleFavorite = async (page: OrgPage) => {
-    const { data, error } = await supabase
-      .from("org_pages")
-      .update({ is_favorite: !page.is_favorite })
-      .eq("id", page.id)
-      .select("*")
-      .single();
-    if (error) { toast({ title: "Erro", description: "Falha ao favoritar" }); return; }
-    setPages(prev => prev.map(p => (p.id === page.id ? (data as OrgPage) : p)));
-  };
-
-  const deletePage = async (pageId: string) => {
-    // Check if this page has children
-    const hasChildren = pages.some(p => p.parent_id === pageId);
-    if (hasChildren) {
-      toast({ title: "Erro", description: "Não é possível deletar uma página que tem páginas filhas" });
-      return;
-    }
-
-    const { error } = await supabase.from("org_pages").delete().eq("id", pageId);
-    if (error) { 
-      toast({ title: "Erro", description: "Não foi possível deletar a página" }); 
-      return; 
-    }
-    
-    setPages(prev => prev.filter(p => p.id !== pageId));
-    
-    // If we're deleting the current page, navigate away
-    if (currentPageId === pageId) {
-      setCurrentPageId(null);
-    }
-    
-    toast({ title: "Sucesso", description: "Página deletada" });
-  };
-
-  const addBlock = async (type: BlockType) => {
-    if (!currentPageId) return;
-    const nextIndex = blocks.length * 100;
-    const { data, error } = await supabase
-      .from("org_blocks")
-      .insert({ page_id: currentPageId, type, order_index: nextIndex, content: type === "text" ? "" : null })
-      .select("*")
-      .single();
-    if (error) { toast({ title: "Erro", description: "Não foi possível adicionar bloco" }); return; }
-    setBlocks(prev => [...prev, data as OrgBlock]);
-  };
-
-  const updateBlock = async (id: string, patch: Partial<OrgBlock>) => {
-    const { data, error } = await supabase
-      .from("org_blocks")
-      .update(patch)
-      .eq("id", id)
-      .select("*")
-      .single();
-    if (error) { toast({ title: "Erro", description: "Falha ao atualizar bloco" }); return; }
-    setBlocks(prev => prev.map(b => (b.id === id ? (data as OrgBlock) : b)));
-  };
-
-  // Reorder blocks within the current page
-  const reorderBlocks = async (sourceId: string, targetId: string, position: 'before' | 'after' = 'before') => {
-    if (!currentPageId) return;
-    const siblings = [...blocks]
-      .filter(b => b.page_id === currentPageId)
-      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
-
-    const srcIdx = siblings.findIndex(b => b.id === sourceId);
-    const tgtIdx = siblings.findIndex(b => b.id === targetId);
-    if (srcIdx === -1 || tgtIdx === -1) return;
-
-    const arr = siblings.filter(b => b.id !== sourceId);
-    const insertAt = Math.max(0, arr.findIndex(b => b.id === targetId) + (position === 'after' ? 1 : 0));
-    const [moved] = siblings.splice(srcIdx, 1);
-    arr.splice(insertAt, 0, moved);
-
-    const withOrder = arr.map((b, i) => ({ id: b.id, order_index: i * 100 }));
-
-    // persist
-    await Promise.all(
-      withOrder.map(({ id, order_index }) =>
-        supabase.from('org_blocks').update({ order_index }).eq('id', id)
-      )
-    );
-
-    setBlocks(prev => prev.map(b => {
-      const n = withOrder.find(x => x.id === b.id);
-      return n ? { ...b, order_index: n.order_index } as any : b;
+  /* ===== Ações ===== */
+  function createPage(title = "Nova página") {
+    const id = uuid();
+    const firstBlockId = uuid();
+    setState((s) => ({
+      ...s,
+      pages: [{ id, title, blocks: [{ id: firstBlockId, type: "text", content: "" }] }, ...s.pages],
+      ui: { ...s.ui, activePageId: id, focusedBlockId: firstBlockId, anchorBlockId: firstBlockId, selectedBlockIds: [] },
     }));
-  };
+    requestAnimationFrame(() => focusBlockById(firstBlockId));
+  }
 
-  // Move a block to another page (append to end)
-  const moveBlock = async (blockId: string, targetPageId: string) => {
-    const block = blocks.find(b => b.id === blockId);
-    if (!block) return;
+  function renamePage(id: string, newTitle: string) {
+    setState((s) => ({
+      ...s,
+      pages: s.pages.map((p) => (p.id === id ? { ...p, title: newTitle } : p)),
+    }));
+  }
 
-    // Determine new order at the end of target page
-    const { data: targetBlocks } = await supabase
-      .from('org_blocks')
-      .select('id, order_index')
-      .eq('page_id', targetPageId)
-      .order('order_index', { ascending: true });
-    const nextOrder = ((targetBlocks || []).length) * 100;
+  function setActivePage(id: string) {
+    setState((s) => ({ ...s, ui: { ...s.ui, activePageId: id, focusedBlockId: null, anchorBlockId: null, selectedBlockIds: [] } }));
+  }
 
-    const { error, data } = await supabase
-      .from('org_blocks')
-      .update({ page_id: targetPageId, order_index: nextOrder })
-      .eq('id', blockId)
-      .select('*')
-      .single();
-    if (error) { toast({ title: 'Erro', description: 'Não foi possível mover o bloco' }); return; }
+  function updateBlockContent(blockId: string, text: string) {
+    setState((s) => ({
+      ...s,
+      pages: s.pages.map((p) =>
+        p.id !== page.id ? p : { ...p, blocks: p.blocks.map((b) => (b.id === blockId ? { ...b, content: text } : b)) }
+      ),
+    }));
+  }
 
-    // Update local state: remove from current page if moved away
-    setBlocks(prev => prev.filter(b => b.id !== blockId || targetPageId === currentPageId).map(b => (b.id === blockId ? (data as any) : b)));
-  };
+  function createBlockBelow(afterId: string) {
+    const newId = uuid();
+    setState((s) => ({
+      ...s,
+      pages: s.pages.map((p) => {
+        if (p.id !== page.id) return p;
+        const i = getBlockIndex(p, afterId);
+        const nextBlocks = [...p.blocks];
+        nextBlocks.splice(i + 1, 0, { id: newId, type: "text", content: "" });
+        return { ...p, blocks: nextBlocks };
+      }),
+      ui: { ...s.ui, focusedBlockId: newId, anchorBlockId: newId, selectedBlockIds: [] },
+    }));
+    return newId;
+  }
 
-  // Create a new empty block after a given one
-  const createBlockAfter = async (afterId: string) => {
-    if (!currentPageId) return;
-    const siblings = [...blocks]
-      .filter(b => b.page_id === currentPageId)
-      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+  function deleteBlock(blockId: string) {
+    setState((s) => ({
+      ...s,
+      pages: s.pages.map((p) => {
+        if (p.id !== page.id) return p;
+        const nextBlocks = p.blocks.filter((b) => b.id !== blockId);
+        return { ...p, blocks: nextBlocks.length ? nextBlocks : [{ id: uuid(), type: "text", content: "" }] };
+      }),
+      ui: { ...s.ui, selectedBlockIds: s.ui.selectedBlockIds.filter((id) => id !== blockId) },
+    }));
+  }
 
-    const idx = siblings.findIndex(b => b.id === afterId);
-    const insertAt = idx === -1 ? siblings.length : idx + 1;
+  function moveFocusToNeighbor(currentId: string, dir: "up" | "down") {
+    const i = getBlockIndex(page, currentId);
+    const next = dir === "down" ? page.blocks[i + 1] : page.blocks[i - 1];
+    if (next) {
+      setState((s) => ({ ...s, ui: { ...s.ui, focusedBlockId: next.id, anchorBlockId: next.id, selectedBlockIds: [] } }));
+      focusBlockById(next.id);
+    }
+  }
 
-    const { data: inserted, error } = await supabase
-      .from('org_blocks')
-      .insert({ page_id: currentPageId, type: 'text', order_index: 0, content: '' })
-      .select('*')
-      .single();
-    if (error || !inserted) { toast({ title: 'Erro', description: 'Não foi possível criar a linha' }); return; }
-
-    const arr = [...siblings];
-    arr.splice(insertAt, 0, inserted as any);
-    const withOrder = arr.map((b, i) => ({ id: b.id, order_index: i * 100 }));
-
-    await Promise.all(withOrder.map(({ id, order_index }) => supabase.from('org_blocks').update({ order_index }).eq('id', id)));
-
-    // Update local
-    setBlocks(prev => {
-      // remove any existing instance and re-add ordered ones for current page
-      const others = prev.filter(b => b.page_id !== currentPageId);
-      const updatedSiblings = arr.map((b, i) => ({ ...b, order_index: i * 100 } as any));
-      return [...others, ...updatedSiblings];
+  function extendSelectionByKeyboard(currentId: string, dir: "up" | "down") {
+    setState((s) => {
+      const p = s.pages.find((pp) => pp.id === s.ui.activePageId)!;
+      const anchor = s.ui.anchorBlockId || currentId;
+      const i = getBlockIndex(p, currentId);
+      const neighbor =
+        dir === "down" ? p.blocks[clamp(i + 1, 0, p.blocks.length - 1)] : p.blocks[clamp(i - 1, 0, p.blocks.length - 1)];
+      if (!neighbor || neighbor.id === currentId) return s;
+      const range = idsInRange(p, anchor, neighbor.id);
+      return { ...s, ui: { ...s.ui, focusedBlockId: neighbor.id, anchorBlockId: anchor, selectedBlockIds: range } };
     });
-  };
+  }
 
-  // Split current block at caret: update current with beforeHtml and insert new block with afterHtml, then reorder
-  const splitBlock = async (blockId: string, beforeHtml: string, afterHtml: string): Promise<string | null> => {
-    if (!currentPageId) return null;
-    // Update current block content
-    await updateBlock(blockId, { content: beforeHtml });
-
-    // Insert new block
-    const { data: inserted, error: insertError } = await supabase
-      .from('org_blocks')
-      .insert({ page_id: currentPageId, type: 'text', order_index: 0, content: afterHtml })
-      .select('*')
-      .single();
-    if (insertError || !inserted) { toast({ title: 'Erro', description: 'Não foi possível criar a nova linha' }); return null; }
-
-    // Prepare new ordering placing the new block right after the original one
-    const siblings = [...blocks]
-      .filter(b => b.page_id === currentPageId)
-      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
-
-    const idx = siblings.findIndex(b => b.id === blockId);
-    const arr = [...siblings];
-    arr.splice(idx + 1, 0, inserted as any);
-    const withOrder = arr.map((b, i) => ({ id: b.id, order_index: i * 100 }));
-
-    await Promise.all(withOrder.map(({ id, order_index }) => supabase.from('org_blocks').update({ order_index }).eq('id', id)));
-
-    // Update local state
-    setBlocks(prev => {
-      const others = prev.filter(b => b.page_id !== currentPageId);
-      const updatedSiblings = arr.map((b, i) => ({ ...b, order_index: i * 100 } as any));
-      return [...others, ...updatedSiblings];
-    });
-
-    return (inserted as any).id as string;
-  };
-  // Join current block with previous one and return previous id
-  const joinWithPrevious = async (blockId: string, currentHtml: string): Promise<string | null> => {
-    if (!currentPageId) return null;
-    const siblings = [...blocks]
-      .filter(b => b.page_id === currentPageId)
-      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
-    const idx = siblings.findIndex(b => b.id === blockId);
-    if (idx <= 0) return null;
-    const prev = siblings[idx - 1];
-    const combined = (prev.content || '') + (currentHtml || '');
-
-    // Update previous content
-    const { data: updatedPrev, error: updErr } = await supabase
-      .from('org_blocks')
-      .update({ content: combined })
-      .eq('id', prev.id)
-      .select('*')
-      .single();
-    if (updErr) { toast({ title: 'Erro', description: 'Não foi possível juntar com a linha anterior' }); return null; }
-
-    // Delete current block
-    await supabase.from('org_blocks').delete().eq('id', blockId);
-
-    // Recompute order for remaining siblings
-    const remaining = siblings.filter(b => b.id !== blockId).map((b, i) => ({ id: b.id, order_index: i * 100 }));
-    await Promise.all(remaining.map(({ id, order_index }) => supabase.from('org_blocks').update({ order_index }).eq('id', id)));
-
-    // Update local state
-    setBlocks(prevState => {
-      const next = prevState.filter(b => b.id !== blockId).map(b => (b.id === prev.id ? ({ ...(updatedPrev as any) }) : b));
-      return next.map(b => {
-        const n = remaining.find(r => r.id === b.id);
-        return n ? ({ ...b, order_index: n.order_index } as any) : b;
+  /* ===== Drag-select global ===== */
+  useEffect(() => {
+    function onMove(e: PointerEvent) {
+      if (!state.ui.isDragSelecting || !state.ui.dragAnchorId) return;
+      const hoveredId = elementBlockIdFromPoint(e.clientX, e.clientY);
+      if (!hoveredId) return;
+      setState((s) => {
+        const p = s.pages.find((pp) => pp.id === s.ui.activePageId)!;
+        const range = idsInRange(p, s.ui.dragAnchorId!, hoveredId);
+        const base = s.ui.dragAdditive ? selectionSnapshotAtDragStart.current : [];
+        const sel = uniq([...base, ...range]);
+        return { ...s, ui: { ...s.ui, selectedBlockIds: sel, focusedBlockId: hoveredId } };
       });
-    });
 
-    return prev.id;
-  };
-  // Move a page under a new parent (or to root when null)
-  const movePage = async (sourceId: string, newParentId: string | null) => {
-    const { data, error } = await supabase
-      .from("org_pages")
-      .update({ parent_id: newParentId })
-      .eq("id", sourceId)
-      .select("*")
-      .single();
-    if (error) { toast({ title: "Erro", description: "Não foi possível mover a página" }); return; }
-    setPages(prev => prev.map(p => (p.id === sourceId ? (data as OrgPage) : p)));
-    setDraggingId(null);
-    setDropOverId(null);
-  };
-
-  // Reorder favorites list locally and persist favorite_order
-  const reorderFavorites = async (sourceId: string, targetId: string) => {
-    const favs = pages.filter(p => p.is_favorite).sort((a,b)=> (a.favorite_order??0)-(b.favorite_order??0));
-    const srcIdx = favs.findIndex(p=>p.id===sourceId);
-    const tgtIdx = favs.findIndex(p=>p.id===targetId);
-    if (srcIdx === -1 || tgtIdx === -1) return;
-    const [moved] = favs.splice(srcIdx,1);
-    favs.splice(tgtIdx,0,moved);
-    // assign local orders with gaps of 100
-    const orderMap = new Map<string, number>();
-    favs.forEach((p,i)=> orderMap.set(p.id, i*100));
-    await Promise.all(favs.map((p)=> supabase.from('org_pages').update({ favorite_order: orderMap.get(p.id)! }).eq('id', p.id)));
-    setPages(prev => prev.map(p => orderMap.has(p.id) ? { ...p, favorite_order: orderMap.get(p.id)! } as any : p));
-  };
-
-  const reorderSibling = async (sourceId: string, targetId: string, position: 'before'|'after'='before') => {
-    const target = pages.find(p=>p.id===targetId);
-    const source = pages.find(p=>p.id===sourceId);
-    if (!target || !source) return;
-    const parentId = target.parent_id ?? null;
-    let siblings = pages
-      .filter(p=> (p.parent_id ?? null) === parentId)
-      .sort((a,b)=> (a.sort_index??0)-(b.sort_index??0));
-    // remove source if present (it may come from another parent)
-    siblings = siblings.filter(p=>p.id!==sourceId);
-    const insertAt = Math.max(0, siblings.findIndex(p=>p.id===targetId) + (position==='after'?1:0));
-    siblings.splice(insertAt, 0, { ...source, parent_id: parentId });
-
-    // assign new local sort_index values so UI updates immediately
-    const siblingsWithOrder = siblings.map((p, i) => ({ ...p, sort_index: i*100, parent_id: parentId }));
-
-    // persist
-    await Promise.all(
-      siblingsWithOrder.map((p) =>
-        supabase.from('org_pages').update({ sort_index: p.sort_index, parent_id: parentId }).eq('id', p.id)
-      )
-    );
-
-    setPages(prev => prev.map(p => {
-      const n = siblingsWithOrder.find(s => s.id === p.id);
-      return n ? ({ ...p, sort_index: n.sort_index, parent_id: n.parent_id } as any) : p;
-    }));
-  };
-
-  const openPage = (pageId: string) => setCurrentPageId(pageId);
-
-  const createRootPage = async () => {
-    console.log('createRootPage called, title:', creatingTitle);
-    if (!creatingTitle.trim()) {
-      toast({ title: "Aviso", description: "Digite o nome da página" });
-      return;
+      // auto-scroll leve do container
+      const c = containerRef.current;
+      if (c) {
+        const rect = c.getBoundingClientRect();
+        const threshold = 48;
+        if (e.clientY < rect.top + threshold) c.scrollBy({ top: -12 });
+        else if (e.clientY > rect.bottom - threshold) c.scrollBy({ top: 12 });
+      }
     }
-    const p = await createPage(creatingTitle.trim(), null);
-    if (p) { 
-      setCreatingTitle(""); 
-      setCurrentPageId(p.id);
-      toast({ title: "Sucesso", description: "Página criada" });
+
+    function onUp() {
+      if (!state.ui.isDragSelecting) return;
+      setState((s) => ({ ...s, ui: { ...s.ui, isDragSelecting: false, dragAnchorId: null, dragAdditive: false } }));
     }
-  };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, [state.ui.isDragSelecting, state.ui.dragAnchorId, state.ui.activePageId]);
+
+  /* ===== Render ===== */
   return (
-    <div className="container py-6">
-      <header className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Organização</h1>
-      </header>
+    <div className="flex h-full w-full text-sm">
+      {/* Sidebar lateral para páginas */}
+      <aside className="w-64 border-r border-border bg-muted/30 p-4 space-y-3 overflow-auto">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => createPage()}
+            className="w-full justify-start"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nova página
+          </Button>
+        </div>
+        <div className="space-y-1">
+          {state.pages.map((p) => (
+            <button
+              key={p.id}
+              className={`w-full text-left px-3 py-2 rounded-md transition-smooth text-sm ${
+                p.id === page.id 
+                  ? "bg-accent text-accent-foreground border border-border" 
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+              onClick={() => setActivePage(p.id)}
+            >
+              <span className="truncate block">{p.title || "Sem título"}</span>
+            </button>
+          ))}
+        </div>
+      </aside>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <aside className="lg:col-span-3 space-y-4 md:-ml-2 lg:-ml-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Favoritos</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {favorites.map(p => (
+      {/* Editor principal */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {/* Título da página */}
+        <div className="p-6 pb-4 border-b border-border bg-background">
+          <input
+            className="w-full text-2xl font-semibold outline-none bg-transparent text-foreground placeholder:text-muted-foreground"
+            placeholder="Sem título"
+            value={page.title}
+            onChange={(e) => renamePage(page.id, e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                const first = page.blocks[0];
+                if (first) {
+                  setState((s) => ({ ...s, ui: { ...s.ui, focusedBlockId: first.id, anchorBlockId: first.id } }));
+                  focusBlockById(first.id);
+                }
+              }
+            }}
+          />
+        </div>
+
+        {/* Blocos de conteúdo */}
+        <div ref={containerRef} className="flex-1 overflow-auto p-6 bg-background">
+          <div role="list" className="max-w-4xl mx-auto space-y-1">
+            {page.blocks.map((b, idx) => {
+              const selected = state.ui.selectedBlockIds.includes(b.id);
+              const focused = state.ui.focusedBlockId === b.id;
+              return (
                 <div
-                  key={p.id}
-                  className={`group flex items-center justify-between w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-smooth ${currentPageId===p.id? 'bg-muted' : ''} ${dropOverId===p.id ? 'ring-2 ring-primary' : ''}`}
-                  draggable
-                  onDragStart={(e) => { e.dataTransfer.setData('text/plain', p.id); setDraggingId(p.id); }}
-                  onDragEnd={() => { setDraggingId(null); setDropOverId(null); }}
-                  onDragOver={(e) => { e.preventDefault(); setDropOverId(p.id); }}
-                  onDragLeave={() => setDropOverId(prev => prev === p.id ? null : prev)}
-                  onDrop={async (e) => {
-                    e.preventDefault();
-                    const raw = e.dataTransfer.getData('text/plain');
-                    if (!raw) return;
-                    const blockMatch = raw.match(/^block:(.+)$/);
-                    if (blockMatch) {
-                      await moveBlock(blockMatch[1], p.id);
-                      return;
-                    }
-                    const pageId = raw.startsWith('page:') ? raw.slice(5) : raw;
-                    if (pageId && pageId !== p.id) await reorderFavorites(pageId, p.id);
-                  }}
+                  key={b.id}
+                  role="listitem"
+                  data-block-id={b.id}
+                  className={`group flex items-center gap-3 px-4 py-2.5 rounded-lg transition-smooth border ${
+                    selected 
+                      ? "border-primary bg-primary/5 shadow-sm" 
+                      : focused 
+                        ? "border-border bg-muted/40" 
+                        : "border-transparent hover:bg-muted/30"
+                  }`}
                 >
-                  <button 
-                    onClick={() => openPage(p.id)}
-                    className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                  {/* Handle para drag-select */}
+                  <div
+                    className="shrink-0 w-5 self-stretch cursor-pointer flex items-center justify-center text-muted-foreground hover:text-foreground transition-smooth opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    onPointerDown={(e) => {
+                      (e.target as HTMLElement).setPointerCapture?.((e as any).pointerId);
+                      selectionSnapshotAtDragStart.current = state.ui.selectedBlockIds;
+                      const additive = e.ctrlKey || e.metaKey;
+                      setState((s) => ({
+                        ...s,
+                        ui: {
+                          ...s.ui,
+                          isDragSelecting: true,
+                          dragAnchorId: b.id,
+                          dragAdditive: additive,
+                          anchorBlockId: b.id,
+                          focusedBlockId: b.id,
+                          selectedBlockIds: additive ? uniq([...s.ui.selectedBlockIds, b.id]) : [b.id],
+                        },
+                      }));
+                      e.preventDefault();
+                    }}
+                    title="Arrastar para selecionar múltiplos blocos"
                   >
-                    <span className="truncate">{p.title}</span>
-                  </button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6 opacity-0 group-hover:opacity-100 flex-shrink-0"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <MoreVertical className="h-3 w-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem 
-                        onClick={() => deletePage(p.id)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Deletar página
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Todas as páginas</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-                <div className="flex gap-2">
-                  <Input placeholder="Nome da nova página" value={creatingTitle} onChange={e => setCreatingTitle(e.target.value)} />
-                  <Button onClick={createRootPage} variant="ghost" size="icon" aria-label="Criar página" className="org-text-green">
-                    <FilePlus2 />
-                  </Button>
-                </div>
-              <Separator />
-              <div className="space-y-1 max-h-[360px] overflow-auto">
-                <PageTree
-                  pages={pages}
-                  currentPageId={currentPageId}
-                  openPage={openPage}
-                  movePage={movePage}
-                  reorderSibling={reorderSibling}
-                  draggingId={draggingId}
-                  setDraggingId={setDraggingId}
-                  dropOverId={dropOverId}
-                  setDropOverId={setDropOverId}
-                  moveBlock={moveBlock}
-                  deletePage={deletePage}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </aside>
-
-        <main className="lg:col-span-9">
-          {!currentPage && (
-            <Card>
-              <CardContent className="py-10 text-center text-muted-foreground">Selecione ou crie uma página para começar.</CardContent>
-            </Card>
-          )}
-
-          {currentPage && (
-            <div className="space-y-4">
-              <Card className="shadow-none border-0 bg-transparent">
-                <CardContent className="pt-6 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={currentPage.title}
-                      onChange={async (e) => {
-                        const title = e.target.value;
-                        setPages(prev => prev.map(p => p.id===currentPage.id ? { ...p, title } : p));
-                        const { error } = await supabase.from("org_pages").update({ title }).eq("id", currentPage.id);
-                        if (error) toast({ title: "Erro", description: "Não foi possível renomear a página" });
-                      }}
-                      className="text-3xl md:text-4xl font-semibold bg-transparent border-0 focus-visible:ring-0 px-0 flex-1"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={currentPage.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-                      aria-pressed={currentPage.is_favorite}
-                      onClick={() => toggleFavorite(currentPage)}
-                      className="org-text-green"
-                      title={currentPage.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-                    >
-                      <Star className="h-6 w-6" fill={currentPage.is_favorite ? "currentColor" : "none"} />
-                    </Button>
+                    <svg className="w-3 h-4" viewBox="0 0 12 16" fill="currentColor">
+                      <circle cx="2" cy="2" r="1"/>
+                      <circle cx="2" cy="6" r="1"/>
+                      <circle cx="2" cy="10" r="1"/>
+                      <circle cx="2" cy="14" r="1"/>
+                      <circle cx="6" cy="2" r="1"/>
+                      <circle cx="6" cy="6" r="1"/>
+                      <circle cx="6" cy="10" r="1"/>
+                      <circle cx="6" cy="14" r="1"/>
+                    </svg>
                   </div>
-                  <Separator />
-                </CardContent>
-              </Card>
 
-              <div className="space-y-3 animate-fade-in">
-                {loading && <p className="text-sm text-muted-foreground">Carregando…</p>}
-                {blocks.length > 0 && (
-                  <Card key={"blocks"} className="shadow-none border-0 bg-transparent">
-                    <CardContent className="pt-4 px-0">
-                      <BlockListEditor
-                        blocks={blocks
-                          .filter(b => b.page_id === currentPageId)
-                          .map(b => ({ id: b.id, content: b.content, order_index: b.order_index }))}
-                        onChangeContent={(id, html) => updateBlock(id, { content: html })}
-                        onReorder={reorderBlocks}
-                        onMoveToPage={moveBlock}
-                        onCreateAfter={createBlockAfter}
-                        onSplit={splitBlock}
-                        onJoinPrev={joinWithPrevious}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
+                  {/* Input do bloco */}
+                  <input
+                    className="w-full bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
+                    value={b.content}
+                    onChange={(e) => updateBlockContent(b.id, e.target.value)}
+                    onFocus={() =>
+                      setState((s) => ({ ...s, ui: { ...s.ui, focusedBlockId: b.id, anchorBlockId: b.id } }))
+                    }
+                    onKeyDown={(e) => {
+                      const input = e.currentTarget;
+
+                      // Multi-seleção por teclado (Shift + ↑/↓)
+                      if (e.shiftKey && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+                        e.preventDefault();
+                        extendSelectionByKeyboard(b.id, e.key === "ArrowDown" ? "down" : "up");
+                        return;
+                      }
+
+                      // Navegação ↑/↓ quando cursor no início/fim
+                      if (!e.shiftKey && e.key === "ArrowDown" && isInputCaretAtEnd(input)) {
+                        e.preventDefault();
+                        moveFocusToNeighbor(b.id, "down");
+                        return;
+                      }
+                      if (!e.shiftKey && e.key === "ArrowUp" && isInputCaretAtStart(input)) {
+                        e.preventDefault();
+                        moveFocusToNeighbor(b.id, "up");
+                        return;
+                      }
+
+                      // Enter → criar bloco abaixo e focar
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        const newId = createBlockBelow(b.id);
+                        focusBlockById(newId);
+                        return;
+                      }
+
+                      // Backspace no início de bloco vazio → deletar e focar anterior
+                      if (e.key === "Backspace" && isInputCaretAtStart(input) && b.content === "") {
+                        e.preventDefault();
+                        const i = getBlockIndex(page, b.id);
+                        const prev = page.blocks[i - 1];
+                        deleteBlock(b.id);
+                        if (prev) focusBlockById(prev.id);
+                        return;
+                      }
+                    }}
+                    placeholder={idx === 0 && !b.content ? "Escreva algo aqui..." : ""}
+                  />
+                </div>
+              );
+            })}
+            
+            {page.blocks.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>Nenhum bloco ainda. Comece digitando no título acima.</p>
               </div>
-            </div>
-          )}
-        </main>
-      </div>
+            )}
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
