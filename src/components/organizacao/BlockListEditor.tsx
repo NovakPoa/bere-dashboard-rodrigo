@@ -165,11 +165,12 @@ export default function BlockListEditor({
               }}
               onArrowNavigate={(dir, place) => {
                 const idx = sorted.findIndex((x) => x.id === b.id);
-                if (idx === -1) return;
+                if (idx === -1) return false;
                 const target = dir === 'prev' ? sorted[idx - 1] : sorted[idx + 1];
-                if (!target) return;
+                if (!target) return false;
                 setFocusId(target.id);
                 setFocusAtEnd(place === 'end');
+                return true;
               }}
               autoFocus={focusId === b.id}
               autoFocusAtEnd={focusId === b.id ? focusAtEnd : false}

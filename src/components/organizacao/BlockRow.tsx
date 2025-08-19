@@ -15,7 +15,7 @@ interface BlockRowProps {
   onSplit?: (id: string, beforeHtml: string, afterHtml: string) => Promise<string | null>;
   onJoinPrev?: (id: string, currentHtml: string) => Promise<string | null>;
   onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void;
-  onArrowNavigate?: (dir: 'prev' | 'next', place: 'start' | 'end') => void;
+  onArrowNavigate?: (dir: 'prev' | 'next', place: 'start' | 'end') => boolean;
   autoFocus?: boolean;
   autoFocusAtEnd?: boolean;
   onFocusDone?: () => void;
@@ -232,11 +232,14 @@ export function BlockRow({ id, html, onChange, onSplit, onJoinPrev, onKeyDown, o
 
       if (atStart || atEnd) {
         e.preventDefault();
-        (el as HTMLElement).blur();
-        if (e.key === 'ArrowUp') {
-          onArrowNavigate?.('prev', atEnd ? 'end' : 'start');
-        } else {
-          onArrowNavigate?.('next', atEnd ? 'end' : 'start');
+        // Check if navigation is possible before blurring
+        const shouldNavigate = onArrowNavigate?.(
+          e.key === 'ArrowUp' ? 'prev' : 'next', 
+          atEnd ? 'end' : 'start'
+        );
+        // Only blur if navigation actually happened
+        if (shouldNavigate !== false) {
+          (el as HTMLElement).blur();
         }
         return;
       }
