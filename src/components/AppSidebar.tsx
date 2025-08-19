@@ -22,6 +22,7 @@ const items = [
   { title: "Hábitos", url: "/habitos", icon: CheckCheck },
   { title: "Organização", url: "/organizacao", icon: Notebook },
   { title: "Organização 2", url: "/organizacao2", icon: Notebook },
+  { title: "Organização 3", url: "/organizacao3", icon: Notebook },
 ];
 
 export function AppSidebar() {
