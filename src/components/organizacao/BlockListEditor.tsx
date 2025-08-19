@@ -33,7 +33,7 @@ export default function BlockListEditor({
   );
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [dropOver, setDropOver] = useState<{ id: string; zone: "before" | "after" | null } | null>(null);
+  const [dropSeparatorActive, setDropSeparatorActive] = useState<string | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [focusAtEnd, setFocusAtEnd] = useState(false);
 
@@ -42,28 +42,24 @@ export default function BlockListEditor({
     e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDragOver = (id: string, e: React.DragEvent) => {
+  const handleSeparatorDragOver = (targetId: string, position: "before" | "after", e: React.DragEvent) => {
     e.preventDefault();
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const y = e.clientY - rect.top;
-    const zone = y < rect.height / 2 ? "before" : "after";
-    setDropOver({ id, zone });
+    setDropSeparatorActive(`${targetId}-${position}`);
   };
 
-  const handleDragLeave = (id: string) => {
-    setDropOver((prev) => (prev && prev.id === id ? null : prev));
+  const handleSeparatorDragLeave = () => {
+    setDropSeparatorActive(null);
   };
 
-  const handleDrop = (id: string, e: React.DragEvent) => {
+  const handleSeparatorDrop = (targetId: string, position: "before" | "after", e: React.DragEvent) => {
     e.preventDefault();
     const data = e.dataTransfer.getData("text/plain");
     const m = data.match(/^block:(.+)$/);
     if (!m) return;
     const sourceId = m[1];
-    if (sourceId === id) return;
-    const zone = dropOver?.zone || "before";
-    onReorder(sourceId, id, zone);
-    setDropOver(null);
+    if (sourceId === targetId) return;
+    onReorder(sourceId, targetId, position);
+    setDropSeparatorActive(null);
   };
 
   const handleKeyDown = (id: string, e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -129,60 +125,110 @@ export default function BlockListEditor({
       style={{ userSelect: "text", WebkitUserSelect: "text" }}
       data-block-container
     >
-      {sorted.map((b) => (
-        <div
-          key={b.id}
-          onDragOver={(e) => handleDragOver(b.id, e)}
-          onDragLeave={() => handleDragLeave(b.id)}
-          onDrop={(e) => handleDrop(b.id, e)}
-          className={`group rounded-md transition-smooth border border-transparent ${dropOver && dropOver.id === b.id && dropOver.zone === "before" ? "border-t-primary" : ""} ${dropOver && dropOver.id === b.id && dropOver.zone === "after" ? "border-b-primary" : ""}`}
-        >
-          <div className="flex items-start gap-2 group/row">
-            <button
-              className="opacity-0 group-hover/row:opacity-100 focus:opacity-100 mt-1 cursor-grab active:cursor-grabbing text-muted-foreground transition-opacity"
-              draggable
-              onDragStart={(e) => handleDragStart(b.id, e)}
-              onMouseDown={(e) => e.stopPropagation()}
-              aria-label="Arrastar bloco"
-              style={{ userSelect: "none", WebkitUserSelect: "none" }}
-            >
-              <GripVertical className="h-4 w-4" />
-            </button>
-            <BlockRow
-              id={b.id}
-              html={b.content}
-              onChange={onChangeContent}
-              onKeyDown={(e) => handleKeyDown(b.id, e)}
-              onSplit={async (id, before, after) => {
-                const newId = await onSplit?.(id, before, after);
-                if (newId) { setFocusId(newId); setFocusAtEnd(false); }
-                return newId ?? null;
-              }}
-              onJoinPrev={async (id, html) => {
-                const prevId = await (typeof onJoinPrev === 'function' ? onJoinPrev(id, html) : Promise.resolve(null));
-                if (prevId) { setFocusId(prevId); setFocusAtEnd(true); }
-                return prevId ?? null;
-              }}
-              onArrowNavigate={(dir, place) => {
-                const idx = sorted.findIndex((x) => x.id === b.id);
-                if (idx === -1) return false;
-                const target = dir === 'prev' ? sorted[idx - 1] : sorted[idx + 1];
-                if (!target) return false;
-                setFocusId(target.id);
-                setFocusAtEnd(place === 'end');
-                return true;
-              }}
-              autoFocus={focusId === b.id}
-              autoFocusAtEnd={focusId === b.id ? focusAtEnd : false}
-              onFocusDone={() => setFocusId(null)}
-              onBeginCrossSelect={beginCrossSelect}
-            />
+      {sorted.map((b, index) => (
+        <div key={b.id}>
+          {/* Drop separator before each block (including first) */}
+          <div
+            className={`h-3 w-full transition-smooth ${
+              dropSeparatorActive === `${b.id}-before` 
+                ? "bg-primary/20 border-t-2 border-primary" 
+                : "hover:bg-muted/50"
+            }`}
+            onDragOver={(e) => handleSeparatorDragOver(b.id, "before", e)}
+            onDragLeave={handleSeparatorDragLeave}
+            onDrop={(e) => handleSeparatorDrop(b.id, "before", e)}
+          />
+          
+          {/* Block content */}
+          <div className="group rounded-md">
+            <div className="flex items-start gap-2 group/row">
+              <button
+                className="opacity-0 group-hover/row:opacity-100 focus:opacity-100 mt-1 cursor-grab active:cursor-grabbing text-muted-foreground transition-opacity"
+                draggable
+                onDragStart={(e) => handleDragStart(b.id, e)}
+                onMouseDown={(e) => e.stopPropagation()}
+                aria-label="Arrastar bloco"
+                style={{ userSelect: "none", WebkitUserSelect: "none" }}
+              >
+                <GripVertical className="h-4 w-4" />
+              </button>
+              <BlockRow
+                id={b.id}
+                html={b.content}
+                onChange={onChangeContent}
+                onKeyDown={(e) => handleKeyDown(b.id, e)}
+                onSplit={async (id, before, after) => {
+                  const newId = await onSplit?.(id, before, after);
+                  if (newId) { setFocusId(newId); setFocusAtEnd(false); }
+                  return newId ?? null;
+                }}
+                onJoinPrev={async (id, html) => {
+                  const prevId = await (typeof onJoinPrev === 'function' ? onJoinPrev(id, html) : Promise.resolve(null));
+                  if (prevId) { setFocusId(prevId); setFocusAtEnd(true); }
+                  return prevId ?? null;
+                }}
+                onArrowNavigate={(dir, place) => {
+                  const idx = sorted.findIndex((x) => x.id === b.id);
+                  if (idx === -1) return false;
+                  const target = dir === 'prev' ? sorted[idx - 1] : sorted[idx + 1];
+                  if (!target) return false;
+                  setFocusId(target.id);
+                  setFocusAtEnd(place === 'end');
+                  return true;
+                }}
+                autoFocus={focusId === b.id}
+                autoFocusAtEnd={focusId === b.id ? focusAtEnd : false}
+                onFocusDone={() => setFocusId(null)}
+                onBeginCrossSelect={beginCrossSelect}
+              />
+            </div>
           </div>
+
+          {/* Drop separator after last block */}
+          {index === sorted.length - 1 && (
+            <div
+              className={`h-3 w-full transition-smooth ${
+                dropSeparatorActive === `${b.id}-after` 
+                  ? "bg-primary/20 border-t-2 border-primary" 
+                  : "hover:bg-muted/50"
+              }`}
+              onDragOver={(e) => handleSeparatorDragOver(b.id, "after", e)}
+              onDragLeave={handleSeparatorDragLeave}
+              onDrop={(e) => handleSeparatorDrop(b.id, "after", e)}
+            />
+          )}
         </div>
       ))}
+      
       {sorted.length === 0 && (
-        <div className="text-sm text-muted-foreground">Sem linhas ainda.</div>
+        <>
+          {/* Drop zone for empty list */}
+          <div
+            className={`h-12 w-full rounded-md border-2 border-dashed transition-smooth ${
+              dropSeparatorActive === "empty" 
+                ? "border-primary bg-primary/10" 
+                : "border-muted-foreground/20 hover:border-muted-foreground/40"
+            }`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDropSeparatorActive("empty");
+            }}
+            onDragLeave={handleSeparatorDragLeave}
+            onDrop={(e) => {
+              e.preventDefault();
+              const data = e.dataTransfer.getData("text/plain");
+              const m = data.match(/^block:(.+)$/);
+              if (m) {
+                // For empty list, we'll need a different approach since there's no target
+                console.log("Drop on empty list - need to handle this case");
+              }
+              setDropSeparatorActive(null);
+            }}
+          />
+          <div className="text-sm text-muted-foreground text-center mt-4">Sem linhas ainda.</div>
+        </>
       )}
+      
       {sorted.length > 0 && onCreateAfter && (
         <div className="pt-2">
           <button
