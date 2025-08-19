@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
-import { useEffect, useState } from "react";
+import React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -23,10 +23,10 @@ import Auth from "./pages/Auth";
 const queryClient = new QueryClient();
 
 const RequireAuth = () => {
-  const [ready, setReady] = useState(false);
-  const [hasSession, setHasSession] = useState<boolean | null>(null);
+  const [ready, setReady] = React.useState(false);
+  const [hasSession, setHasSession] = React.useState<boolean | null>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setHasSession(!!session);
       setReady(true);
