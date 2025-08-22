@@ -27,6 +27,7 @@ export type Database = {
           texto: string | null
           tipo: string | null
           ts: string | null
+          user_id: string | null
           wa_id: string | null
         }
         Insert: {
@@ -41,6 +42,7 @@ export type Database = {
           texto?: string | null
           tipo?: string | null
           ts?: string | null
+          user_id?: string | null
           wa_id?: string | null
         }
         Update: {
@@ -55,6 +57,7 @@ export type Database = {
           texto?: string | null
           tipo?: string | null
           ts?: string | null
+          user_id?: string | null
           wa_id?: string | null
         }
         Relationships: []
@@ -119,6 +122,7 @@ export type Database = {
           tipo_item: string | null
           titulo: string | null
           ts: string | null
+          user_id: string | null
           wa_id: string | null
         }
         Insert: {
@@ -132,6 +136,7 @@ export type Database = {
           tipo_item?: string | null
           titulo?: string | null
           ts?: string | null
+          user_id?: string | null
           wa_id?: string | null
         }
         Update: {
@@ -145,6 +150,7 @@ export type Database = {
           tipo_item?: string | null
           titulo?: string | null
           ts?: string | null
+          user_id?: string | null
           wa_id?: string | null
         }
         Relationships: []
@@ -160,6 +166,7 @@ export type Database = {
           texto: string | null
           tipo: string | null
           ts: string | null
+          user_id: string | null
           valor: number | null
           wa_id: string | null
         }
@@ -173,6 +180,7 @@ export type Database = {
           texto?: string | null
           tipo?: string | null
           ts?: string | null
+          user_id?: string | null
           valor?: number | null
           wa_id?: string | null
         }
@@ -186,6 +194,7 @@ export type Database = {
           texto?: string | null
           tipo?: string | null
           ts?: string | null
+          user_id?: string | null
           valor?: number | null
           wa_id?: string | null
         }
@@ -202,6 +211,7 @@ export type Database = {
           texto: string | null
           tipo: string | null
           ts: string | null
+          user_id: string | null
           wa_id: string | null
         }
         Insert: {
@@ -214,6 +224,7 @@ export type Database = {
           texto?: string | null
           tipo?: string | null
           ts?: string | null
+          user_id?: string | null
           wa_id?: string | null
         }
         Update: {
@@ -226,6 +237,7 @@ export type Database = {
           texto?: string | null
           tipo?: string | null
           ts?: string | null
+          user_id?: string | null
           wa_id?: string | null
         }
         Relationships: []
