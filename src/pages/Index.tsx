@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { getExpenses, filterExpenses, filterExpensesByDateRange, getMonthlyTotal } from "@/lib/finance";
+import { filterExpenses, filterExpensesByDateRange, getMonthlyTotal } from "@/lib/finance";
 import type { Category, PaymentMethod } from "@/types/expense";
 import StatCard from "@/components/finance/StatCard";
 import AddExpenseFromMessage from "@/components/finance/AddExpenseFromMessage";
@@ -10,20 +10,16 @@ import CategoryChart from "@/components/finance/CategoryChart";
 import MethodChart from "@/components/finance/MethodChart";
 import ExpensesTable from "@/components/finance/ExpensesTable";
 import DateRangePicker from "@/components/finance/DateRangePicker";
+import { useExpenses } from "@/hooks/useFinance";
 
 const Index = () => {
-  const [expenses, setExpenses] = useState(() => getExpenses());
+  const { data: expenses = [], refetch } = useExpenses();
   const [category, setCategory] = useState<"all" | Category>("all");
   const [method, setMethod] = useState<"all" | PaymentMethod>("all");
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
 
-  const refresh = () => setExpenses(getExpenses());
-
-  useEffect(() => {
-    // Initial load from localStorage
-    setExpenses(getExpenses());
-  }, []);
+  const refresh = () => refetch();
 
   useEffect(() => {
     document.title = "Financeiro";

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getHabits } from "@/lib/habits";
+import { useHabits } from "@/hooks/useHabits";
 import { HabitForm } from "@/components/habits/HabitForm";
 import { DailyHabitTracker } from "@/components/habits/DailyHabitTracker";
 import { MonthlyView } from "@/components/habits/MonthlyView";
@@ -12,7 +12,7 @@ import { HistoricalView } from "@/components/habits/HistoricalView";
 import { format, addMonths, subMonths } from "date-fns";
 
 export default function Habitos() {
-  const [habits, setHabits] = useState(getHabits());
+  const { data: habits = [], refetch } = useHabits();
   const [selectedHabit, setSelectedHabit] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [refreshKey, setRefreshKey] = useState(0);
@@ -28,7 +28,7 @@ export default function Habitos() {
   }, [habits, selectedHabit]);
 
   const refresh = () => {
-    setHabits(getHabits());
+    refetch();
     setRefreshKey(prev => prev + 1);
   };
 

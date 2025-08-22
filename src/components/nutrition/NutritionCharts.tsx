@@ -6,15 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-type FoodEntry = {
-  descricao: string;
-  refeicao: string;
-  calorias: number;
-  proteinas_g: number;
-  carboidratos_g: number;
-  gorduras_g: number;
-  data: string;
-};
+import { FoodEntry } from "@/hooks/useNutrition";
 
 interface NutritionChartsProps {
   entries: FoodEntry[];
@@ -25,14 +17,14 @@ export default function NutritionCharts({ entries, dateRange }: NutritionChartsP
   const filteredEntries = useMemo(() => {
     if (!dateRange?.from || !dateRange?.to) return entries;
     return entries.filter(entry => {
-      const entryDate = new Date(entry.data);
+      const entryDate = new Date(entry.date);
       return entryDate >= dateRange.from && entryDate <= dateRange.to;
     });
   }, [entries, dateRange]);
 
   const dailyData = useMemo(() => {
     const grouped = filteredEntries.reduce((acc, entry) => {
-      const date = format(new Date(entry.data), 'dd/MM', { locale: ptBR });
+      const date = format(new Date(entry.date), 'dd/MM', { locale: ptBR });
       if (!acc[date]) {
         acc[date] = {
           data: date,
@@ -43,10 +35,10 @@ export default function NutritionCharts({ entries, dateRange }: NutritionChartsP
           count: 0
         };
       }
-      acc[date].calorias += entry.calorias;
-      acc[date].proteinas += entry.proteinas_g;
-      acc[date].carboidratos += entry.carboidratos_g;
-      acc[date].gorduras += entry.gorduras_g;
+      acc[date].calorias += entry.calories;
+      acc[date].proteinas += entry.protein;
+      acc[date].carboidratos += entry.carbs;
+      acc[date].gorduras += entry.fat;
       acc[date].count += 1;
       return acc;
     }, {} as Record<string, any>);

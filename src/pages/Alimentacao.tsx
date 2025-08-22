@@ -16,10 +16,9 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import NutritionCharts from "@/components/nutrition/NutritionCharts";
 import RecentMeals from "@/components/nutrition/RecentMeals";
+import { useFoodEntries, useAddFoodEntry, type FoodEntry } from "@/hooks/useNutrition";
 
-const STORAGE_KEY = "food_diary_v1";
-
-type FoodEntry = {
+type LegacyFoodEntry = {
   descricao: string;
   refeicao: string;
   calorias: number;
@@ -29,48 +28,34 @@ type FoodEntry = {
   data: string;
 };
 
-const parseFood = (msg: string): FoodEntry | null => {
+const parseFood = (msg: string): Omit<FoodEntry, "id"> | null => {
   const lower = msg.toLowerCase();
   if (!lower.trim()) return null;
   // simples: tenta extrair refeição
   const refeicoes = ["café da manhã", "cafe da manha", "almoço", "almoco", "jantar", "lanche"];
-  const refeicao = refeicoes.find((r) => lower.includes(r)) || "refeição";
+  const refeicao = refeicoes.find((r) => lower.includes(r)) || "café da manhã";
   return {
-    descricao: msg.trim(),
-    refeicao,
-    calorias: 500,
-    proteinas_g: 20,
-    carboidratos_g: 60,
-    gorduras_g: 15,
-    data: new Date().toISOString(),
+    description: msg.trim(),
+    mealType: refeicao as FoodEntry["mealType"],
+    calories: 500,
+    protein: 20,
+    carbs: 60,
+    fat: 15,
+    date: new Date().toISOString().split('T')[0],
   };
 };
 
-function save(entry: FoodEntry) {
-  const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]") as FoodEntry[];
-  all.unshift(entry);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-}
-
-function getFoodEntries(): FoodEntry[] {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-
 export default function Alimentacao() {
+  const { data: entries = [] } = useFoodEntries();
+  const addFoodEntry = useAddFoodEntry();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [range, setRange] = useState<DateRange | undefined>(
     () => ({ from: subDays(new Date(), 6), to: new Date() })
   );
   const fieldsRef = useRef<Partial<FoodEntry>>({});
 
   useEffect(() => setPageSEO("Alimentação", "Registre refeições por texto ou foto"), []);
-  useEffect(() => setEntries(getFoodEntries()), []);
 
   const onFile = (f: File | null) => {
     setFile(f);
@@ -84,20 +69,20 @@ export default function Alimentacao() {
     }
     // MVP stub: heurística simples
     const name = file.name.toLowerCase();
-    let base: Pick<FoodEntry, "calorias" | "proteinas_g" | "carboidratos_g" | "gorduras_g"> = {
-      calorias: 500,
-      proteinas_g: 20,
-      carboidratos_g: 60,
-      gorduras_g: 15,
+    let base: Pick<FoodEntry, "calories" | "protein" | "carbs" | "fat"> = {
+      calories: 500,
+      protein: 20,
+      carbs: 60,
+      fat: 15,
     };
-    if (/(salada|salad)/.test(name)) base = { calorias: 250, proteinas_g: 10, carboidratos_g: 20, gorduras_g: 12 };
-    if (/(pizza)/.test(name)) base = { calorias: 750, proteinas_g: 28, carboidratos_g: 85, gorduras_g: 30 };
-    if (/(frango|chicken)/.test(name)) base = { calorias: 420, proteinas_g: 35, carboidratos_g: 10, gorduras_g: 18 };
+    if (/(salada|salad)/.test(name)) base = { calories: 250, protein: 10, carbs: 20, fat: 12 };
+    if (/(pizza)/.test(name)) base = { calories: 750, protein: 28, carbs: 85, fat: 30 };
+    if (/(frango|chicken)/.test(name)) base = { calories: 420, protein: 35, carbs: 10, fat: 18 };
 
-    const entry: FoodEntry = {
-      descricao: "Estimado pela foto",
-      refeicao: "refeição",
-      data: new Date().toISOString(),
+    const entry: Partial<FoodEntry> = {
+      description: "Estimado pela foto",
+      mealType: "café da manhã",
+      date: new Date().toISOString().split('T')[0],
       ...base,
     };
 
@@ -107,22 +92,20 @@ export default function Alimentacao() {
 
   const saveFromFields = () => {
     const f = fieldsRef.current;
-    if (!f || !f.descricao) {
+    if (!f || !f.description) {
       toast({ title: "Complete os campos", variant: "destructive" });
       return;
     }
-    const entry: FoodEntry = {
-      descricao: f.descricao!,
-      refeicao: (f.refeicao as string) || "refeição",
-      calorias: Number(f.calorias ?? 0),
-      proteinas_g: Number(f.proteinas_g ?? 0),
-      carboidratos_g: Number(f.carboidratos_g ?? 0),
-      gorduras_g: Number(f.gorduras_g ?? 0),
-      data: new Date().toISOString(),
+    const entry: Omit<FoodEntry, "id"> = {
+      description: f.description!,
+      mealType: (f.mealType as FoodEntry["mealType"]) || "café da manhã",
+      calories: Number(f.calories ?? 0),
+      protein: Number(f.protein ?? 0),
+      carbs: Number(f.carbs ?? 0),
+      fat: Number(f.fat ?? 0),
+      date: new Date().toISOString().split('T')[0],
     };
-    save(entry);
-    setEntries(getFoodEntries());
-    toast({ title: "Refeição registrada" });
+    addFoodEntry.mutate(entry);
   };
 
   const periods = [
@@ -156,15 +139,15 @@ export default function Alimentacao() {
 
   // Campos editáveis tipados
   const editorFields = [
-    ["descricao", "Descrição"],
-    ["refeicao", "Refeição"],
-    ["calorias", "Calorias (kcal)"],
-    ["proteinas_g", "Proteínas (g)"],
-    ["carboidratos_g", "Carboidratos (g)"],
-    ["gorduras_g", "Gorduras (g)"],
+    ["description", "Descrição"],
+    ["mealType", "Refeição"],
+    ["calories", "Calorias (kcal)"],
+    ["protein", "Proteínas (g)"],
+    ["carbs", "Carboidratos (g)"],
+    ["fat", "Gorduras (g)"],
   ] as const satisfies ReadonlyArray<readonly [keyof FoodEntry, string]>;
 
-  const FoodSim = MessageSimulator<FoodEntry>;
+  const FoodSim = MessageSimulator<Omit<FoodEntry, "id">>;
 
   return (
     <div className="min-h-screen">
@@ -218,9 +201,7 @@ export default function Alimentacao() {
           placeholder="Ex.: Almoço: frango com arroz"
           parse={parseFood}
           onConfirm={(data) => {
-            save(data);
-            setEntries(getFoodEntries());
-            toast({ title: "Refeição registrada" });
+            addFoodEntry.mutate(data);
           }}
         />
 

@@ -4,15 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-type FoodEntry = {
-  descricao: string;
-  refeicao: string;
-  calorias: number;
-  proteinas_g: number;
-  carboidratos_g: number;
-  gorduras_g: number;
-  data: string;
-};
+import { FoodEntry } from "@/hooks/useNutrition";
 
 interface RecentMealsProps {
   entries: FoodEntry[];
@@ -23,7 +15,7 @@ export default function RecentMeals({ entries, dateRange }: RecentMealsProps) {
   const filteredEntries = entries
     .filter(entry => {
       if (!dateRange?.from || !dateRange?.to) return true;
-      const entryDate = new Date(entry.data);
+      const entryDate = new Date(entry.date);
       return entryDate >= dateRange.from && entryDate <= dateRange.to;
     })
     .slice(0, 10);
@@ -55,15 +47,15 @@ export default function RecentMeals({ entries, dateRange }: RecentMealsProps) {
               filteredEntries.map((entry, index) => (
                 <TableRow key={index}>
                   <TableCell className="font-mono text-xs">
-                    {format(new Date(entry.data), "dd/MM HH:mm", { locale: ptBR })}
+                    {format(new Date(entry.date), "dd/MM", { locale: ptBR })}
                   </TableCell>
-                  <TableCell className="capitalize">{entry.refeicao}</TableCell>
-                  <TableCell className="max-w-48 truncate">{entry.descricao}</TableCell>
+                  <TableCell className="capitalize">{entry.mealType}</TableCell>
+                  <TableCell className="max-w-48 truncate">{entry.description}</TableCell>
                   <TableCell className="text-right font-mono">
-                    {entry.calorias.toLocaleString()}
+                    {entry.calories.toLocaleString()}
                   </TableCell>
                   <TableCell className="text-right font-mono">
-                    {entry.proteinas_g}
+                    {entry.protein}
                   </TableCell>
                 </TableRow>
               ))
