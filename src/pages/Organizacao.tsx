@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { setPageSEO } from "@/lib/seo";
 
 // Tipos simples: páginas com conteúdo livre em HTML e hierarquia
-type Page = { id: string; title: string; content: string; parentId?: string };
+type Page = { id: string; title: string; content: string; parentId?: string; category?: 'tarefas' | 'projetos' };
 
 type AppState = {
   pages: Page[];
@@ -33,9 +33,9 @@ function migrateIfNeeded(raw: any): AppState | null {
     const migratedPages: Page[] = parsed.pages.map((p: any) => {
       if (Array.isArray(p.blocks)) {
         const text = p.blocks.map((b: any) => (typeof b?.content === "string" ? b.content : "")).join("\n");
-        return { id: p.id ?? uuid(), title: p.title ?? "Página", content: text };
+        return { id: p.id ?? uuid(), title: p.title ?? "Página", content: text, category: p.category ?? 'projetos' };
       }
-      return { id: p.id ?? uuid(), title: p.title ?? "Página", content: p.content ?? "" } as Page;
+      return { id: p.id ?? uuid(), title: p.title ?? "Página", content: p.content ?? "", category: p.category ?? 'projetos' } as Page;
     });
     const activeId = parsed.ui?.activePageId ?? migratedPages?.[0]?.id ?? null;
     return { pages: migratedPages, ui: { activePageId: activeId } } as AppState;
@@ -61,7 +61,7 @@ export default function Organizacao() {
     }
     const firstId = uuid();
     return {
-      pages: [{ id: firstId, title: "Página sem título", content: "" }],
+      pages: [{ id: firstId, title: "Página sem título", content: "", category: 'projetos' }],
       ui: { activePageId: firstId },
     } as AppState;
   }, []);
@@ -96,11 +96,11 @@ export default function Organizacao() {
     setState((s) => ({ ...s, ui: { activePageId: id } }));
   }
 
-  function createPage(title = "Nova página", content = "", parentId?: string): string {
+  function createPage(title = "Nova página", content = "", parentId?: string, category: 'tarefas' | 'projetos' = 'projetos'): string {
     const id = uuid();
     setState((s) => ({
       ...s,
-      pages: [...s.pages, { id, title, content, parentId }],
+      pages: [...s.pages, { id, title, content, parentId, category }],
       ui: { activePageId: id },
     }));
     return id;
@@ -189,28 +189,60 @@ export default function Organizacao() {
   return (
     <div className="flex h-full w-full text-sm">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-border p-3 space-y-2 overflow-auto bg-background">
-        <div className="flex gap-2">
-          <button
-            className="px-3 py-1 rounded-xl border border-border hover:bg-accent transition-colors"
-            onClick={() => createPage()}
-          >
-            Nova página
-          </button>
-        </div>
-        <ul className="space-y-1 mt-2">
-          {state.pages.filter(p => !p.parentId).map((p) => (
-            <li
-              key={p.id}
-              className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer transition-colors ${
-                p.id === page.id ? "bg-accent" : "hover:bg-accent/50"
-              }`}
-              onClick={() => setActivePage(p.id)}
+      <aside className="w-64 border-r border-border p-3 space-y-4 overflow-auto bg-background">
+        {/* Seção Tarefas */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tarefas</span>
+            <button
+              className="text-xs w-5 h-5 flex items-center justify-center rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+              onClick={() => createPage("Nova tarefa", "", undefined, 'tarefas')}
+              title="Nova tarefa"
             >
-              <span className="truncate text-foreground">{p.title || "Sem título"}</span>
-            </li>
-          ))}
-        </ul>
+              +
+            </button>
+          </div>
+          <ul className="space-y-1">
+            {state.pages.filter(p => !p.parentId && p.category === 'tarefas').map((p) => (
+              <li
+                key={p.id}
+                className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer transition-colors ${
+                  p.id === page.id ? "bg-accent" : "hover:bg-accent/50"
+                }`}
+                onClick={() => setActivePage(p.id)}
+              >
+                <span className="truncate text-foreground">{p.title || "Sem título"}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Seção Projetos */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Projetos</span>
+            <button
+              className="text-xs w-5 h-5 flex items-center justify-center rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+              onClick={() => createPage("Novo projeto", "", undefined, 'projetos')}
+              title="Novo projeto"
+            >
+              +
+            </button>
+          </div>
+          <ul className="space-y-1">
+            {state.pages.filter(p => !p.parentId && (p.category === 'projetos' || !p.category)).map((p) => (
+              <li
+                key={p.id}
+                className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer transition-colors ${
+                  p.id === page.id ? "bg-accent" : "hover:bg-accent/50"
+                }`}
+                onClick={() => setActivePage(p.id)}
+              >
+                <span className="truncate text-foreground">{p.title || "Sem título"}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </aside>
 
       {/* Editor */}
