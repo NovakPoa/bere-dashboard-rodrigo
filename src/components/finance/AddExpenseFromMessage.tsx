@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { addExpense, parseExpenseMessage } from "@/lib/finance";
+import { parseExpenseMessage } from "@/lib/finance";
+import { useAddExpense } from "@/hooks/useFinance";
 import { toast } from "@/hooks/use-toast";
 
 export default function AddExpenseFromMessage({ onAdded }: { onAdded: () => void }) {
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+  const addExpense = useAddExpense();
 
 
   const METHOD_LABELS = {
@@ -17,24 +18,23 @@ export default function AddExpenseFromMessage({ onAdded }: { onAdded: () => void
   } as const;
 
   const handleAdd = () => {
-    setLoading(true);
-    try {
-      const parsed = parseExpenseMessage(message);
-      if (!parsed) {
-        toast({
-          title: "Não foi possível interpretar",
-          description: "Inclua valor, categoria e forma de pagamento (ex.: 'R$ 45,90 alimentação crédito').",
-          variant: "destructive",
-        });
-        return;
-      }
-      const saved = addExpense(parsed);
-      toast({ title: "Despesa adicionada", description: `${saved.category} • ${METHOD_LABELS[saved.method]}` });
-      setMessage("");
-      onAdded();
-    } finally {
-      setLoading(false);
+    const parsed = parseExpenseMessage(message);
+    if (!parsed) {
+      toast({
+        title: "Não foi possível interpretar",
+        description: "Inclua valor, categoria e forma de pagamento (ex.: 'R$ 45,90 alimentação crédito').",
+        variant: "destructive",
+      });
+      return;
     }
+    
+    addExpense.mutate(parsed, {
+      onSuccess: (saved) => {
+        toast({ title: "Despesa adicionada", description: `${saved.category} • ${METHOD_LABELS[saved.method]}` });
+        setMessage("");
+        onAdded();
+      }
+    });
   };
 
   return (
@@ -50,8 +50,8 @@ export default function AddExpenseFromMessage({ onAdded }: { onAdded: () => void
           className="min-h-24"
         />
         <div className="flex justify-end">
-          <Button variant="hero" onClick={handleAdd} disabled={loading} className="transition-smooth">
-            {loading ? "Adicionando..." : "Interpretar e adicionar"}
+          <Button variant="hero" onClick={handleAdd} disabled={addExpense.isPending} className="transition-smooth">
+            {addExpense.isPending ? "Adicionando..." : "Interpretar e adicionar"}
           </Button>
         </div>
       </CardContent>

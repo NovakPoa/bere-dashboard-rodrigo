@@ -101,6 +101,44 @@ export function useAddHabit() {
   });
 }
 
+// Note: For habit sessions, we'll continue using localStorage for now since the habits table
+// doesn't have the proper structure for session tracking (multiple entries per habit per day)
+// This would require a separate habit_sessions table in the future
+export function useHabitSessions() {
+  const updateSession = (habitId: string, date: string, sessions: number, timeSpent: number) => {
+    // For now, continue using localStorage for sessions until we create a proper sessions table
+    const SESSIONS_KEY = "habit_sessions_v2";
+    const allSessions = JSON.parse(localStorage.getItem(SESSIONS_KEY) || "[]");
+    const sessionIndex = allSessions.findIndex((s: any) => s.habitId === habitId && s.date === date);
+    
+    if (sessionIndex >= 0) {
+      if (sessions === 0 && timeSpent === 0) {
+        allSessions.splice(sessionIndex, 1);
+      } else {
+        allSessions[sessionIndex] = { ...allSessions[sessionIndex], sessions, timeSpent };
+      }
+    } else if (sessions > 0 || timeSpent > 0) {
+      allSessions.push({
+        id: `session-${Date.now()}`,
+        habitId,
+        date,
+        sessions,
+        timeSpent,
+      });
+    }
+    
+    localStorage.setItem(SESSIONS_KEY, JSON.stringify(allSessions));
+  };
+
+  const getSessionForDate = (habitId: string, date: string) => {
+    const SESSIONS_KEY = "habit_sessions_v2";
+    const sessions = JSON.parse(localStorage.getItem(SESSIONS_KEY) || "[]");
+    return sessions.find((s: any) => s.habitId === habitId && s.date === date) || null;
+  };
+
+  return { updateSession, getSessionForDate };
+}
+
 export function useDeleteHabit() {
   const queryClient = useQueryClient();
   const { toast } = useToast();

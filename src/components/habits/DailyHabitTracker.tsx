@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Trash2, Target, Clock } from "lucide-react";
-import { Habit } from "@/types/habit";
-import { updateHabitSession, getHabitSessionForDate, deleteHabit } from "@/lib/habits";
+import { useDeleteHabit, useHabitSessions, type Habit } from "@/hooks/useHabits";
 import { format } from "date-fns";
 
 interface DailyHabitTrackerProps {
@@ -17,20 +16,23 @@ interface DailyHabitTrackerProps {
 
 export function DailyHabitTracker({ habit, date, onUpdate, onDelete }: DailyHabitTrackerProps) {
   const dateStr = format(date, 'yyyy-MM-dd');
-  const session = getHabitSessionForDate(habit.id, dateStr);
+  const { updateSession, getSessionForDate } = useHabitSessions();
+  const deleteHabit = useDeleteHabit();
+  const session = getSessionForDate(habit.id, dateStr);
   
   const [sessions, setSessions] = useState(session?.sessions || 0);
   const [timeSpent, setTimeSpent] = useState(session?.timeSpent || 0);
 
   const handleUpdate = () => {
-    updateHabitSession(habit.id, dateStr, sessions, timeSpent);
+    updateSession(habit.id, dateStr, sessions, timeSpent);
     onUpdate();
   };
 
   const handleDelete = () => {
     if (confirm(`Tem certeza que deseja excluir o hábito "${habit.name}"?`)) {
-      deleteHabit(habit.id);
-      onDelete();
+      deleteHabit.mutate(habit.id, {
+        onSuccess: () => onDelete()
+      });
     }
   };
 

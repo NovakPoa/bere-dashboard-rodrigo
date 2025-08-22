@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { addHabit } from "@/lib/habits";
+import { useAddHabit } from "@/hooks/useHabits";
 
 interface HabitFormProps {
   onHabitAdded: () => void;
@@ -14,22 +14,25 @@ export function HabitForm({ onHabitAdded, canAddMore }: HabitFormProps) {
   const [name, setName] = useState("");
   const [targetSessions, setTargetSessions] = useState("1");
   const [targetTime, setTargetTime] = useState("30");
+  const addHabit = useAddHabit();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!name.trim() || !canAddMore) return;
     
-    addHabit(
-      name.trim(),
-      parseInt(targetSessions) || 1,
-      parseInt(targetTime) || 30
-    );
-    
-    setName("");
-    setTargetSessions("1");
-    setTargetTime("30");
-    onHabitAdded();
+    addHabit.mutate({
+      name: name.trim(),
+      targetSessions: parseInt(targetSessions) || 1,
+      targetTime: parseInt(targetTime) || 30
+    }, {
+      onSuccess: () => {
+        setName("");
+        setTargetSessions("1");
+        setTargetTime("30");
+        onHabitAdded();
+      }
+    });
   };
 
   if (!canAddMore) {
@@ -94,8 +97,8 @@ export function HabitForm({ onHabitAdded, canAddMore }: HabitFormProps) {
             </div>
           </div>
           
-          <Button type="submit" className="w-full">
-            Adicionar Hábito
+          <Button type="submit" className="w-full" disabled={addHabit.isPending}>
+            {addHabit.isPending ? "Adicionando..." : "Adicionar Hábito"}
           </Button>
         </form>
       </CardContent>

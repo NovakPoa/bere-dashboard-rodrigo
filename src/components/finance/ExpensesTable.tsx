@@ -3,7 +3,7 @@ import { Expense } from "@/types/expense";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { removeExpense } from "@/lib/finance";
+import { useRemoveExpense } from "@/hooks/useFinance";
 import { toast } from "@/hooks/use-toast";
 import { Trash2 } from "lucide-react";
 
@@ -16,11 +16,15 @@ const METHOD_LABELS: Record<Expense["method"], string> = {
 
 export default function ExpensesTable({ expenses, onChange }: { expenses: Expense[]; onChange: () => void }) {
   const rows = useMemo(() => expenses, [expenses]);
+  const removeExpense = useRemoveExpense();
 
   const handleDelete = (id: string) => {
-    removeExpense(id);
-    toast({ title: "Excluído" });
-    onChange();
+    removeExpense.mutate(id, {
+      onSuccess: () => {
+        toast({ title: "Excluído" });
+        onChange();
+      }
+    });
   };
 
   return (
