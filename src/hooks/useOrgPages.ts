@@ -1,0 +1,159 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
+
+type DbOrgPage = Database['public']['Tables']['org_pages']['Row'];
+
+export interface OrgPage {
+  id: string;
+  title: string;
+  content?: string;
+  category: 'tarefas' | 'projetos';
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export function useOrgPages() {
+  const [pages, setPages] = useState<OrgPage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  const fetchPages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('org_pages')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      
+      // Map database rows to our interface, ensuring category type safety
+      const mappedPages: OrgPage[] = (data || []).map((page: DbOrgPage) => ({
+        id: page.id,
+        title: page.title,
+        content: page.content || '',
+        category: (page.category === 'tarefas' || page.category === 'projetos') ? page.category : 'projetos',
+        user_id: page.user_id,
+        created_at: page.created_at,
+        updated_at: page.updated_at
+      }));
+      
+      setPages(mappedPages);
+    } catch (error) {
+      console.error('Error fetching pages:', error);
+      toast({
+        title: "Erro ao carregar páginas",
+        description: "Não foi possível carregar as páginas.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPages();
+  }, []);
+
+  const addPage = async (title: string, category: 'tarefas' | 'projetos' = 'projetos') => {
+    try {
+      const { data, error } = await supabase
+        .from('org_pages')
+        .insert([{
+          title,
+          category,
+          content: '',
+          user_id: (await supabase.auth.getUser()).data.user?.id
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      const mappedPage: OrgPage = {
+        id: data.id,
+        title: data.title,
+        content: data.content || '',
+        category: (data.category === 'tarefas' || data.category === 'projetos') ? data.category : 'projetos',
+        user_id: data.user_id,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+      
+      setPages(prev => [...prev, mappedPage]);
+      return mappedPage;
+    } catch (error) {
+      console.error('Error adding page:', error);
+      toast({
+        title: "Erro ao criar página",
+        description: "Não foi possível criar a página.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
+  const updatePage = async (id: string, updates: Partial<OrgPage>) => {
+    try {
+      const { data, error } = await supabase
+        .from('org_pages')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      const mappedPage: OrgPage = {
+        id: data.id,
+        title: data.title,
+        content: data.content || '',
+        category: (data.category === 'tarefas' || data.category === 'projetos') ? data.category : 'projetos',
+        user_id: data.user_id,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+      
+      setPages(prev => prev.map(page => page.id === id ? mappedPage : page));
+      return mappedPage;
+    } catch (error) {
+      console.error('Error updating page:', error);
+      toast({
+        title: "Erro ao atualizar página",
+        description: "Não foi possível atualizar a página.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
+  const deletePage = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('org_pages')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setPages(prev => prev.filter(page => page.id !== id));
+    } catch (error) {
+      console.error('Error deleting page:', error);
+      toast({
+        title: "Erro ao deletar página",
+        description: "Não foi possível deletar a página.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return {
+    pages,
+    loading,
+    addPage,
+    updatePage,
+    deletePage,
+    refetch: fetchPages
+  };
+}

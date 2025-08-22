@@ -298,6 +298,8 @@ export type Database = {
       }
       org_pages: {
         Row: {
+          category: string
+          content: string | null
           created_at: string
           favorite_order: number
           id: string
@@ -309,6 +311,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category?: string
+          content?: string | null
           created_at?: string
           favorite_order?: number
           id?: string
@@ -320,6 +324,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category?: string
+          content?: string | null
           created_at?: string
           favorite_order?: number
           id?: string

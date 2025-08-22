@@ -1,124 +1,139 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { setPageSEO } from "@/lib/seo";
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { setPageSEO } from '@/lib/seo';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Plus } from 'lucide-react';
+import { useOrgPages, type OrgPage } from '@/hooks/useOrgPages';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
-// Tipos simples: páginas com conteúdo livre em HTML e hierarquia
-type Page = { id: string; title: string; content: string; parentId?: string; category?: 'tarefas' | 'projetos' };
+// Legacy migration function for localStorage data
+const migrateLegacyData = async (legacyData: any) => {
+  if (!legacyData || !legacyData.pages) return;
+  
+  const user = await supabase.auth.getUser();
+  if (!user.data.user) return;
 
-type AppState = {
-  pages: Page[];
-  ui: { activePageId: string | null };
+  // Check if pages already exist in Supabase to avoid duplicates
+  const { data: existingPages } = await supabase
+    .from('org_pages')
+    .select('id')
+    .limit(1);
+    
+  if (existingPages && existingPages.length > 0) {
+    localStorage.removeItem('organizacao-state');
+    localStorage.removeItem('lovable-notion-organizacao-v1');
+    return;
+  }
+
+  try {
+    for (const page of legacyData.pages) {
+      await supabase.from('org_pages').insert({
+        id: page.id,
+        title: page.title,
+        content: page.content || '',
+        category: page.category || 'projetos',
+        user_id: user.data.user.id
+      });
+    }
+    
+    // Clear localStorage after migration
+    localStorage.removeItem('organizacao-state');
+    localStorage.removeItem('lovable-notion-organizacao-v1');
+  } catch (error) {
+    console.error('Migration error:', error);
+  }
 };
 
-const STORAGE_KEY = "lovable-notion-organizacao-v1"; // reutiliza a chave antiga com migração
-
-const uuid = () => crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
-
-// Migração: se existir schema antigo com blocks, converte para conteúdo livre
-function migrateIfNeeded(raw: any): AppState | null {
-  try {
-    const parsed = raw as any;
-    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.pages)) return null;
-
-    // Detecta se já está no novo formato (content string)
-    const isNew = parsed.pages.every((p: any) => typeof p.content === "string");
-    if (isNew) {
-      const activeId = parsed.ui?.activePageId ?? parsed.pages?.[0]?.id ?? null;
-      return {
-        pages: parsed.pages as Page[],
-        ui: { activePageId: activeId },
-      } as AppState;
-    }
-
-    // Antigo: pages[].blocks[] -> junta em linhas
-    const migratedPages: Page[] = parsed.pages.map((p: any) => {
-      if (Array.isArray(p.blocks)) {
-        const text = p.blocks.map((b: any) => (typeof b?.content === "string" ? b.content : "")).join("\n");
-        return { id: p.id ?? uuid(), title: p.title ?? "Página", content: text, category: p.category ?? 'projetos' };
-      }
-      return { id: p.id ?? uuid(), title: p.title ?? "Página", content: p.content ?? "", category: p.category ?? 'projetos' } as Page;
-    });
-    const activeId = parsed.ui?.activePageId ?? migratedPages?.[0]?.id ?? null;
-    return { pages: migratedPages, ui: { activePageId: activeId } } as AppState;
-  } catch {
-    return null;
-  }
-}
-
 export default function Organizacao() {
-  // SEO
-  useEffect(() => {
-    setPageSEO(
-      "Organização - Texto Livre",
-      "Escreva livremente e transforme trechos em páginas com um clique."
-    );
-  }, []);
-
-  const initial = useMemo<AppState>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const migrated = migrateIfNeeded(JSON.parse(saved));
-      if (migrated) return migrated;
-    }
-    const firstId = uuid();
-    return {
-      pages: [{ id: firstId, title: "Página sem título", content: "", category: 'projetos' }],
-      ui: { activePageId: firstId },
-    } as AppState;
-  }, []);
-
-  const [state, setState] = useState<AppState>(initial);
-  const page = useMemo(
-    () => state.pages.find((p) => p.id === state.ui.activePageId)!,
-    [state]
+  setPageSEO(
+    "Organização - Sistema de Gestão Pessoal",
+    "Organize suas tarefas e projetos de forma livre e flexível com nosso sistema de páginas hierárquicas."
   );
 
-  // Persistência
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
+  const { pages, loading, addPage, updatePage, deletePage } = useOrgPages();
+  const { toast } = useToast();
+  const [activePageId, setActivePageId] = useState<string | null>(null);
+  
+  // Página ativa atual
+  const page = useMemo(() => 
+    pages.find(p => p.id === activePageId) || null, 
+    [pages, activePageId]
+  );
 
-  // Refs do editor e menu de contexto
-  const editorRef = useRef<HTMLDivElement | null>(null);
+  // Referências para elementos DOM
+  const editorRef = useRef<HTMLDivElement>(null);
   const savedRangeRef = useRef<Range | null>(null);
-  const [menu, setMenu] = useState<{ visible: boolean; x: number; y: number; selectedText: string }>(
-    { visible: false, x: 0, y: 0, selectedText: "" }
-  );
 
-  // Sincroniza conteúdo atual no DOM do contentEditable quando troca de página
+  // Estado do menu de contexto
+  const [menu, setMenu] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
+    selectedText: ''
+  });
+
+  // Migrate legacy data on first load
+  useEffect(() => {
+    const legacyKeys = ['organizacao-state', 'lovable-notion-organizacao-v1'];
+    for (const key of legacyKeys) {
+      const legacyData = localStorage.getItem(key);
+      if (legacyData) {
+        try {
+          const parsed = JSON.parse(legacyData);
+          migrateLegacyData(parsed).then(() => {
+            toast({
+              title: "Dados migrados",
+              description: "Seus dados foram migrados para o Supabase com sucesso!",
+            });
+          });
+        } catch (error) {
+          console.error('Error parsing legacy data:', error);
+          localStorage.removeItem(key);
+        }
+        break; // Only migrate from the first found key
+      }
+    }
+  }, [toast]);
+
+  // Set first page as active when pages load
+  useEffect(() => {
+    if (!loading && pages.length > 0 && !activePageId) {
+      setActivePageId(pages[0].id);
+    }
+  }, [loading, pages, activePageId]);
+
+  // Sincronizar o editor com o conteúdo da página ativa
   useEffect(() => {
     if (editorRef.current && page) {
-      editorRef.current.innerHTML = page.content || "";
+      editorRef.current.innerHTML = page.content || '';
     }
-  }, [page?.id]);
+  }, [page?.id]); // Só atualiza quando a página muda
 
-  // Ações básicas
-  function setActivePage(id: string) {
-    setState((s) => ({ ...s, ui: { activePageId: id } }));
-  }
+  // Função para definir página ativa
+  const setActivePage = (pageId: string | null) => {
+    setActivePageId(pageId);
+  };
 
-  function createPage(title = "Nova página", content = "", parentId?: string, category: 'tarefas' | 'projetos' = 'projetos'): string {
-    const id = uuid();
-    setState((s) => ({
-      ...s,
-      pages: [...s.pages, { id, title, content, parentId, category }],
-      ui: { activePageId: id },
-    }));
-    return id;
-  }
+  // Função para criar nova página
+  const createPage = async (title: string, category: 'tarefas' | 'projetos' = 'projetos') => {
+    const newPage = await addPage(title, category);
+    if (newPage) {
+      setActivePageId(newPage.id);
+    }
+    return newPage;
+  };
 
-  function renamePage(id: string, title: string) {
-    setState((s) => ({
-      ...s,
-      pages: s.pages.map((p) => (p.id === id ? { ...p, title } : p)),
-    }));
-  }
+  // Função para renomear página
+  const renamePage = async (id: string, newTitle: string) => {
+    await updatePage(id, { title: newTitle });
+  };
 
-  function setContent(html: string) {
-    setState((s) => ({
-      ...s,
-      pages: s.pages.map((p) => (p.id === page.id ? { ...p, content: html } : p)),
-    }));
-  }
+  // Função para atualizar conteúdo da página
+  const setContent = async (content: string) => {
+    if (!page) return;
+    await updatePage(page.id, { content });
+  };
 
   // Context menu no editor
   function handleContextMenu(e: React.MouseEvent) {
@@ -168,10 +183,12 @@ export default function Organizacao() {
     setContent(editor.innerHTML);
   }
 
-  function handleMakeSelectionPage() {
+  async function handleMakeSelectionPage() {
     const title = menu.selectedText.trim() || "Nova página";
-    const newId = createPage(title, "", page.id); // Define como filha da página atual
-    insertLinkForSavedRange(newId, title);
+    const newPage = await createPage(title, 'projetos'); // Default to projetos
+    if (newPage) {
+      insertLinkForSavedRange(newPage.id, title);
+    }
     setMenu({ visible: false, x: 0, y: 0, selectedText: "" });
   }
 
@@ -186,110 +203,143 @@ export default function Organizacao() {
     }
   }
 
+  // Filtrar páginas por categoria
+  const tarefas = pages.filter(p => p.category === 'tarefas');
+  const projetos = pages.filter(p => p.category === 'projetos');
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-lg font-medium mb-2">Carregando...</h2>
+          <p className="text-muted-foreground">Sincronizando suas páginas...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-full w-full text-sm">
+    <div className="flex h-screen bg-background">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-border p-3 space-y-4 overflow-auto bg-background">
+      <aside className="w-64 border-r border-border bg-card p-4 overflow-y-auto">
         {/* Seção Tarefas */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tarefas</span>
-            <button
-              className="text-xs w-5 h-5 flex items-center justify-center rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
-              onClick={() => createPage("Nova tarefa", "", undefined, 'tarefas')}
-              title="Nova tarefa"
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Tarefas
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const title = prompt('Nome da tarefa:');
+                if (title) createPage(title, 'tarefas');
+              }}
+              className="h-6 w-6 p-0"
             >
-              +
-            </button>
+              <Plus className="h-3 w-3" />
+            </Button>
           </div>
-          <ul className="space-y-1">
-            {state.pages.filter(p => !p.parentId && p.category === 'tarefas').map((p) => (
-              <li
+          
+          <div className="space-y-1">
+            {tarefas.map(p => (
+              <button
                 key={p.id}
-                className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer transition-colors ${
-                  p.id === page.id ? "bg-accent" : "hover:bg-accent/50"
-                }`}
                 onClick={() => setActivePage(p.id)}
+                className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-accent transition-colors ${
+                  page?.id === p.id ? 'bg-accent text-accent-foreground' : 'text-foreground'
+                }`}
               >
-                <span className="truncate text-foreground">{p.title || "Sem título"}</span>
-              </li>
+                {p.title}
+              </button>
             ))}
-          </ul>
+          </div>
         </div>
 
         {/* Seção Projetos */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Projetos</span>
-            <button
-              className="text-xs w-5 h-5 flex items-center justify-center rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
-              onClick={() => createPage("Novo projeto", "", undefined, 'projetos')}
-              title="Novo projeto"
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Projetos
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const title = prompt('Nome do projeto:');
+                if (title) createPage(title, 'projetos');
+              }}
+              className="h-6 w-6 p-0"
             >
-              +
-            </button>
+              <Plus className="h-3 w-3" />
+            </Button>
           </div>
-          <ul className="space-y-1">
-            {state.pages.filter(p => !p.parentId && (p.category === 'projetos' || !p.category)).map((p) => (
-              <li
+          
+          <div className="space-y-1">
+            {projetos.map(p => (
+              <button
                 key={p.id}
-                className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer transition-colors ${
-                  p.id === page.id ? "bg-accent" : "hover:bg-accent/50"
-                }`}
                 onClick={() => setActivePage(p.id)}
+                className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-accent transition-colors ${
+                  page?.id === p.id ? 'bg-accent text-accent-foreground' : 'text-foreground'
+                }`}
               >
-                <span className="truncate text-foreground">{p.title || "Sem título"}</span>
-              </li>
+                {p.title}
+              </button>
             ))}
-          </ul>
+          </div>
         </div>
       </aside>
 
-      {/* Editor */}
-      <main className="flex-1 flex flex-col overflow-hidden bg-background">
-        {/* Título */}
-        <div className="p-6 border-b border-border">
-          <input
-            className="w-full text-2xl font-semibold outline-none bg-transparent text-foreground placeholder:text-muted-foreground"
-            placeholder="Sem título"
-            value={page.title}
-            onChange={(e) => renamePage(page.id, e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                editorRef.current?.focus();
-              }
-            }}
-          />
-        </div>
+      {/* Área principal */}
+      <main className="flex-1 flex flex-col">
+        {page ? (
+          <>
+            {/* Header com título da página */}
+            <header className="border-b border-border p-4">
+              <Input
+                value={page.title}
+                onChange={(e) => renamePage(page.id, e.target.value)}
+                className="text-lg font-semibold border-none bg-transparent p-0 focus-visible:ring-0"
+                placeholder="Título da página"
+              />
+            </header>
 
-        {/* Área de texto livre */}
-        <div className="flex-1 overflow-auto p-6">
-          <div
-            ref={editorRef}
-            contentEditable
-            suppressContentEditableWarning
-            className="max-w-3xl mx-auto min-h-[40vh] outline-none whitespace-pre-wrap break-words leading-relaxed text-foreground"
-            onInput={(e) => setContent((e.currentTarget as HTMLDivElement).innerHTML)}
-            onContextMenu={handleContextMenu}
-            onClick={handleEditorClick}
-            aria-label="Editor de texto"
-          />
-        </div>
+            {/* Editor de conteúdo */}
+            <div className="flex-1 p-4">
+              <div
+                ref={editorRef}
+                contentEditable
+                onInput={(e) => setContent(e.currentTarget.innerHTML)}
+                onContextMenu={handleContextMenu}
+                onClick={handleEditorClick}
+                className="w-full h-full min-h-[400px] p-4 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                style={{ whiteSpace: 'pre-wrap' }}
+                data-placeholder="Comece a escrever..."
+              />
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-muted-foreground">
+            <div className="text-center">
+              <h2 className="text-lg font-medium mb-2">Nenhuma página selecionada</h2>
+              <p>Selecione uma página na barra lateral ou crie uma nova.</p>
+            </div>
+          </div>
+        )}
       </main>
 
-      {/* Menu de contexto simples */}
+      {/* Menu de contexto */}
       {menu.visible && (
         <div
-          className="fixed z-50 border border-border bg-background rounded-md shadow-lg px-3 py-2 text-sm"
+          className="fixed bg-popover border border-border rounded-md shadow-md p-1 z-50"
           style={{ left: menu.x, top: menu.y }}
-          onMouseDown={(e) => e.preventDefault()}
         >
           <button
-            className="hover:bg-accent px-2 py-1 rounded"
             onClick={handleMakeSelectionPage}
+            className="block w-full text-left px-3 py-1 text-sm hover:bg-accent rounded"
           >
-            Transformar seleção em página
+            Transformar em página
           </button>
         </div>
       )}
