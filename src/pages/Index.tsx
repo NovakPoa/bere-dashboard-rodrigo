@@ -2,18 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { getExpenses, filterExpenses, getMonthlyTotal } from "@/lib/finance";
+import { getExpenses, filterExpenses, filterExpensesByDateRange, getMonthlyTotal } from "@/lib/finance";
 import type { Category, PaymentMethod } from "@/types/expense";
 import StatCard from "@/components/finance/StatCard";
 import AddExpenseFromMessage from "@/components/finance/AddExpenseFromMessage";
 import CategoryChart from "@/components/finance/CategoryChart";
 import MethodChart from "@/components/finance/MethodChart";
 import ExpensesTable from "@/components/finance/ExpensesTable";
+import DateRangePicker from "@/components/finance/DateRangePicker";
 
 const Index = () => {
   const [expenses, setExpenses] = useState(() => getExpenses());
   const [category, setCategory] = useState<"all" | Category>("all");
   const [method, setMethod] = useState<"all" | PaymentMethod>("all");
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
 
   const refresh = () => setExpenses(getExpenses());
 
@@ -26,7 +29,21 @@ const Index = () => {
     document.title = "Financeiro";
   }, []);
 
-  const filtered = useMemo(() => filterExpenses(expenses, { category, method }), [expenses, category, method]);
+  const filteredByDate = useMemo(() => 
+    filterExpensesByDateRange(expenses, startDate, endDate), 
+    [expenses, startDate, endDate]
+  );
+  
+  const filtered = useMemo(() => 
+    filterExpenses(filteredByDate, { category, method }), 
+    [filteredByDate, category, method]
+  );
+  
+  const totalInPeriod = useMemo(() => 
+    filteredByDate.reduce((sum, e) => sum + e.amount, 0), 
+    [filteredByDate]
+  );
+  
   const totalThisMonth = useMemo(() => getMonthlyTotal(expenses), [expenses]);
   const categoriesList = useMemo(() => Array.from(new Set(expenses.map((e) => e.category))).sort(), [expenses]);
   const currency = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -38,21 +55,10 @@ const Index = () => {
       </header>
 
       <main className="container py-8 space-y-8">
-        <section aria-labelledby="stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <h2 id="stats" className="sr-only">Métricas principais</h2>
-          <StatCard title="Este mês" value={currency(totalThisMonth)} />
-          <StatCard title="Transações" value={String(expenses.length)} />
-          <StatCard title="Filtradas" value={String(filtered.length)} hint="De acordo com os filtros" />
-          <StatCard title="Média (filtradas)" value={filtered.length ? currency(filtered.reduce((a, b) => a + b.amount, 0) / filtered.length) : "-"} />
-        </section>
-
-        <section aria-labelledby="add-message" className="grid gap-6 md:grid-cols-5">
-          <h2 id="add-message" className="sr-only">Adicionar despesa por mensagem</h2>
-          <div className="md:col-span-2">
-            <AddExpenseFromMessage onAdded={refresh} />
-          </div>
-          <div className="md:col-span-3 grid gap-6 rounded-lg p-4">
-            <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-end">
+        <section aria-labelledby="filters" className="space-y-6">
+          <h2 id="filters" className="sr-only">Filtros</h2>
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="flex flex-col md:flex-row gap-3">
               <div className="flex-1">
                 <label className="text-sm text-muted-foreground">Categoria</label>
                 <Select value={category} onValueChange={(v) => setCategory(v as any)}>
@@ -84,22 +90,45 @@ const Index = () => {
                 </Select>
               </div>
             </div>
-            <div className="grid gap-6">
-              <MethodChart expenses={filtered} />
-            </div>
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+            />
           </div>
         </section>
 
-        <section aria-labelledby="category-chart">
-          <h2 id="category-chart" className="sr-only">Distribuição por categoria</h2>
+        <section aria-labelledby="stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <h2 id="stats" className="sr-only">Métricas principais</h2>
+          <StatCard title="Gasto no Período" value={currency(totalInPeriod)} />
+          <StatCard title="Gasto no Mês" value={currency(totalThisMonth)} />
+          <StatCard title="Total de Transações" value={String(filteredByDate.length)} />
+          <StatCard 
+            title="Ticket Médio no Período" 
+            value={filteredByDate.length ? currency(totalInPeriod / filteredByDate.length) : "-"} 
+          />
+        </section>
+
+        <section aria-labelledby="add-message">
+          <h2 id="add-message" className="sr-only">Adicionar despesa por mensagem</h2>
+          <AddExpenseFromMessage onAdded={refresh} />
+        </section>
+
+        <section aria-labelledby="charts" className="grid gap-6 md:grid-cols-2">
+          <h2 id="charts" className="sr-only">Gráficos de distribuição</h2>
           <CategoryChart expenses={filtered} />
+          <MethodChart expenses={filtered} />
         </section>
 
         <Separator />
 
         <section aria-labelledby="list">
           <h2 id="list" className="text-lg font-medium mb-3">Despesas</h2>
-          <ExpensesTable expenses={filtered} onChange={refresh} />
+          <ExpensesTable 
+            expenses={filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())} 
+            onChange={refresh} 
+          />
         </section>
       </main>
     </div>

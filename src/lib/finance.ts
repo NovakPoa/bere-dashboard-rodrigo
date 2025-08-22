@@ -213,6 +213,19 @@ export function filterExpenses(
   });
 }
 
+export function filterExpensesByDateRange(
+  expenses: Expense[],
+  startDate?: Date,
+  endDate?: Date
+) {
+  return expenses.filter((e) => {
+    const expenseDate = new Date(e.date);
+    if (startDate && expenseDate < startDate) return false;
+    if (endDate && expenseDate > endDate) return false;
+    return true;
+  });
+}
+
 export function getMonthlyTotal(expenses: Expense[], date = new Date()) {
   const month = date.getMonth();
   const year = date.getFullYear();
