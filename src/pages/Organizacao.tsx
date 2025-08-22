@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { setPageSEO } from "@/lib/seo";
 
-// Tipos simples: páginas com conteúdo livre em HTML
-type Page = { id: string; title: string; content: string };
+// Tipos simples: páginas com conteúdo livre em HTML e hierarquia
+type Page = { id: string; title: string; content: string; parentId?: string };
 
 type AppState = {
   pages: Page[];
@@ -96,11 +96,11 @@ export default function Organizacao() {
     setState((s) => ({ ...s, ui: { activePageId: id } }));
   }
 
-  function createPage(title = "Nova página", content = ""): string {
+  function createPage(title = "Nova página", content = "", parentId?: string): string {
     const id = uuid();
     setState((s) => ({
       ...s,
-      pages: [...s.pages, { id, title, content }],
+      pages: [...s.pages, { id, title, content, parentId }],
       ui: { activePageId: id },
     }));
     return id;
@@ -170,7 +170,7 @@ export default function Organizacao() {
 
   function handleMakeSelectionPage() {
     const title = menu.selectedText.trim() || "Nova página";
-    const newId = createPage(title, "");
+    const newId = createPage(title, "", page.id); // Define como filha da página atual
     insertLinkForSavedRange(newId, title);
     setMenu({ visible: false, x: 0, y: 0, selectedText: "" });
   }
@@ -199,7 +199,7 @@ export default function Organizacao() {
           </button>
         </div>
         <ul className="space-y-1 mt-2">
-          {state.pages.map((p) => (
+          {state.pages.filter(p => !p.parentId).map((p) => (
             <li
               key={p.id}
               className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer transition-colors ${
