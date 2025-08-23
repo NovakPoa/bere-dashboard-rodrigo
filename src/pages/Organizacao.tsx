@@ -73,6 +73,14 @@ export default function Organizacao() {
     selectedText: ''
   });
 
+  // Estado do menu de contexto da sidebar
+  const [sidebarMenu, setSidebarMenu] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
+    pageId: ''
+  });
+
   // Migrate legacy data on first load
   useEffect(() => {
     const legacyKeys = ['organizacao-state', 'lovable-notion-organizacao-v1'];
@@ -185,7 +193,7 @@ export default function Organizacao() {
 
   async function handleMakeSelectionPage() {
     const title = menu.selectedText.trim() || "Nova página";
-    const newPage = await createPage(title, 'projetos'); // Default to projetos
+    const newPage = await addPage(title, 'projetos', page?.id); // Create as child page
     if (newPage) {
       insertLinkForSavedRange(newPage.id, title);
     }
@@ -203,9 +211,45 @@ export default function Organizacao() {
     }
   }
 
-  // Filtrar páginas por categoria
-  const tarefas = pages.filter(p => p.category === 'tarefas');
-  const projetos = pages.filter(p => p.category === 'projetos');
+  // Context menu na sidebar para deletar páginas
+  function handleSidebarContextMenu(e: React.MouseEvent, pageId: string) {
+    e.preventDefault();
+    setSidebarMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      pageId
+    });
+  }
+
+  // Função para deletar página com confirmação
+  async function handleDeletePage() {
+    if (!sidebarMenu.pageId) return;
+    
+    const confirmed = window.confirm('Tem certeza que deseja excluir esta página? Esta ação não pode ser desfeita.');
+    if (confirmed) {
+      await deletePage(sidebarMenu.pageId);
+      if (activePageId === sidebarMenu.pageId) {
+        setActivePageId(null);
+      }
+    }
+    setSidebarMenu({ visible: false, x: 0, y: 0, pageId: '' });
+  }
+
+  // Fechar menus ao clicar fora
+  useEffect(() => {
+    function handleClickOutside() {
+      setMenu((m) => ({ ...m, visible: false }));
+      setSidebarMenu((m) => ({ ...m, visible: false }));
+    }
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  // Filtrar páginas por categoria (apenas páginas raiz - sem parent_id)
+  const tarefas = pages.filter(p => p.category === 'tarefas' && !p.parent_id);
+  const projetos = pages.filter(p => p.category === 'projetos' && !p.parent_id);
 
   if (loading) {
     return (
@@ -246,6 +290,7 @@ export default function Organizacao() {
               <button
                 key={p.id}
                 onClick={() => setActivePage(p.id)}
+                onContextMenu={(e) => handleSidebarContextMenu(e, p.id)}
                 className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-accent transition-colors ${
                   page?.id === p.id ? 'bg-accent text-accent-foreground' : 'text-foreground'
                 }`}
@@ -280,6 +325,7 @@ export default function Organizacao() {
               <button
                 key={p.id}
                 onClick={() => setActivePage(p.id)}
+                onContextMenu={(e) => handleSidebarContextMenu(e, p.id)}
                 className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-accent transition-colors ${
                   page?.id === p.id ? 'bg-accent text-accent-foreground' : 'text-foreground'
                 }`}
@@ -300,7 +346,7 @@ export default function Organizacao() {
               <Input
                 value={page.title}
                 onChange={(e) => renamePage(page.id, e.target.value)}
-                className="text-lg font-semibold border-none bg-transparent p-0 focus-visible:ring-0"
+                className="text-3xl font-semibold border-none bg-transparent p-0 focus-visible:ring-0"
                 placeholder="Título da página"
               />
             </header>
@@ -313,7 +359,7 @@ export default function Organizacao() {
                 onInput={(e) => setContent(e.currentTarget.innerHTML)}
                 onContextMenu={handleContextMenu}
                 onClick={handleEditorClick}
-                className="w-full h-full min-h-[400px] p-4 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                className="w-full h-full min-h-[400px] p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-ring resize-none"
                 style={{ whiteSpace: 'pre-wrap' }}
                 data-placeholder="Comece a escrever..."
               />
@@ -329,7 +375,7 @@ export default function Organizacao() {
         )}
       </main>
 
-      {/* Menu de contexto */}
+      {/* Menu de contexto do editor */}
       {menu.visible && (
         <div
           className="fixed bg-popover border border-border rounded-md shadow-md p-1 z-50"
@@ -340,6 +386,21 @@ export default function Organizacao() {
             className="block w-full text-left px-3 py-1 text-sm hover:bg-accent rounded"
           >
             Transformar em página
+          </button>
+        </div>
+      )}
+
+      {/* Menu de contexto da sidebar */}
+      {sidebarMenu.visible && (
+        <div
+          className="fixed bg-popover border border-border rounded-md shadow-md p-1 z-50"
+          style={{ left: sidebarMenu.x, top: sidebarMenu.y }}
+        >
+          <button
+            onClick={handleDeletePage}
+            className="block w-full text-left px-3 py-1 text-sm hover:bg-destructive hover:text-destructive-foreground rounded"
+          >
+            Excluir página
           </button>
         </div>
       )}

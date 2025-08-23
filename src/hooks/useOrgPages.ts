@@ -13,6 +13,7 @@ export interface OrgPage {
   user_id?: string;
   created_at?: string;
   updated_at?: string;
+  parent_id?: string;
 }
 
 export function useOrgPages() {
@@ -37,7 +38,8 @@ export function useOrgPages() {
         category: (page.category === 'tarefas' || page.category === 'projetos') ? page.category : 'projetos',
         user_id: page.user_id,
         created_at: page.created_at,
-        updated_at: page.updated_at
+        updated_at: page.updated_at,
+        parent_id: page.parent_id
       }));
       
       setPages(mappedPages);
@@ -57,7 +59,7 @@ export function useOrgPages() {
     fetchPages();
   }, []);
 
-  const addPage = async (title: string, category: 'tarefas' | 'projetos' = 'projetos') => {
+  const addPage = async (title: string, category: 'tarefas' | 'projetos' = 'projetos', parentId?: string) => {
     try {
       const { data, error } = await supabase
         .from('org_pages')
@@ -65,6 +67,7 @@ export function useOrgPages() {
           title,
           category,
           content: '',
+          parent_id: parentId || null,
           user_id: (await supabase.auth.getUser()).data.user?.id
         }])
         .select()
@@ -79,7 +82,8 @@ export function useOrgPages() {
         category: (data.category === 'tarefas' || data.category === 'projetos') ? data.category : 'projetos',
         user_id: data.user_id,
         created_at: data.created_at,
-        updated_at: data.updated_at
+        updated_at: data.updated_at,
+        parent_id: data.parent_id
       };
       
       setPages(prev => [...prev, mappedPage]);
@@ -113,7 +117,8 @@ export function useOrgPages() {
         category: (data.category === 'tarefas' || data.category === 'projetos') ? data.category : 'projetos',
         user_id: data.user_id,
         created_at: data.created_at,
-        updated_at: data.updated_at
+        updated_at: data.updated_at,
+        parent_id: data.parent_id
       };
       
       setPages(prev => prev.map(page => page.id === id ? mappedPage : page));
