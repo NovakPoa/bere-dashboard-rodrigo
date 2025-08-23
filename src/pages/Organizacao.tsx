@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { setPageSEO } from '@/lib/seo';
 import { Button } from '@/components/ui/button';
@@ -380,9 +379,8 @@ export default function Organizacao() {
                     (e.target as HTMLElement).blur();
                   }
                 }}
-                className="text-5xl font-bold bg-transparent outline-none leading-tight"
+                className="text-5xl font-bold bg-transparent outline-none leading-tight min-h-[1.2em] empty:before:content-['Título_da_página'] empty:before:text-muted-foreground"
                 style={{ minHeight: '1.2em' }}
-                placeholder="Título da página"
               />
             </header>
 
