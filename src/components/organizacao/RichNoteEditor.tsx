@@ -5,7 +5,6 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
   ContextMenuSeparator,
-  ContextMenuLabel,
   ContextMenuSub,
   ContextMenuSubContent,
   ContextMenuSubTrigger,
@@ -43,6 +42,7 @@ const bgColorClass = (c: ColorName) => (c === "default" ? "org-bg-default" : `or
 export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpenPage }: RichNoteEditorProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const saveTimer = useRef<number | null>(null);
+  
   useEffect(() => {
     if (editorRef.current) {
       editorRef.current.innerHTML = html || "";
@@ -135,14 +135,9 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
 
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error("Você precisa estar logado para fazer upload de imagens");
-        return null;
-      }
-
+      // Generate a unique filename without requiring user authentication
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
       const { data, error } = await supabase.storage
         .from('org-images')
@@ -215,7 +210,7 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
     const range = sel.getRangeAt(0);
     const link = document.createElement("a");
     link.textContent = text;
-    link.href = `/organizacao/${pageId}`;
+    link.href = `#`;
     link.setAttribute("data-page-id", pageId);
     link.className = "underline underline-offset-4 text-primary hover:opacity-80 transition-smooth";
     range.deleteContents();
@@ -245,7 +240,7 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
-          className="min-h-[320px] whitespace-pre-wrap border-0 bg-transparent px-0 py-2 focus:outline-none"
+          className="min-h-[320px] whitespace-pre-wrap bg-transparent px-0 py-2 focus:outline-none"
           onInput={handleInput}
           onClick={handleClick}
           onPaste={handlePaste}

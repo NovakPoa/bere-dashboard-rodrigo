@@ -1,7 +1,7 @@
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { setPageSEO } from '@/lib/seo';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Plus } from 'lucide-react';
 import { useOrgPages, type OrgPage } from '@/hooks/useOrgPages';
 import { supabase } from '@/integrations/supabase/client';
@@ -64,6 +64,7 @@ export default function Organizacao() {
 
   // Referências para elementos DOM
   const editorRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
   const savedRangeRef = useRef<Range | null>(null);
 
   // Estado do menu de contexto
@@ -118,6 +119,13 @@ export default function Organizacao() {
       editorRef.current.innerHTML = page.content || '';
     }
   }, [page?.id]); // Só atualiza quando a página muda
+
+  // Sincronizar o título com a página ativa
+  useEffect(() => {
+    if (titleRef.current && page) {
+      titleRef.current.textContent = page.title;
+    }
+  }, [page?.id, page?.title]);
 
   // Função para definir página ativa
   const setActivePage = (pageId: string | null) => {
@@ -244,6 +252,16 @@ export default function Organizacao() {
     setSidebarMenu({ visible: false, x: 0, y: 0, pageId: '' });
   }
 
+  // Handle title changes
+  const handleTitleChange = () => {
+    if (titleRef.current && page) {
+      const newTitle = titleRef.current.textContent || '';
+      if (newTitle !== page.title) {
+        renamePage(page.id, newTitle);
+      }
+    }
+  };
+
   // Fechar menus ao clicar fora
   useEffect(() => {
     function handleClickOutside() {
@@ -350,11 +368,20 @@ export default function Organizacao() {
         {page ? (
           <>
             {/* Header com título da página */}
-            <header className="border-b border-border p-4">
-              <Input
-                value={page.title}
-                onChange={(e) => renamePage(page.id, e.target.value)}
-                className="text-5xl font-bold border-none bg-transparent p-0 focus-visible:ring-0"
+            <header className="p-4">
+              <div
+                ref={titleRef}
+                contentEditable
+                suppressContentEditableWarning
+                onBlur={handleTitleChange}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    (e.target as HTMLElement).blur();
+                  }
+                }}
+                className="text-5xl font-bold bg-transparent outline-none leading-tight"
+                style={{ minHeight: '1.2em' }}
                 placeholder="Título da página"
               />
             </header>
