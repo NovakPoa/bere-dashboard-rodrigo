@@ -144,6 +144,18 @@ All colors MUST be HSL.
   .org-text-purple { color: hsl(var(--org-purple)); }
   .org-text-pink { color: hsl(var(--org-pink)); }
   .org-text-red { color: hsl(var(--org-red)); }
+
+  /* Background colors for text highlighting */
+  .org-bg-default { background-color: transparent; }
+  .org-bg-gray { background-color: hsl(220 13% 91%); padding: 2px 4px; border-radius: 4px; }
+  .org-bg-brown { background-color: hsl(40 20% 85%); padding: 2px 4px; border-radius: 4px; }
+  .org-bg-orange { background-color: hsl(25 40% 90%); padding: 2px 4px; border-radius: 4px; }
+  .org-bg-yellow { background-color: hsl(45 40% 90%); padding: 2px 4px; border-radius: 4px; }
+  .org-bg-green { background-color: hsl(142 30% 90%); padding: 2px 4px; border-radius: 4px; }
+  .org-bg-blue { background-color: hsl(221 30% 90%); padding: 2px 4px; border-radius: 4px; }
+  .org-bg-purple { background-color: hsl(271 30% 90%); padding: 2px 4px; border-radius: 4px; }
+  .org-bg-pink { background-color: hsl(330 30% 90%); padding: 2px 4px; border-radius: 4px; }
+  .org-bg-red { background-color: hsl(0 30% 90%); padding: 2px 4px; border-radius: 4px; }
 +
 +  /* Force left-to-right editing inside organization editors */
 +  .org-ltr, .org-ltr * { direction: ltr !important; unicode-bidi: isolate-override !important; text-align: start; }

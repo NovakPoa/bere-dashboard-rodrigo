@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react';
 import { useOrgPages, type OrgPage } from '@/hooks/useOrgPages';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import RichNoteEditor from '@/components/organizacao/RichNoteEditor';
 
 // Legacy migration function for localStorage data
 const migrateLegacyData = async (legacyData: any) => {
@@ -138,9 +139,14 @@ export default function Organizacao() {
   };
 
   // Função para atualizar conteúdo da página
-  const setContent = async (content: string) => {
-    if (!page) return;
-    await updatePage(page.id, { content });
+  const setContent = async (pageId: string, content: string) => {
+    await updatePage(pageId, { content });
+  };
+
+  // Função para converter texto em página (usada pelo RichNoteEditor)
+  const handleConvertToPage = async (title: string): Promise<string | null> => {
+    const newPage = await addPage(title, 'projetos', page?.id);
+    return newPage?.id || null;
   };
 
   // Context menu no editor
@@ -188,7 +194,9 @@ export default function Organizacao() {
     }
 
     // Atualiza estado com o HTML atual
-    setContent(editor.innerHTML);
+    if (page) {
+      setContent(page.id, editor.innerHTML);
+    }
   }
 
   async function handleMakeSelectionPage() {
@@ -346,22 +354,18 @@ export default function Organizacao() {
               <Input
                 value={page.title}
                 onChange={(e) => renamePage(page.id, e.target.value)}
-                className="text-3xl font-semibold border-none bg-transparent p-0 focus-visible:ring-0"
+                className="text-5xl font-bold border-none bg-transparent p-0 focus-visible:ring-0"
                 placeholder="Título da página"
               />
             </header>
 
             {/* Editor de conteúdo */}
-            <div className="flex-1 p-4">
-              <div
-                ref={editorRef}
-                contentEditable
-                onInput={(e) => setContent(e.currentTarget.innerHTML)}
-                onContextMenu={handleContextMenu}
-                onClick={handleEditorClick}
-                className="w-full h-full min-h-[400px] p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                style={{ whiteSpace: 'pre-wrap' }}
-                data-placeholder="Comece a escrever..."
+            <div className="flex-1 p-6">
+              <RichNoteEditor
+                html={page.content || ""}
+                onChange={(content) => setContent(page.id, content)}
+                onConvertToPage={handleConvertToPage}
+                onOpenPage={setActivePage}
               />
             </div>
           </>
