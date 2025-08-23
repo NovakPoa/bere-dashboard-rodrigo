@@ -112,19 +112,16 @@ export default function Organizacao() {
     }
   }, [loading, pages, activePageId]);
 
-  // Sincronizar o editor com o conteúdo da página ativa
-  useEffect(() => {
-    if (editorRef.current && page) {
-      editorRef.current.innerHTML = page.content || '';
-    }
-  }, [page?.id]); // Só atualiza quando a página muda
+  // Referência para controlar se está editando ativamente
+  const isActivelyEditingRef = useRef(false);
+  const isActivelyEditingTitleRef = useRef(false);
 
-  // Sincronizar o título com a página ativa
+  // Sincronizar o título com a página ativa (apenas quando necessário)
   useEffect(() => {
-    if (titleRef.current && page) {
+    if (titleRef.current && page && !isActivelyEditingTitleRef.current) {
       titleRef.current.textContent = page.title;
     }
-  }, [page?.id, page?.title]);
+  }, [page?.id]); // Apenas quando a página muda
 
   // Função para definir página ativa
   const setActivePage = (pageId: string | null) => {
@@ -253,12 +250,17 @@ export default function Organizacao() {
 
   // Handle title changes
   const handleTitleChange = () => {
+    isActivelyEditingTitleRef.current = false;
     if (titleRef.current && page) {
       const newTitle = titleRef.current.textContent || '';
       if (newTitle !== page.title) {
         renamePage(page.id, newTitle);
       }
     }
+  };
+
+  const handleTitleFocus = () => {
+    isActivelyEditingTitleRef.current = true;
   };
 
   // Fechar menus ao clicar fora
@@ -372,6 +374,7 @@ export default function Organizacao() {
                 ref={titleRef}
                 contentEditable
                 suppressContentEditableWarning
+                onFocus={handleTitleFocus}
                 onBlur={handleTitleChange}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {

@@ -42,10 +42,62 @@ const bgColorClass = (c: ColorName) => (c === "default" ? "org-bg-default" : `or
 export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpenPage }: RichNoteEditorProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const saveTimer = useRef<number | null>(null);
+  const isActivelyEditingRef = useRef(false);
+  const lastHtmlRef = useRef(html);
   
+  // Preservar cursor position durante updates
+  const preserveCursor = (callback: () => void) => {
+    if (!editorRef.current || isActivelyEditingRef.current) return;
+    
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) {
+      callback();
+      return;
+    }
+
+    const range = sel.getRangeAt(0);
+    const preCaretRange = range.cloneRange();
+    preCaretRange.selectNodeContents(editorRef.current);
+    preCaretRange.setEnd(range.startContainer, range.startOffset);
+    const caretOffset = preCaretRange.toString().length;
+
+    callback();
+
+    // Restaurar cursor após update
+    setTimeout(() => {
+      if (!editorRef.current) return;
+      const walker = document.createTreeWalker(
+        editorRef.current,
+        NodeFilter.SHOW_TEXT,
+        null
+      );
+      
+      let charCount = 0;
+      let node;
+      
+      while (node = walker.nextNode()) {
+        const nodeLength = node.textContent?.length || 0;
+        if (charCount + nodeLength >= caretOffset) {
+          const newRange = document.createRange();
+          newRange.setStart(node, Math.max(0, caretOffset - charCount));
+          newRange.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(newRange);
+          break;
+        }
+        charCount += nodeLength;
+      }
+    }, 0);
+  };
+
   useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.innerHTML = html || "";
+    if (html !== lastHtmlRef.current && editorRef.current) {
+      preserveCursor(() => {
+        if (editorRef.current && !isActivelyEditingRef.current) {
+          editorRef.current.innerHTML = html || "";
+        }
+      });
+      lastHtmlRef.current = html;
     }
   }, [html]);
 
@@ -221,8 +273,25 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
   };
 
   const handleInput = () => {
+    isActivelyEditingRef.current = true;
     const next = editorRef.current?.innerHTML || "";
+    lastHtmlRef.current = next;
     scheduleSave(next);
+    
+    // Reset editing flag after a delay
+    setTimeout(() => {
+      isActivelyEditingRef.current = false;
+    }, 1000);
+  };
+
+  const handleFocus = () => {
+    isActivelyEditingRef.current = true;
+  };
+
+  const handleBlur = () => {
+    setTimeout(() => {
+      isActivelyEditingRef.current = false;
+    }, 100);
   };
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -242,6 +311,8 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
           suppressContentEditableWarning
           className="min-h-[320px] whitespace-pre-wrap bg-transparent px-0 py-2 focus:outline-none"
           onInput={handleInput}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           onClick={handleClick}
           onPaste={handlePaste}
         />
