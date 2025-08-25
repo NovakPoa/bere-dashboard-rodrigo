@@ -383,6 +383,10 @@ export type Database = {
         Args: { target_user_id: string; user_phone: string }
         Returns: number
       }
+      normalize_phone: {
+        Args: { input: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
