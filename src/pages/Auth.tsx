@@ -25,10 +25,10 @@ export default function Auth() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) navigate("/organizacao", { replace: true });
+      if (session) navigate("/app", { replace: true });
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/organizacao", { replace: true });
+      if (session) navigate("/app", { replace: true });
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -43,7 +43,7 @@ export default function Auth() {
       });
       if (error) throw error;
       toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
-      navigate("/organizacao", { replace: true });
+      navigate("/app", { replace: true });
     } catch (err: any) {
       toast({ title: "Erro ao entrar", description: err?.message ?? "Tente novamente." });
     } finally {

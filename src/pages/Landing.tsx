@@ -73,7 +73,8 @@ export default function Landing() {
             <FeatureCard
               icon={<HeartPulse className="h-5 w-5" aria-hidden />}
               title="Atividades"
-              description="Visualize treinos, evolução e calorias gastas." to="/atividades"
+              description="Visualize treinos, evolução e calorias gastas."
+              to="/atividades"
             />
             <FeatureCard
               icon={<Utensils className="h-5 w-5" aria-hidden />}
