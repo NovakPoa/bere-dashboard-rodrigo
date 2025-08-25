@@ -6,6 +6,7 @@ export interface Profile {
   id: string;
   phone_number?: string;
   full_name?: string;
+  email?: string;
   created_at: string;
   updated_at: string;
 }
@@ -17,14 +18,38 @@ export function useProfile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
+      // Try to get existing profile
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      return data as Profile;
+
+      // If no profile exists, create one
+      if (!data) {
+        const { data: newProfile, error: insertError } = await supabase
+          .from("profiles")
+          .insert({
+            id: user.id,
+            full_name: user.email
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        
+        return {
+          ...newProfile,
+          email: user.email
+        } as Profile;
+      }
+
+      return {
+        ...data,
+        email: user.email
+      } as Profile;
     },
   });
 }
@@ -38,10 +63,13 @@ export function useUpdateProfile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
+      // Try to update existing profile, create if doesn't exist
       const { data, error } = await supabase
         .from("profiles")
-        .update(updates)
-        .eq("id", user.id)
+        .upsert({
+          id: user.id,
+          ...updates
+        })
         .select()
         .single();
 

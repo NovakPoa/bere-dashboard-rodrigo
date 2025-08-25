@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Phone, User, Link, LogOut } from "lucide-react";
+import { Phone, User, Link, LogOut, Mail } from "lucide-react";
 import { useProfile, useUpdateProfile, useLinkHistoricalData } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -95,6 +95,22 @@ export function ProfileForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email" className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              Email
+            </Label>
+            <Input
+              id="email"
+              value={profile?.email || ""}
+              disabled
+              className="bg-muted"
+            />
+            <p className="text-sm text-muted-foreground">
+              Email não pode ser alterado aqui
+            </p>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="fullName">Nome Completo</Label>
             <Input
