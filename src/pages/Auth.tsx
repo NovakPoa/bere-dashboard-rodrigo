@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Auth() {
@@ -19,6 +20,7 @@ export default function Auth() {
   const [signupPassword, setSignupPassword] = useState("");
   const [resetEmail, setResetEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   useEffect(() => {
     setPageSEO("Autenticação", "Entre ou crie sua conta para continuar");
@@ -88,6 +90,7 @@ export default function Auth() {
         description: "Verifique sua caixa de entrada para o link de recuperação.",
       });
       setResetEmail("");
+      setResetDialogOpen(false);
     } catch (err: any) {
       toast({ title: "Erro ao enviar e-mail", description: err?.message ?? "Tente novamente." });
     } finally {
@@ -109,10 +112,9 @@ export default function Auth() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Entrar</TabsTrigger>
                 <TabsTrigger value="signup">Cadastrar</TabsTrigger>
-                <TabsTrigger value="reset">Esqueceu a senha?</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login" className="mt-4">
@@ -180,36 +182,50 @@ export default function Auth() {
                 </form>
               </TabsContent>
 
-              <TabsContent value="reset" className="mt-4">
-                <form onSubmit={handlePasswordReset} className="grid gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="reset-email">E-mail</Label>
-                    <Input
-                      id="reset-email"
-                      type="email"
-                      autoComplete="email"
-                      required
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      placeholder="voce@exemplo.com"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Enviaremos um link para redefinir sua senha
-                    </p>
-                  </div>
-                  <Button type="submit" disabled={loading} className="w-full">
-                    {loading ? "Enviando…" : "Enviar link de recuperação"}
-                  </Button>
-                </form>
-              </TabsContent>
 
             </Tabs>
 
-            <div className="mt-6 text-center text-sm">
-              <span className="text-muted-foreground">Quer voltar?</span>{" "}
-              <Link to="/" className="underline underline-offset-4">
-                Ir para a página inicial
-              </Link>
+            <div className="mt-6 text-center text-sm space-y-2">
+              <div>
+                <span className="text-muted-foreground">Quer voltar?</span>{" "}
+                <Link to="/" className="underline underline-offset-4">
+                  Ir para a página inicial
+                </Link>
+              </div>
+              <div>
+                <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+                  <DialogTrigger asChild>
+                    <button className="underline underline-offset-4 text-muted-foreground hover:text-foreground">
+                      Esqueceu sua senha?
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Recuperar senha</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handlePasswordReset} className="grid gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="reset-email">E-mail</Label>
+                        <Input
+                          id="reset-email"
+                          type="email"
+                          autoComplete="email"
+                          required
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          placeholder="voce@exemplo.com"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Enviaremos um link para redefinir sua senha
+                        </p>
+                      </div>
+                      <Button type="submit" disabled={loading} className="w-full">
+                        {loading ? "Enviando…" : "Enviar link de recuperação"}
+                      </Button>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
           </CardContent>
         </Card>
