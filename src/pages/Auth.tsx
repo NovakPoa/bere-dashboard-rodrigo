@@ -77,7 +77,41 @@ export default function Auth() {
     
     if (accessToken && type === 'recovery') {
       console.log('[Auth] Recovery mode activated');
-      setIsRecoveryMode(true);
+      
+      // Extrair refresh_token também
+      const refreshToken = hashParams.get('refresh_token');
+      
+      if (refreshToken) {
+        console.log('[Auth] Setting session with recovery tokens');
+        
+        // Estabelecer a sessão ANTES de ativar o modo de recuperação
+        supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        }).then(({ error }) => {
+          if (error) {
+            console.error('[Auth] Error setting session:', error);
+            toast({
+              title: "Erro de recuperação",
+              description: "Sessão de recuperação inválida ou expirada. Solicite um novo link.",
+              variant: "destructive"
+            });
+            setResetDialogOpen(true);
+          } else {
+            console.log('[Auth] Session established successfully');
+            setIsRecoveryMode(true);
+          }
+        });
+      } else {
+        console.error('[Auth] Missing refresh_token');
+        toast({
+          title: "Erro de recuperação",
+          description: "Sessão de recuperação inválida ou expirada. Solicite um novo link.",
+          variant: "destructive"
+        });
+        setResetDialogOpen(true);
+      }
+      
       // Limpar a URL mantendo apenas o path
       window.history.replaceState(null, '', window.location.pathname);
     }
@@ -115,7 +149,7 @@ export default function Auth() {
     e.preventDefault();
     try {
       setLoading(true);
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = `${window.location.origin}/auth`;
       const { error } = await supabase.auth.signUp({
         email: signupEmail,
         password: signupPassword,
@@ -176,11 +210,39 @@ export default function Auth() {
 
     try {
       setLoading(true);
+      
+      // Verificar se há sessão ativa antes de tentar atualizar
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error('[Auth] No active session for password update:', sessionError);
+        toast({
+          title: "Sessão expirada",
+          description: "Sua sessão de recuperação expirou. Solicite um novo link de recuperação.",
+          variant: "destructive"
+        });
+        setIsRecoveryMode(false);
+        setResetDialogOpen(true);
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
       
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('Auth session missing')) {
+          toast({
+            title: "Sessão expirada",
+            description: "Sua sessão de recuperação expirou. Solicite um novo link de recuperação.",
+            variant: "destructive"
+          });
+          setIsRecoveryMode(false);
+          setResetDialogOpen(true);
+          return;
+        }
+        throw error;
+      }
       
       toast({
         title: "Senha atualizada",
@@ -192,9 +254,11 @@ export default function Auth() {
       setConfirmPassword("");
       navigate("/app", { replace: true });
     } catch (err: any) {
+      console.error('Error updating password:', err);
       toast({
         title: "Erro ao atualizar senha",
         description: err?.message ?? "Tente novamente.",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
