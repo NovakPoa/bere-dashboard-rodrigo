@@ -29,12 +29,51 @@ export default function Auth() {
   useEffect(() => {
     setPageSEO("Autenticação", "Entre ou crie sua conta para continuar");
     
-    // Verificar se há tokens de recuperação na URL
+    // Verificar se há tokens de recuperação ou erros na URL
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const accessToken = hashParams.get('access_token');
     const type = hashParams.get('type');
+    const error = hashParams.get('error');
+    const errorCode = hashParams.get('error_code');
+    const errorDescription = hashParams.get('error_description');
     
-    console.log('[Auth] Hash params:', { accessToken: !!accessToken, type });
+    console.log('[Auth] Hash params:', { 
+      accessToken: !!accessToken, 
+      type, 
+      error, 
+      errorCode, 
+      errorDescription 
+    });
+    
+    // Verificar se há erros na URL (como OTP expirado)
+    if (error) {
+      console.log('[Auth] Error detected in URL:', { error, errorCode, errorDescription });
+      
+      let errorMessage = "Ocorreu um erro durante a autenticação.";
+      let shouldOpenDialog = false;
+      
+      if (errorCode === 'otp_expired') {
+        errorMessage = "O link de recuperação expirou ou já foi usado. Solicite um novo link de recuperação.";
+        shouldOpenDialog = true;
+      } else if (error === 'access_denied') {
+        errorMessage = "Acesso negado. Verifique se o link está correto e tente novamente.";
+        shouldOpenDialog = true;
+      }
+      
+      toast({
+        title: "Erro de autenticação",
+        description: errorMessage,
+        variant: "destructive"
+      });
+      
+      if (shouldOpenDialog) {
+        setResetDialogOpen(true);
+      }
+      
+      // Limpar a URL mantendo apenas o path
+      window.history.replaceState(null, '', window.location.pathname);
+      return;
+    }
     
     if (accessToken && type === 'recovery') {
       console.log('[Auth] Recovery mode activated');
@@ -42,7 +81,7 @@ export default function Auth() {
       // Limpar a URL mantendo apenas o path
       window.history.replaceState(null, '', window.location.pathname);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {

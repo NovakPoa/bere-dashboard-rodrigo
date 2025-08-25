@@ -11,11 +11,13 @@ const RecoveryRedirector = () => {
   React.useEffect(() => {
     console.log('[RecoveryRedirector] useEffect triggered', { path: window.location.pathname, hash: window.location.hash });
     const hash = window.location.hash;
-    if (hash.includes('type=recovery') && window.location.pathname !== '/auth') {
-      console.log('[RecoveryRedirector] Redirecting to /auth with recovery token');
+    
+    // Redirecionar para /auth se há recovery token ou erro
+    if ((hash.includes('type=recovery') || hash.includes('error=')) && window.location.pathname !== '/auth') {
+      console.log('[RecoveryRedirector] Redirecting to /auth with hash params');
       window.location.replace(`/auth${hash}`);
-    } else if (hash.includes('type=recovery')) {
-      console.log('[RecoveryRedirector] Already on /auth with recovery hash');
+    } else if (hash.includes('type=recovery') || hash.includes('error=')) {
+      console.log('[RecoveryRedirector] Already on /auth with hash params');
     }
   }, []);
   return null;
