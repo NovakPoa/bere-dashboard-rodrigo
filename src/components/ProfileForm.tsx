@@ -3,13 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Phone, User, Link } from "lucide-react";
+import { Phone, User, Link, LogOut } from "lucide-react";
 import { useProfile, useUpdateProfile, useLinkHistoricalData } from "@/hooks/useProfile";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export function ProfileForm() {
   const { data: profile, isLoading } = useProfile();
   const updateProfile = useUpdateProfile();
   const linkHistorical = useLinkHistoricalData();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -42,6 +47,25 @@ export function ProfileForm() {
     // If user just added their phone number, link historical data
     if (wasPhoneEmpty && phoneNumber) {
       await linkHistorical.mutateAsync(phoneNumber);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      toast({
+        title: "Sessão encerrada",
+        description: "Você foi desconectado com sucesso!",
+      });
+      navigate("/");
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: `Falha ao encerrar sessão: ${error.message}`,
+        variant: "destructive",
+      });
     }
   };
 
@@ -120,6 +144,16 @@ export function ProfileForm() {
             ) : (
               "Salvar Perfil"
             )}
+          </Button>
+          
+          <Button 
+            type="button"
+            variant="outline"
+            onClick={handleLogout}
+            className="w-full mt-4"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Sair da Sessão
           </Button>
         </form>
       </CardContent>
