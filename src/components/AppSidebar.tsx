@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, HeartPulse, Utensils, Film, Calendar, CheckCheck, Wallet, Notebook, BookOpen } from "lucide-react";
+import { Home, HeartPulse, Utensils, Film, Calendar, CheckCheck, Wallet, Notebook, User } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -21,6 +21,7 @@ const items = [
   { title: "Alimentação", url: "/alimentacao", icon: Utensils },
   { title: "Cultura", url: "/cultura", icon: Film },
   { title: "Principal", url: "/app", icon: Home },
+  { title: "Perfil", url: "/profile", icon: User },
 ];
 
 export function AppSidebar() {

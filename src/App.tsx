@@ -17,6 +17,7 @@ import Cultura from "./pages/Cultura";
 import Calendario from "./pages/Calendario";
 import Habitos from "./pages/Habitos";
 import Organizacao from "./pages/Organizacao";
+import Profile from "./pages/Profile";
 
 import Auth from "./pages/Auth";
 
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/calendario" element={<Calendario />} />
             <Route path="/organizacao" element={<Organizacao />} />
             <Route path="/organizacao/:id" element={<Organizacao />} />
+            <Route path="/profile" element={<Profile />} />
             
             <Route path="/habitos" element={<Habitos />} />
           </Route>

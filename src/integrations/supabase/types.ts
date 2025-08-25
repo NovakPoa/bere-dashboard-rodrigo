@@ -346,12 +346,43 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          phone_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+          phone_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone_number?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      extract_phone_from_wa_id: {
+        Args: { wa_id: string }
+        Returns: string
+      }
+      link_historical_whatsapp_data: {
+        Args: { target_user_id: string; user_phone: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
