@@ -33,7 +33,10 @@ export default function Auth() {
     const accessToken = hashParams.get('access_token');
     const type = hashParams.get('type');
     
+    console.log('[Auth] Hash params:', { accessToken: !!accessToken, type });
+    
     if (accessToken && type === 'recovery') {
+      console.log('[Auth] Recovery mode activated');
       setIsRecoveryMode(true);
       // Limpar a URL mantendo apenas o path
       window.history.replaceState(null, '', window.location.pathname);

@@ -5,6 +5,18 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import React from "react";
+
+// Component to handle recovery redirects
+const RecoveryRedirector = () => {
+  React.useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes('type=recovery') && window.location.pathname !== '/auth') {
+      console.log('[RecoveryRedirector] Redirecting to /auth with recovery token');
+      window.location.replace(`/auth${hash}`);
+    }
+  }, []);
+  return null;
+};
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -49,6 +61,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <RecoveryRedirector />
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<Landing />} />
