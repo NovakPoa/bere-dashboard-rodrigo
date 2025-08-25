@@ -17,6 +17,7 @@ export default function Auth() {
   const [loginPassword, setLoginPassword] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -73,6 +74,27 @@ export default function Auth() {
     }
   };
 
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const redirectUrl = `${window.location.origin}/auth`;
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: redirectUrl,
+      });
+      if (error) throw error;
+      toast({
+        title: "E-mail enviado",
+        description: "Verifique sua caixa de entrada para o link de recuperação.",
+      });
+      setResetEmail("");
+    } catch (err: any) {
+      toast({ title: "Erro ao enviar e-mail", description: err?.message ?? "Tente novamente." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
       <section className="w-full max-w-md">
@@ -87,9 +109,10 @@ export default function Auth() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="login">Entrar</TabsTrigger>
                 <TabsTrigger value="signup">Cadastrar</TabsTrigger>
+                <TabsTrigger value="reset">Esqueceu a senha?</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login" className="mt-4">
@@ -153,6 +176,29 @@ export default function Auth() {
                   </div>
                   <Button type="submit" disabled={loading} className="w-full">
                     {loading ? "Criando conta…" : "Criar conta"}
+                  </Button>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="reset" className="mt-4">
+                <form onSubmit={handlePasswordReset} className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="reset-email">E-mail</Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      placeholder="voce@exemplo.com"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enviaremos um link para redefinir sua senha
+                    </p>
+                  </div>
+                  <Button type="submit" disabled={loading} className="w-full">
+                    {loading ? "Enviando…" : "Enviar link de recuperação"}
                   </Button>
                 </form>
               </TabsContent>
