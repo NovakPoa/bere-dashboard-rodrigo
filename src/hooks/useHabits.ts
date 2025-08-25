@@ -36,13 +36,14 @@ const convertToHabit = (record: HabitRecord): Habit => ({
   createdAt: new Date(record.data).getTime(),
 });
 
-const convertFromHabit = (habit: Omit<Habit, "id">) => ({
+const convertFromHabit = (habit: Omit<Habit, "id">, user_id: string) => ({
   nome: habit.name,
   quantidade_sessoes: habit.targetSessions,
   tempo_total_sessoes: habit.targetTime,
   data: new Date(habit.createdAt).toISOString().split('T')[0],
   origem: "manual",
   tipo: "habito",
+  user_id,
 });
 
 export function useHabits() {
@@ -67,12 +68,19 @@ export function useAddHabit() {
 
   return useMutation({
     mutationFn: async ({ name, targetSessions, targetTime }: { name: string; targetSessions: number; targetTime: number }) => {
+      // Verificar se o usuário está autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("Usuário não autenticado. Faça login para criar hábitos.");
+      }
+
       const record = convertFromHabit({
         name,
         targetSessions,
         targetTime,
         createdAt: Date.now(),
-      });
+      }, user.id);
 
       const { data, error } = await supabase
         .from("habitos")
@@ -80,7 +88,10 @@ export function useAddHabit() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao inserir hábito:", error);
+        throw error;
+      }
       
       return convertToHabit(data);
     },
@@ -92,9 +103,21 @@ export function useAddHabit() {
       });
     },
     onError: (error: Error) => {
+      console.error("Erro completo ao criar hábito:", error);
+      
+      let errorMessage = "Falha ao criar hábito";
+      
+      if (error.message.includes("não autenticado")) {
+        errorMessage = error.message;
+      } else if (error.message.includes("row-level security")) {
+        errorMessage = "Erro de permissão. Verifique se você está logado.";
+      } else if (error.message) {
+        errorMessage = `Falha ao criar hábito: ${error.message}`;
+      }
+      
       toast({
         title: "Erro",
-        description: `Falha ao criar hábito: ${error.message}`,
+        description: errorMessage,
         variant: "destructive",
       });
     },
