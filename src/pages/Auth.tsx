@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast";
 
 export default function Auth() {
+  console.log('[Auth] Component rendering');
   const navigate = useNavigate();
   const { toast } = useToast();
 

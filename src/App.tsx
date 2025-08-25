@@ -9,10 +9,13 @@ import React from "react";
 // Component to handle recovery redirects
 const RecoveryRedirector = () => {
   React.useEffect(() => {
+    console.log('[RecoveryRedirector] useEffect triggered', { path: window.location.pathname, hash: window.location.hash });
     const hash = window.location.hash;
     if (hash.includes('type=recovery') && window.location.pathname !== '/auth') {
       console.log('[RecoveryRedirector] Redirecting to /auth with recovery token');
       window.location.replace(`/auth${hash}`);
+    } else if (hash.includes('type=recovery')) {
+      console.log('[RecoveryRedirector] Already on /auth with recovery hash');
     }
   }, []);
   return null;
