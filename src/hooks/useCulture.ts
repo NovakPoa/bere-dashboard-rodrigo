@@ -29,25 +29,120 @@ interface CultureRecord {
   user_id?: string;
 }
 
-const convertToCultureItem = (record: CultureRecord): Item => ({
-  id: record.id.toString(),
-  title: record.titulo,
-  status: record.status as Status,
-  domain: record.tipo_item as Domain,
-  subtype: record.tipo as VideoSubtype,
-  rating: record.nota || undefined,
-  year: record.data ? new Date(record.data).getFullYear() : undefined,
-});
+const convertToCultureItem = (record: CultureRecord): Item => {
+  // Map Portuguese WhatsApp values to English frontend values
+  const mapStatus = (status: string): Status => {
+    switch (status?.toLowerCase()) {
+      case 'quero ler':
+      case 'quero assistir':
+      case 'backlog':
+        return 'backlog';
+      case 'lendo':
+      case 'assistindo':
+      case 'fazendo':
+      case 'doing':
+        return 'doing';
+      case 'lido':
+      case 'assistido':
+      case 'feito':
+      case 'done':
+        return 'done';
+      default:
+        return 'backlog';
+    }
+  };
 
-const convertFromCultureItem = (item: Omit<Item, "id">) => ({
-  titulo: item.title,
-  status: item.status,
-  tipo_item: item.domain,
-  tipo: item.subtype || null,
-  nota: item.rating || null,
-  data: item.year ? `${item.year}-01-01` : new Date().toISOString().split('T')[0],
-  origem: "manual",
-});
+  const mapDomain = (tipo_item: string): Domain => {
+    switch (tipo_item?.toLowerCase()) {
+      case 'livro':
+      case 'books':
+        return 'books';
+      case 'filme':
+      case 'serie':
+      case 'videos':
+        return 'videos';
+      default:
+        return 'books';
+    }
+  };
+
+  const mapSubtype = (tipo: string, domain: Domain): VideoSubtype | undefined => {
+    if (domain === 'books') return undefined;
+    
+    switch (tipo?.toLowerCase()) {
+      case 'filme':
+      case 'movie':
+        return 'movie';
+      case 'serie':
+      case 'series':
+        return 'series';
+      default:
+        return 'movie';
+    }
+  };
+
+  const domain = mapDomain(record.tipo_item);
+  
+  return {
+    id: record.id.toString(),
+    title: record.titulo,
+    status: mapStatus(record.status),
+    domain,
+    subtype: mapSubtype(record.tipo, domain),
+    rating: record.nota || undefined,
+    year: record.data ? new Date(record.data).getFullYear() : undefined,
+  };
+};
+
+const convertFromCultureItem = (item: Omit<Item, "id">) => {
+  // Map English frontend values back to Portuguese for database
+  const mapStatusToPortuguese = (status: Status): string => {
+    switch (status) {
+      case 'backlog':
+        return item.domain === 'books' ? 'quero ler' : 'quero assistir';
+      case 'doing':
+        return item.domain === 'books' ? 'lendo' : 'assistindo';
+      case 'done':
+        return item.domain === 'books' ? 'lido' : 'assistido';
+      default:
+        return 'quero ler';
+    }
+  };
+
+  const mapDomainToPortuguese = (domain: Domain): string => {
+    switch (domain) {
+      case 'books':
+        return 'livro';
+      case 'videos':
+        return 'filme'; // Default to filme, but subtype will specify
+      default:
+        return 'livro';
+    }
+  };
+
+  const mapSubtypeToPortuguese = (subtype?: VideoSubtype): string | null => {
+    if (!subtype) return null;
+    
+    switch (subtype) {
+      case 'movie':
+        return 'filme';
+      case 'series':
+        return 'serie';
+      default:
+        return 'filme';
+    }
+  };
+
+  return {
+    titulo: item.title,
+    status: mapStatusToPortuguese(item.status),
+    tipo_item: mapDomainToPortuguese(item.domain),
+    tipo: mapSubtypeToPortuguese(item.subtype),
+    nota: item.rating || null,
+    data: item.year ? `${item.year}-01-01` : new Date().toISOString().split('T')[0],
+    origem: "manual",
+  };
+};
 
 export function useCultureItems() {
   return useQuery({
