@@ -101,12 +101,12 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
     }
   }, [html]);
 
-  // Debounced save
+  // Debounced save with reduced delay for better responsiveness
   const scheduleSave = (nextHtml: string) => {
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {
       onChange(nextHtml);
-    }, 500);
+    }, 200);
   };
 
   const withinEditor = () => {
@@ -394,6 +394,15 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
     const target = e.target as HTMLElement;
     if (target?.tagName === "A" && target.dataset.pageId) {
       e.preventDefault();
+      e.stopPropagation();
+      
+      // Save current content before navigating
+      if (editorRef.current) {
+        const currentHtml = editorRef.current.innerHTML;
+        onChange(currentHtml);
+      }
+      
+      // Navigate to the linked page
       onOpenPage(target.dataset.pageId);
     }
   };

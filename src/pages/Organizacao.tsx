@@ -54,6 +54,8 @@ export default function Organizacao() {
   const { pages, loading, addPage, updatePage, deletePage } = useOrgPages();
   const { toast } = useToast();
   const [activePageId, setActivePageId] = useState<string | null>(null);
+  const [pageVersion, setPageVersion] = useState(0);
+  const [isChangingPage, setIsChangingPage] = useState(false);
   
   // Página ativa atual
   const page = useMemo(() => 
@@ -123,9 +125,31 @@ export default function Organizacao() {
     }
   }, [page?.id]); // Apenas quando a página muda
 
-  // Função para definir página ativa
+  // Função para definir página ativa com validação e loading
   const setActivePage = (pageId: string | null) => {
+    if (pageId && !pages.find(p => p.id === pageId)) {
+      console.warn('Tentativa de navegar para página inexistente:', pageId);
+      return;
+    }
+    
+    setIsChangingPage(true);
     setActivePageId(pageId);
+    setPageVersion(prev => prev + 1); // Force re-render
+    
+    // Scroll to top when changing pages
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    setTimeout(() => {
+      setIsChangingPage(false);
+      if (pageId) {
+        const targetPage = pages.find(p => p.id === pageId);
+        toast({
+          title: "Página carregada",
+          description: `Navegando para: ${targetPage?.title}`,
+          duration: 1500,
+        });
+      }
+    }, 200);
   };
 
   // Função para criar nova página
@@ -389,12 +413,19 @@ export default function Organizacao() {
 
             {/* Editor de conteúdo */}
             <div className="flex-1 p-6">
-              <RichNoteEditor
-                html={page.content || ""}
-                onChange={(content) => setContent(page.id, content)}
-                onConvertToPage={handleConvertToPage}
-                onOpenPage={setActivePage}
-              />
+              {isChangingPage ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="text-muted-foreground">Carregando página...</div>
+                </div>
+              ) : (
+                <RichNoteEditor
+                  key={`${activePageId}-${pageVersion}`} // Force re-render on page change
+                  html={page.content || ""}
+                  onChange={(content) => setContent(page.id, content)}
+                  onConvertToPage={handleConvertToPage}
+                  onOpenPage={setActivePage}
+                />
+              )}
             </div>
           </>
         ) : (
@@ -402,6 +433,17 @@ export default function Organizacao() {
             <div className="text-center">
               <h2 className="text-lg font-medium mb-2">Nenhuma página selecionada</h2>
               <p>Selecione uma página na barra lateral ou crie uma nova.</p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => {
+                  if (pages.length > 0) {
+                    setActivePage(pages[0].id);
+                  }
+                }}
+              >
+                Recarregar primeira página
+              </Button>
             </div>
           </div>
         )}

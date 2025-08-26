@@ -19,6 +19,7 @@ export interface OrgPage {
 export function useOrgPages() {
   const [pages, setPages] = useState<OrgPage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cache, setCache] = useState<Map<string, OrgPage>>(new Map());
   const { toast } = useToast();
 
   const fetchPages = async () => {
@@ -43,6 +44,11 @@ export function useOrgPages() {
       }));
       
       setPages(mappedPages);
+      
+      // Update cache
+      const newCache = new Map();
+      mappedPages.forEach(page => newCache.set(page.id, page));
+      setCache(newCache);
     } catch (error) {
       console.error('Error fetching pages:', error);
       toast({
@@ -87,6 +93,7 @@ export function useOrgPages() {
       };
       
       setPages(prev => [...prev, mappedPage]);
+      setCache(prev => new Map(prev).set(mappedPage.id, mappedPage));
       return mappedPage;
     } catch (error) {
       console.error('Error adding page:', error);
@@ -122,6 +129,7 @@ export function useOrgPages() {
       };
       
       setPages(prev => prev.map(page => page.id === id ? mappedPage : page));
+      setCache(prev => new Map(prev).set(id, mappedPage));
       return mappedPage;
     } catch (error) {
       console.error('Error updating page:', error);
@@ -143,6 +151,11 @@ export function useOrgPages() {
 
       if (error) throw error;
       setPages(prev => prev.filter(page => page.id !== id));
+      setCache(prev => {
+        const newCache = new Map(prev);
+        newCache.delete(id);
+        return newCache;
+      });
     } catch (error) {
       console.error('Error deleting page:', error);
       toast({
