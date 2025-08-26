@@ -5,34 +5,53 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCultureItems, useAddCultureItem, useUpdateCultureItem, useRemoveCultureItem, type Item } from "@/hooks/useCulture";
+import { useProfile } from "@/hooks/useProfile";
+import { useLinkHistoricalData } from "@/hooks/useProfile";
 
 export default function Cultura() {
-  const { data: items = [] } = useCultureItems();
+  const { data: items = [], isLoading } = useCultureItems();
+  const { data: profile } = useProfile();
+  const linkHistoricalData = useLinkHistoricalData();
   const addItem = useAddCultureItem();
   const updateItem = useUpdateCultureItem();
   const removeItem = useRemoveCultureItem();
   
   useEffect(() => setPageSEO("Cultura", "Listas de filmes, séries e livros"), []);
 
-  // Form inline por lista
-  const [newForm, setNewForm] = useState<
-    | null
-    | {
-        list: "video-backlog" | "video-done" | "book-backlog" | "book-done";
-        title: string;
-        subtype?: "movie" | "series";
-        genre?: string;
-        rating?: number;
-        year?: number;
-      }
-  >(null);
+  // Form inline por lista - using stable object structure to fix cursor issue
+  const [newForm, setNewForm] = useState<{
+    isOpen: boolean;
+    list: "video-backlog" | "video-done" | "book-backlog" | "book-done";
+    title: string;
+    subtype: "movie" | "series";
+    genre: string;
+    rating: number;
+    year: number;
+  }>({
+    isOpen: false,
+    list: "video-backlog",
+    title: "",
+    subtype: "movie",
+    genre: "",
+    rating: 0,
+    year: 0,
+  });
 
   const toggleNew = (list: NonNullable<typeof newForm>["list"]) => {
-    setNewForm((p) => (p?.list === list ? null : { list, title: "", subtype: "movie", rating: 0 }));
+    setNewForm((prev) => ({
+      ...prev,
+      isOpen: prev.isOpen && prev.list === list ? false : true,
+      list,
+      title: "",
+      subtype: "movie",
+      genre: "",
+      rating: 0,
+      year: 0,
+    }));
   };
 
   const addInline = (list: NonNullable<typeof newForm>["list"]) => {
-    if (!newForm?.title.trim()) return;
+    if (!newForm.title.trim()) return;
     const domain = list.startsWith("video") ? "videos" : "books";
     const status = list.endsWith("done") ? "done" : "backlog";
     const it: Omit<Item, "id"> = {
@@ -45,7 +64,7 @@ export default function Cultura() {
       year: newForm.year || undefined,
     };
     addItem.mutate(it);
-    setNewForm(null);
+    setNewForm((prev) => ({ ...prev, isOpen: false, title: "", genre: "", rating: 0, year: 0 }));
   };
 
   const handleUpdateItem = (id: string, patch: Partial<Item>) => updateItem.mutate({ id, updates: patch });
@@ -176,10 +195,15 @@ export default function Cultura() {
 
   const AddForm = ({ list }: { list: NonNullable<typeof newForm>["list"] }) => (
     <div className="rounded-md border p-3 grid gap-2">
-      <Input placeholder="Título" value={newForm?.title || ""} onChange={(e) => setNewForm((p) => (p ? { ...p, title: e.target.value } : p))} />
+      <Input 
+        placeholder="Título" 
+        value={newForm.title} 
+        onChange={(e) => setNewForm((prev) => ({ ...prev, title: e.target.value }))}
+        autoFocus
+      />
       {list.startsWith("video") ? (
         <div className="grid gap-2 sm:grid-cols-3">
-          <Select value={newForm?.subtype} onValueChange={(v) => setNewForm((p) => (p ? { ...p, subtype: v as "movie" | "series" } : p))}>
+          <Select value={newForm.subtype} onValueChange={(v) => setNewForm((prev) => ({ ...prev, subtype: v as "movie" | "series" }))}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Tipo" />
             </SelectTrigger>
@@ -188,22 +212,30 @@ export default function Cultura() {
               <SelectItem value="series">Série</SelectItem>
             </SelectContent>
           </Select>
-          <Input placeholder="Gênero" value={newForm?.genre || ""} onChange={(e) => setNewForm((p) => (p ? { ...p, genre: e.target.value } : p))} />
+          <Input 
+            placeholder="Gênero" 
+            value={newForm.genre} 
+            onChange={(e) => setNewForm((prev) => ({ ...prev, genre: e.target.value }))} 
+          />
           <Input 
             type="number" 
             placeholder="Ano" 
-            value={newForm?.year || ""} 
-            onChange={(e) => setNewForm((p) => (p ? { ...p, year: e.target.value ? parseInt(e.target.value) : undefined } : p))} 
+            value={newForm.year || ""} 
+            onChange={(e) => setNewForm((prev) => ({ ...prev, year: e.target.value ? parseInt(e.target.value) : 0 }))} 
           />
         </div>
       ) : (
         <div className="grid gap-2 sm:grid-cols-2">
-          <Input placeholder="Gênero" value={newForm?.genre || ""} onChange={(e) => setNewForm((p) => (p ? { ...p, genre: e.target.value } : p))} />
+          <Input 
+            placeholder="Gênero" 
+            value={newForm.genre} 
+            onChange={(e) => setNewForm((prev) => ({ ...prev, genre: e.target.value }))} 
+          />
           <Input 
             type="number" 
             placeholder="Ano" 
-            value={newForm?.year || ""} 
-            onChange={(e) => setNewForm((p) => (p ? { ...p, year: e.target.value ? parseInt(e.target.value) : undefined } : p))} 
+            value={newForm.year || ""} 
+            onChange={(e) => setNewForm((prev) => ({ ...prev, year: e.target.value ? parseInt(e.target.value) : 0 }))} 
           />
         </div>
       )}
@@ -215,13 +247,13 @@ export default function Cultura() {
             min={1}
             max={5}
             className="w-24"
-            value={newForm?.rating ?? ""}
-            onChange={(e) => setNewForm((p) => (p ? { ...p, rating: e.target.value ? Math.max(1, Math.min(5, Number(e.target.value))) : undefined } : p))}
+            value={newForm.rating || ""}
+            onChange={(e) => setNewForm((prev) => ({ ...prev, rating: e.target.value ? Math.max(1, Math.min(5, Number(e.target.value))) : 0 }))}
           />
         </div>
       </div>
       <div className="flex justify-end gap-2">
-        <Button variant="secondary" onClick={() => setNewForm(null)}>Cancelar</Button>
+        <Button variant="secondary" onClick={() => setNewForm((prev) => ({ ...prev, isOpen: false }))}>Cancelar</Button>
         <Button onClick={() => addInline(list)}>Adicionar</Button>
       </div>
     </div>
@@ -251,11 +283,34 @@ export default function Cultura() {
               }}
               onDrop={onDropTo("video-backlog")}
             >
-              {newForm?.list === "video-backlog" && <AddForm list="video-backlog" />}
+              {newForm.isOpen && newForm.list === "video-backlog" && <AddForm list="video-backlog" />}
               {byVideoBacklog.map((i) => (
                 <ItemCard key={i.id} item={i} />
               ))}
-              {byVideoBacklog.length === 0 && <p className="text-sm text-muted-foreground">Lista vazia.</p>}
+              {!isLoading && byVideoBacklog.length === 0 && (
+                <div className="text-center space-y-3 py-4">
+                  <p className="text-sm text-muted-foreground">
+                    {items.length === 0 ? "Nenhum item encontrado para o seu usuário atual" : "Lista vazia."}
+                  </p>
+                  {items.length === 0 && (
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      <Button size="sm" variant="outline" onClick={() => window.location.reload()}>
+                        Recarregar
+                      </Button>
+                      {profile?.phone_number && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => linkHistoricalData.mutate(profile?.phone_number!)}
+                          disabled={linkHistoricalData.isPending}
+                        >
+                          {linkHistoricalData.isPending ? "Vinculando..." : "Vincular meus dados do WhatsApp"}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -272,7 +327,7 @@ export default function Cultura() {
               }}
               onDrop={onDropTo("video-done")}
             >
-              {newForm?.list === "video-done" && <AddForm list="video-done" />}
+              {newForm.isOpen && newForm.list === "video-done" && <AddForm list="video-done" />}
               {byVideoDone.map((i) => (
                 <ItemCard key={i.id} item={i} />
               ))}
@@ -298,7 +353,7 @@ export default function Cultura() {
               }}
               onDrop={onDropTo("book-backlog")}
             >
-              {newForm?.list === "book-backlog" && <AddForm list="book-backlog" />}
+              {newForm.isOpen && newForm.list === "book-backlog" && <AddForm list="book-backlog" />}
               {byBookBacklog.map((i) => (
                 <ItemCard key={i.id} item={i} />
               ))}
@@ -319,7 +374,7 @@ export default function Cultura() {
               }}
               onDrop={onDropTo("book-done")}
             >
-              {newForm?.list === "book-done" && <AddForm list="book-done" />}
+              {newForm.isOpen && newForm.list === "book-done" && <AddForm list="book-done" />}
               {byBookDone.map((i) => (
                 <ItemCard key={i.id} item={i} />
               ))}

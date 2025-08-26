@@ -114,7 +114,8 @@ const convertFromCultureItem = (item: Omit<Item, "id">) => {
       case 'books':
         return 'livro';
       case 'videos':
-        return 'filme'; // Default to filme, but subtype will specify
+        // For videos, we'll use subtype to determine tipo_item
+        return item.subtype === 'series' ? 'serie' : 'filme';
       default:
         return 'livro';
     }
@@ -148,12 +149,25 @@ export function useCultureItems() {
   return useQuery({
     queryKey: ["culture-items"],
     queryFn: async () => {
+      // Get current user to filter explicitly  
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.log('🚫 No authenticated user for cultura items');
+        return [];
+      }
+
+      console.log('🔍 Fetching cultura items for user:', user.id);
+
       const { data, error } = await supabase
         .from("cultura")
         .select("*")
+        .eq("user_id", user.id) // Explicit filter by user_id
         .order("data", { ascending: false });
 
       if (error) throw error;
+      
+      console.log('📚 Found cultura items:', data?.length || 0);
       
       return data.map(convertToCultureItem);
     },
@@ -166,16 +180,35 @@ export function useAddCultureItem() {
 
   return useMutation({
     mutationFn: async (item: Omit<Item, "id">) => {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+
       const record = convertFromCultureItem(item);
+      
+      // Explicitly set user_id to ensure RLS policies pass
+      const recordWithUser = {
+        ...record,
+        user_id: user.id,
+      };
+
+      console.log('📝 Inserting cultura record:', recordWithUser);
 
       const { data, error } = await supabase
         .from("cultura")
-        .insert([record])
+        .insert([recordWithUser])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Insert failed:', error);
+        throw error;
+      }
       
+      console.log('✅ Insert successful:', data);
       return convertToCultureItem(data);
     },
     onSuccess: () => {
@@ -195,13 +228,55 @@ export function useAddCultureItem() {
   });
 }
 
+// Helper function to convert partial updates correctly
+const convertPatchToRecord = (patch: Partial<Item>) => {
+  const record: Partial<CultureRecord> = {};
+  
+  if (patch.title !== undefined) record.titulo = patch.title;
+  if (patch.status !== undefined) {
+    // Map status to Portuguese based on domain
+    const mapStatusToPortuguese = (status: Status, domain?: Domain): string => {
+      switch (status) {
+        case 'backlog':
+          return domain === 'books' ? 'quero ler' : 'quero assistir';
+        case 'doing':
+          return domain === 'books' ? 'lendo' : 'assistindo';
+        case 'done':
+          return domain === 'books' ? 'lido' : 'assistido';
+        default:
+          return 'quero ler';
+      }
+    };
+    record.status = mapStatusToPortuguese(patch.status, patch.domain);
+  }
+  if (patch.domain !== undefined) {
+    record.tipo_item = patch.domain === 'books' ? 'livro' : 'filme';
+  }
+  if (patch.subtype !== undefined) {
+    record.tipo = patch.subtype === 'series' ? 'serie' : 'filme';
+  }
+  if (patch.rating !== undefined) record.nota = patch.rating;
+  if (patch.year !== undefined) {
+    record.data = patch.year ? `${patch.year}-01-01` : null;
+  }
+  if (patch.genre !== undefined) {
+    // Note: There's no genre column in the database schema, this might be stored in texto or need a migration
+    // For now, we'll skip it to avoid errors
+  }
+  
+  return record;
+};
+
 export function useUpdateCultureItem() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Item> }) => {
-      const record = convertFromCultureItem(updates as Omit<Item, "id">);
+      // Only convert the fields that are actually being updated
+      const record = convertPatchToRecord(updates);
+
+      console.log('📝 Updating cultura record:', record);
 
       const { data, error } = await supabase
         .from("cultura")
@@ -210,8 +285,12 @@ export function useUpdateCultureItem() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Update failed:', error);
+        throw error;
+      }
       
+      console.log('✅ Update successful:', data);
       return convertToCultureItem(data);
     },
     onSuccess: () => {
