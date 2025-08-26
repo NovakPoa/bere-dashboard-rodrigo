@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCultureItems, useAddCultureItem, useUpdateCultureItem, useRemoveCultureItem, type Item } from "@/hooks/useCulture";
 import { useProfile } from "@/hooks/useProfile";
 import { useLinkHistoricalData } from "@/hooks/useProfile";
+import { CompactItemCard } from "@/components/culture/CompactItemCard";
+import { StarRating } from "@/components/culture/StarRating";
 
 export default function Cultura() {
   const { data: items = [], isLoading } = useCultureItems();
@@ -133,65 +135,6 @@ export default function Cultura() {
   const videoSuggestions = useMemo(() => buildSuggestions("videos"), [items]);
   const bookSuggestions = useMemo(() => buildSuggestions("books"), [items]);
 
-  const ItemCard = ({ item }: { item: Item }) => (
-    <article
-      className="rounded-md border p-3 flex flex-col gap-3"
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData("text/plain", item.id);
-        e.dataTransfer.effectAllowed = "move";
-      }}
-    >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h4 className="font-medium leading-snug break-words">
-            {item.title}
-            {item.domain === "videos" && item.subtype ? <span className="text-muted-foreground"> · {item.subtype === "movie" ? "Filme" : "Série"}</span> : null}
-          </h4>
-          <p className="text-sm text-muted-foreground mt-1 break-words">
-            {item.genre ? `Gênero: ${item.genre}` : ""}
-            {item.year ? (item.genre ? " · " : "") + `Ano: ${item.year}` : ""}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => handleRemoveItem(item.id)}>Remover</Button>
-        </div>
-      </div>
-      <div className="grid gap-2 sm:grid-cols-3">
-        {item.domain === "videos" && (
-          <Select value={item.subtype} onValueChange={(v) => handleUpdateItem(item.id, { subtype: v as "movie" | "series" })}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="movie">Filme</SelectItem>
-              <SelectItem value="series">Série</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-        <Input placeholder="Gênero" value={item.genre || ""} onChange={(e) => handleUpdateItem(item.id, { genre: e.target.value })} />
-        <Input
-          type="number"
-          placeholder="Ano"
-          value={item.year || ""}
-          onChange={(e) => handleUpdateItem(item.id, { year: e.target.value ? parseInt(e.target.value) : undefined })}
-        />
-      </div>
-      <div className="grid gap-2 sm:grid-cols-3">
-        <div className="flex items-center gap-3">
-          <label className="text-sm text-muted-foreground">Nota (1–5)</label>
-          <Input
-            type="number"
-            min={1}
-            max={5}
-            className="w-24"
-            value={item.rating ?? ""}
-            onChange={(e) => handleUpdateItem(item.id, { rating: e.target.value ? Math.max(1, Math.min(5, Number(e.target.value))) : undefined })}
-          />
-        </div>
-      </div>
-    </article>
-  );
 
   const AddForm = ({ list }: { list: NonNullable<typeof newForm>["list"] }) => (
     <div className="rounded-md border p-3 grid gap-2">
@@ -241,14 +184,10 @@ export default function Cultura() {
       )}
       <div className="grid gap-2 sm:grid-cols-3">
         <div className="flex items-center gap-3">
-          <label className="text-sm text-muted-foreground">Nota (1–5)</label>
-          <Input
-            type="number"
-            min={1}
-            max={5}
-            className="w-24"
-            value={newForm.rating || ""}
-            onChange={(e) => setNewForm((prev) => ({ ...prev, rating: e.target.value ? Math.max(1, Math.min(5, Number(e.target.value))) : 0 }))}
+          <label className="text-sm text-muted-foreground">Nota</label>
+          <StarRating
+            rating={newForm.rating}
+            onRatingChange={(rating) => setNewForm((prev) => ({ ...prev, rating }))}
           />
         </div>
       </div>
@@ -285,7 +224,12 @@ export default function Cultura() {
             >
               {newForm.isOpen && newForm.list === "video-backlog" && <AddForm list="video-backlog" />}
               {byVideoBacklog.map((i) => (
-                <ItemCard key={i.id} item={i} />
+                <CompactItemCard 
+                  key={i.id} 
+                  item={i} 
+                  onUpdate={handleUpdateItem} 
+                  onRemove={handleRemoveItem} 
+                />
               ))}
               {!isLoading && byVideoBacklog.length === 0 && (
                 <div className="text-center space-y-3 py-4">
@@ -329,7 +273,12 @@ export default function Cultura() {
             >
               {newForm.isOpen && newForm.list === "video-done" && <AddForm list="video-done" />}
               {byVideoDone.map((i) => (
-                <ItemCard key={i.id} item={i} />
+                <CompactItemCard 
+                  key={i.id} 
+                  item={i} 
+                  onUpdate={handleUpdateItem} 
+                  onRemove={handleRemoveItem} 
+                />
               ))}
               {byVideoDone.length === 0 && <p className="text-sm text-muted-foreground">Nenhum assistido.</p>}
             </CardContent>
@@ -355,7 +304,12 @@ export default function Cultura() {
             >
               {newForm.isOpen && newForm.list === "book-backlog" && <AddForm list="book-backlog" />}
               {byBookBacklog.map((i) => (
-                <ItemCard key={i.id} item={i} />
+                <CompactItemCard 
+                  key={i.id} 
+                  item={i} 
+                  onUpdate={handleUpdateItem} 
+                  onRemove={handleRemoveItem} 
+                />
               ))}
               {byBookBacklog.length === 0 && <p className="text-sm text-muted-foreground">Lista vazia.</p>}
             </CardContent>
@@ -376,7 +330,12 @@ export default function Cultura() {
             >
               {newForm.isOpen && newForm.list === "book-done" && <AddForm list="book-done" />}
               {byBookDone.map((i) => (
-                <ItemCard key={i.id} item={i} />
+                <CompactItemCard 
+                  key={i.id} 
+                  item={i} 
+                  onUpdate={handleUpdateItem} 
+                  onRemove={handleRemoveItem} 
+                />
               ))}
               {byBookDone.length === 0 && <p className="text-sm text-muted-foreground">Nenhum lido.</p>}
             </CardContent>
