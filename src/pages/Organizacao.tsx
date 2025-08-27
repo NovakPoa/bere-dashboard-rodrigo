@@ -141,14 +141,6 @@ export default function Organizacao() {
     
     setTimeout(() => {
       setIsChangingPage(false);
-      if (pageId) {
-        const targetPage = pages.find(p => p.id === pageId);
-        toast({
-          title: "Página carregada",
-          description: `Navegando para: ${targetPage?.title}`,
-          duration: 1500,
-        });
-      }
     }, 200);
   };
 
