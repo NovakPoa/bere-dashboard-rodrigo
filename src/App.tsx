@@ -33,6 +33,7 @@ import Alimentacao from "./pages/Alimentacao";
 import Cultura from "./pages/Cultura";
 import Calendario from "./pages/Calendario";
 import Habitos from "./pages/Habitos";
+import { HabitDetailsPage } from "./components/habits/HabitDetailsPage";
 import Organizacao from "./pages/Organizacao";
 import Profile from "./pages/Profile";
 
@@ -82,6 +83,7 @@ const App = () => (
               <Route path="/organizacao/:id" element={<Organizacao />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/habitos" element={<Habitos />} />
+              <Route path="/habitos/:habitId" element={<HabitDetailsPage />} />
             </Route>
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

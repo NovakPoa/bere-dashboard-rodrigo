@@ -200,6 +200,77 @@ export type Database = {
         }
         Relationships: []
       }
+      habit_definitions: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          target_sessions: number
+          target_time_minutes: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          target_sessions?: number
+          target_time_minutes?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          target_sessions?: number
+          target_time_minutes?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      habit_sessions: {
+        Row: {
+          created_at: string
+          date: string
+          habit_id: string
+          id: string
+          sessions_completed: number
+          time_spent_minutes: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          habit_id: string
+          id?: string
+          sessions_completed?: number
+          time_spent_minutes?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          habit_id?: string
+          id?: string
+          sessions_completed?: number
+          time_spent_minutes?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_sessions_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habit_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       habitos: {
         Row: {
           data: string | null
