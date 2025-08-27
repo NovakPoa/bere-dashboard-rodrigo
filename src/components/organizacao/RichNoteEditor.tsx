@@ -90,16 +90,44 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
     }, 0);
   };
 
+  // Initial mount effect - ensure content is set immediately
   useEffect(() => {
-    if (html !== lastHtmlRef.current && editorRef.current) {
+    if (editorRef.current) {
+      console.debug('RichNoteEditor mounted with content:', html ? 'with content' : 'empty');
+      editorRef.current.innerHTML = html || "";
+      lastHtmlRef.current = html;
+    }
+  }, []); // Only on mount
+
+  // Content sync effect - update when html changes
+  useEffect(() => {
+    if (html !== lastHtmlRef.current && editorRef.current && !isActivelyEditingRef.current) {
+      console.debug('Updating editor content:', html ? 'with content' : 'empty');
       preserveCursor(() => {
-        if (editorRef.current && !isActivelyEditingRef.current) {
+        if (editorRef.current) {
           editorRef.current.innerHTML = html || "";
         }
       });
       lastHtmlRef.current = html;
     }
   }, [html]);
+
+  // Unmount effect - flush any pending saves
+  useEffect(() => {
+    return () => {
+      console.debug('RichNoteEditor unmounting - flushing saves');
+      if (saveTimer.current) {
+        window.clearTimeout(saveTimer.current);
+        saveTimer.current = null;
+      }
+      if (editorRef.current) {
+        const currentHtml = editorRef.current.innerHTML;
+        if (currentHtml !== lastHtmlRef.current) {
+          onChange(currentHtml);
+        }
+      }
+    };
+  }, [onChange]);
 
   // Debounced save with reduced delay for better responsiveness
   const scheduleSave = (nextHtml: string) => {
