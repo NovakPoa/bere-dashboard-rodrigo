@@ -29,23 +29,20 @@ export default function Auth() {
   useEffect(() => {
     setPageSEO("Autenticação", "Entre ou crie sua conta para continuar");
     
-    // Verificar se há tokens de recuperação ou erros na URL
+    // Verificar se há erros na URL (como OTP expirado)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get('access_token');
-    const type = hashParams.get('type');
     const error = hashParams.get('error');
     const errorCode = hashParams.get('error_code');
     const errorDescription = hashParams.get('error_description');
+    const type = hashParams.get('type');
     
     console.log('[Auth] Hash params:', { 
-      accessToken: !!accessToken, 
       type, 
       error, 
       errorCode, 
       errorDescription 
     });
     
-    // Verificar se há erros na URL (como OTP expirado)
     if (error) {
       console.log('[Auth] Error detected in URL:', { error, errorCode, errorDescription });
       
@@ -75,47 +72,11 @@ export default function Auth() {
       return;
     }
     
-    if (accessToken && type === 'recovery') {
-      console.log('[Auth] Recovery mode detected - activating recovery mode BEFORE setting session');
-      
-      // CRÍTICO: Ativar modo de recuperação ANTES de estabelecer a sessão
-      // Isso evita o redirecionamento automático no onAuthStateChange
+    // Se há type=recovery na URL, apenas ativar o modo de recuperação
+    // O Supabase detectará e processará automaticamente os tokens via detectSessionInUrl
+    if (type === 'recovery') {
+      console.log('[Auth] Recovery mode detected - activating recovery mode');
       setIsRecoveryMode(true);
-      
-      // Extrair refresh_token também
-      const refreshToken = hashParams.get('refresh_token');
-      
-      if (refreshToken) {
-        console.log('[Auth] Setting session with recovery tokens');
-        
-        // Agora podemos estabelecer a sessão com segurança
-        supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken
-        }).then(({ error }) => {
-          if (error) {
-            console.error('[Auth] Error setting session:', error);
-            toast({
-              title: "Erro de recuperação",
-              description: "Sessão de recuperação inválida ou expirada. Solicite um novo link.",
-              variant: "destructive"
-            });
-            setIsRecoveryMode(false);
-            setResetDialogOpen(true);
-          } else {
-            console.log('[Auth] Session established successfully in recovery mode');
-          }
-        });
-      } else {
-        console.error('[Auth] Missing refresh_token');
-        toast({
-          title: "Erro de recuperação",
-          description: "Sessão de recuperação inválida ou expirada. Solicite um novo link.",
-          variant: "destructive"
-        });
-        setIsRecoveryMode(false);
-        setResetDialogOpen(true);
-      }
       
       // Limpar a URL mantendo apenas o path
       window.history.replaceState(null, '', window.location.pathname);
@@ -125,13 +86,16 @@ export default function Auth() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('[Auth] Auth state change:', { event, hasSession: !!session, isRecoveryMode });
+      
+      // Se não estamos em modo de recuperação e há sessão, redirecionar para app
       if (session && !isRecoveryMode) {
         console.log('[Auth] Redirecting to /app - session exists and not in recovery mode');
         navigate("/app", { replace: true });
       } else if (session && isRecoveryMode) {
-        console.log('[Auth] Session exists but in recovery mode - staying on auth page');
+        console.log('[Auth] Session exists in recovery mode - staying on auth page');
       }
     });
+    
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('[Auth] Initial session check:', { hasSession: !!session, isRecoveryMode });
       if (session && !isRecoveryMode) {
@@ -139,6 +103,7 @@ export default function Auth() {
         navigate("/app", { replace: true });
       }
     });
+    
     return () => subscription.unsubscribe();
   }, [navigate, isRecoveryMode]);
 
