@@ -76,7 +76,11 @@ export default function Auth() {
     }
     
     if (accessToken && type === 'recovery') {
-      console.log('[Auth] Recovery mode activated');
+      console.log('[Auth] Recovery mode detected - activating recovery mode BEFORE setting session');
+      
+      // CRÍTICO: Ativar modo de recuperação ANTES de estabelecer a sessão
+      // Isso evita o redirecionamento automático no onAuthStateChange
+      setIsRecoveryMode(true);
       
       // Extrair refresh_token também
       const refreshToken = hashParams.get('refresh_token');
@@ -84,7 +88,7 @@ export default function Auth() {
       if (refreshToken) {
         console.log('[Auth] Setting session with recovery tokens');
         
-        // Estabelecer a sessão ANTES de ativar o modo de recuperação
+        // Agora podemos estabelecer a sessão com segurança
         supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken
@@ -96,10 +100,10 @@ export default function Auth() {
               description: "Sessão de recuperação inválida ou expirada. Solicite um novo link.",
               variant: "destructive"
             });
+            setIsRecoveryMode(false);
             setResetDialogOpen(true);
           } else {
-            console.log('[Auth] Session established successfully');
-            setIsRecoveryMode(true);
+            console.log('[Auth] Session established successfully in recovery mode');
           }
         });
       } else {
@@ -109,6 +113,7 @@ export default function Auth() {
           description: "Sessão de recuperação inválida ou expirada. Solicite um novo link.",
           variant: "destructive"
         });
+        setIsRecoveryMode(false);
         setResetDialogOpen(true);
       }
       
@@ -118,11 +123,21 @@ export default function Auth() {
   }, [toast]);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session && !isRecoveryMode) navigate("/app", { replace: true });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[Auth] Auth state change:', { event, hasSession: !!session, isRecoveryMode });
+      if (session && !isRecoveryMode) {
+        console.log('[Auth] Redirecting to /app - session exists and not in recovery mode');
+        navigate("/app", { replace: true });
+      } else if (session && isRecoveryMode) {
+        console.log('[Auth] Session exists but in recovery mode - staying on auth page');
+      }
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && !isRecoveryMode) navigate("/app", { replace: true });
+      console.log('[Auth] Initial session check:', { hasSession: !!session, isRecoveryMode });
+      if (session && !isRecoveryMode) {
+        console.log('[Auth] Redirecting to /app - initial session exists and not in recovery mode');
+        navigate("/app", { replace: true });
+      }
     });
     return () => subscription.unsubscribe();
   }, [navigate, isRecoveryMode]);
