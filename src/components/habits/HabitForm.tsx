@@ -1,9 +1,10 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAddHabit } from "@/hooks/useHabits";
+import { useAddHabitDefinition } from "@/hooks/useHabitDefinitions";
 
 interface HabitFormProps {
   onHabitAdded: () => void;
@@ -13,8 +14,8 @@ interface HabitFormProps {
 export function HabitForm({ onHabitAdded, canAddMore }: HabitFormProps) {
   const [name, setName] = useState("");
   const [targetSessions, setTargetSessions] = useState("1");
-  const [targetTime, setTargetTime] = useState("30");
-  const addHabit = useAddHabit();
+  const [targetTimeMinutes, setTargetTimeMinutes] = useState("30");
+  const addHabit = useAddHabitDefinition();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,12 +25,12 @@ export function HabitForm({ onHabitAdded, canAddMore }: HabitFormProps) {
     addHabit.mutate({
       name: name.trim(),
       targetSessions: parseInt(targetSessions) || 1,
-      targetTime: parseInt(targetTime) || 30
+      targetTimeMinutes: parseInt(targetTimeMinutes) || 30
     }, {
       onSuccess: () => {
         setName("");
         setTargetSessions("1");
-        setTargetTime("30");
+        setTargetTimeMinutes("30");
         onHabitAdded();
       }
     });
@@ -90,8 +91,8 @@ export function HabitForm({ onHabitAdded, canAddMore }: HabitFormProps) {
                 min="5"
                 max="480"
                 step="5"
-                value={targetTime}
-                onChange={(e) => setTargetTime(e.target.value)}
+                value={targetTimeMinutes}
+                onChange={(e) => setTargetTimeMinutes(e.target.value)}
                 required
               />
             </div>

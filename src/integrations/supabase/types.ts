@@ -443,7 +443,28 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      habit_sessions_with_names: {
+        Row: {
+          created_at: string | null
+          date: string | null
+          habit_id: string | null
+          habit_name: string | null
+          id: string | null
+          sessions_completed: number | null
+          time_spent_minutes: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_sessions_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habit_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       extract_phone_from_wa_id: {
@@ -457,6 +478,24 @@ export type Database = {
       normalize_phone: {
         Args: { input: string }
         Returns: string
+      }
+      upsert_habit_session_by_name: {
+        Args: {
+          habit_name: string
+          session_date: string
+          sessions_completed: number
+          time_spent_minutes: number
+        }
+        Returns: {
+          created_at: string
+          date: string
+          habit_id: string
+          id: string
+          sessions_completed: number
+          time_spent_minutes: number
+          updated_at: string
+          user_id: string
+        }
       }
     }
     Enums: {

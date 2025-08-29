@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -118,6 +119,8 @@ export function useUpdateHabitSession() {
           date: dateStr,
           sessions_completed: sessionsCompleted,
           time_spent_minutes: timeSpentMinutes,
+        }, {
+          onConflict: 'habit_id,date'
         })
         .select()
         .single();
