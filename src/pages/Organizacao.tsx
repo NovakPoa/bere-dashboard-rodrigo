@@ -1,25 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { setPageSEO } from '@/lib/seo';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Menu } from 'lucide-react';
 import { useOrgPages, type OrgPage } from '@/hooks/useOrgPages';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import RichNoteEditor from '@/components/organizacao/RichNoteEditor';
-import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarGroup, 
-  SidebarGroupContent, 
-  SidebarGroupLabel, 
-  SidebarHeader,
-  SidebarMenu, 
-  SidebarMenuButton, 
-  SidebarMenuItem, 
-  SidebarProvider, 
-  SidebarTrigger,
-  useSidebar 
-} from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 // Legacy migration function for localStorage data
@@ -62,7 +48,11 @@ const migrateLegacyData = async (legacyData: any) => {
 
 function OrganizacaoContent() {
   const isMobile = useIsMobile();
-  const { open } = useSidebar();
+  const [panelOpen, setPanelOpen] = useState<boolean>(true);
+
+  useEffect(() => {
+    setPanelOpen(!isMobile);
+  }, [isMobile]);
 
   const { pages, loading, addPage, updatePage, deletePage } = useOrgPages();
   const { toast } = useToast();
@@ -319,96 +309,86 @@ function OrganizacaoContent() {
   }
 
   return (
-    <div className="flex h-screen w-full">
-      <Sidebar className={!open ? "w-14" : "w-64"} collapsible="icon">
-        <SidebarContent>
-          {/* Seção Tarefas */}
-          <SidebarGroup>
-            <SidebarGroupLabel className="flex items-center justify-between">
-              {open && (
-                <>
-                  <span>Tarefas</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      const title = prompt('Nome da tarefa:');
-                      if (title) createPage(title, 'tarefas');
-                    }}
-                    className="h-6 w-6 p-0"
+    <div className="flex w-full">
+      <aside className={`${panelOpen ? 'w-64' : 'hidden'} md:block md:w-64 border-r`}>
+        <div className="h-full overflow-y-auto">
+          <section className="p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Tarefas</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  const title = prompt('Nome da tarefa:');
+                  if (title) createPage(title, 'tarefas');
+                }}
+                className="h-6 w-6 p-0"
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+            <ul className="space-y-1">
+              {tarefas.map(p => (
+                <li key={p.id}>
+                  <button
+                    onClick={() => setActivePage(p.id)}
+                    onContextMenu={(e) => handleSidebarContextMenu(e, p.id)}
+                    className={`w-full text-left px-2 py-1.5 rounded ${page?.id === p.id ? 'bg-muted text-primary' : 'hover:bg-muted/50'}`}
+                    title={p.title}
                   >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </>
-              )}
-            </SidebarGroupLabel>
-            
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {tarefas.map(p => (
-                  <SidebarMenuItem key={p.id}>
-                    <SidebarMenuButton
-                      onClick={() => setActivePage(p.id)}
-                      onContextMenu={(e) => handleSidebarContextMenu(e, p.id)}
-                      isActive={page?.id === p.id}
-                      className="w-full"
-                      title={!open ? p.title : undefined}
-                    >
-                      {!open ? p.title.slice(0, 2).toUpperCase() : p.title}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+                    {p.title}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
 
-          {/* Seção Projetos */}
-          <SidebarGroup>
-            <SidebarGroupLabel className="flex items-center justify-between">
-              {open && (
-                <>
-                  <span>Projetos</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      const title = prompt('Nome do projeto:');
-                      if (title) createPage(title, 'projetos');
-                    }}
-                    className="h-6 w-6 p-0"
+          <section className="p-3 border-t">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Projetos</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  const title = prompt('Nome do projeto:');
+                  if (title) createPage(title, 'projetos');
+                }}
+                className="h-6 w-6 p-0"
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+            <ul className="space-y-1">
+              {projetos.map(p => (
+                <li key={p.id}>
+                  <button
+                    onClick={() => setActivePage(p.id)}
+                    onContextMenu={(e) => handleSidebarContextMenu(e, p.id)}
+                    className={`w-full text-left px-2 py-1.5 rounded ${page?.id === p.id ? 'bg-muted text-primary' : 'hover:bg-muted/50'}`}
+                    title={p.title}
                   >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </>
-              )}
-            </SidebarGroupLabel>
-            
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {projetos.map(p => (
-                  <SidebarMenuItem key={p.id}>
-                    <SidebarMenuButton
-                      onClick={() => setActivePage(p.id)}
-                      onContextMenu={(e) => handleSidebarContextMenu(e, p.id)}
-                      isActive={page?.id === p.id}
-                      className="w-full"
-                      title={!open ? p.title : undefined}
-                    >
-                      {!open ? p.title.slice(0, 2).toUpperCase() : p.title}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-      </Sidebar>
+                    {p.title}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+      </aside>
 
       {/* Área principal */}
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Header com controle da sidebar */}
+        {/* Header com controle do painel local */}
         <header className="sticky top-0 z-40 h-14 flex items-center border-b px-4 bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <SidebarTrigger className="mr-2" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="mr-2"
+            onClick={() => setPanelOpen((v) => !v)}
+            aria-label="Alternar menu lateral"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
           {page && (
             <div
               ref={titleRef}
@@ -505,8 +485,6 @@ export default function Organizacao() {
   );
 
   return (
-    <SidebarProvider defaultOpen={!useIsMobile()}>
-      <OrganizacaoContent />
-    </SidebarProvider>
+    <OrganizacaoContent />
   );
 }
