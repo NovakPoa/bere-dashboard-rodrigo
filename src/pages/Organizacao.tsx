@@ -6,6 +6,21 @@ import { useOrgPages, type OrgPage } from '@/hooks/useOrgPages';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import RichNoteEditor from '@/components/organizacao/RichNoteEditor';
+import { 
+  Sidebar, 
+  SidebarContent, 
+  SidebarGroup, 
+  SidebarGroupContent, 
+  SidebarGroupLabel, 
+  SidebarHeader,
+  SidebarMenu, 
+  SidebarMenuButton, 
+  SidebarMenuItem, 
+  SidebarProvider, 
+  SidebarTrigger,
+  useSidebar 
+} from '@/components/ui/sidebar';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Legacy migration function for localStorage data
 const migrateLegacyData = async (legacyData: any) => {
@@ -45,11 +60,9 @@ const migrateLegacyData = async (legacyData: any) => {
   }
 };
 
-export default function Organizacao() {
-  setPageSEO(
-    "Organização - Sistema de Gestão Pessoal",
-    "Organize suas tarefas e projetos de forma livre e flexível com nosso sistema de páginas hierárquicas."
-  );
+function OrganizacaoContent() {
+  const isMobile = useIsMobile();
+  const { open } = useSidebar();
 
   const { pages, loading, addPage, updatePage, deletePage } = useOrgPages();
   const { toast } = useToast();
@@ -306,120 +319,131 @@ export default function Organizacao() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-border bg-card p-4 overflow-y-auto">
-        {/* Seção Tarefas */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Tarefas
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                const title = prompt('Nome da tarefa:');
-                if (title) createPage(title, 'tarefas');
-              }}
-              className="h-6 w-6 p-0"
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
-          </div>
-          
-          <div className="space-y-1">
-            {tarefas.map(p => (
-              <button
-                key={p.id}
-                onClick={() => setActivePage(p.id)}
-                onContextMenu={(e) => handleSidebarContextMenu(e, p.id)}
-                className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-accent transition-colors ${
-                  page?.id === p.id ? 'bg-accent text-accent-foreground' : 'text-foreground'
-                }`}
-              >
-                {p.title}
-              </button>
-            ))}
-          </div>
-        </div>
+    <div className="flex h-screen w-full">
+      <Sidebar className={!open ? "w-14" : "w-64"} collapsible="icon">
+        <SidebarContent>
+          {/* Seção Tarefas */}
+          <SidebarGroup>
+            <SidebarGroupLabel className="flex items-center justify-between">
+              {open && (
+                <>
+                  <span>Tarefas</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const title = prompt('Nome da tarefa:');
+                      if (title) createPage(title, 'tarefas');
+                    }}
+                    className="h-6 w-6 p-0"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </>
+              )}
+            </SidebarGroupLabel>
+            
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {tarefas.map(p => (
+                  <SidebarMenuItem key={p.id}>
+                    <SidebarMenuButton
+                      onClick={() => setActivePage(p.id)}
+                      onContextMenu={(e) => handleSidebarContextMenu(e, p.id)}
+                      isActive={page?.id === p.id}
+                      className="w-full"
+                      title={!open ? p.title : undefined}
+                    >
+                      {!open ? p.title.slice(0, 2).toUpperCase() : p.title}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
-        {/* Seção Projetos */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Projetos
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                const title = prompt('Nome do projeto:');
-                if (title) createPage(title, 'projetos');
-              }}
-              className="h-6 w-6 p-0"
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
-          </div>
-          
-          <div className="space-y-1">
-            {projetos.map(p => (
-              <button
-                key={p.id}
-                onClick={() => setActivePage(p.id)}
-                onContextMenu={(e) => handleSidebarContextMenu(e, p.id)}
-                className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-accent transition-colors ${
-                  page?.id === p.id ? 'bg-accent text-accent-foreground' : 'text-foreground'
-                }`}
-              >
-                {p.title}
-              </button>
-            ))}
-          </div>
-        </div>
-      </aside>
+          {/* Seção Projetos */}
+          <SidebarGroup>
+            <SidebarGroupLabel className="flex items-center justify-between">
+              {open && (
+                <>
+                  <span>Projetos</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const title = prompt('Nome do projeto:');
+                      if (title) createPage(title, 'projetos');
+                    }}
+                    className="h-6 w-6 p-0"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </>
+              )}
+            </SidebarGroupLabel>
+            
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {projetos.map(p => (
+                  <SidebarMenuItem key={p.id}>
+                    <SidebarMenuButton
+                      onClick={() => setActivePage(p.id)}
+                      onContextMenu={(e) => handleSidebarContextMenu(e, p.id)}
+                      isActive={page?.id === p.id}
+                      className="w-full"
+                      title={!open ? p.title : undefined}
+                    >
+                      {!open ? p.title.slice(0, 2).toUpperCase() : p.title}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+      </Sidebar>
 
       {/* Área principal */}
-      <main className="flex-1 flex flex-col">
-        {page ? (
-          <>
-            {/* Header com título da página */}
-            <header className="p-4">
-              <div
-                ref={titleRef}
-                contentEditable
-                suppressContentEditableWarning
-                onFocus={handleTitleFocus}
-                onBlur={handleTitleChange}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    (e.target as HTMLElement).blur();
-                  }
-                }}
-                className="text-5xl font-bold bg-transparent outline-none leading-tight min-h-[1.2em] empty:before:content-['Título_da_página'] empty:before:text-muted-foreground"
-                style={{ minHeight: '1.2em' }}
-              />
-            </header>
+      <main className="flex-1 flex flex-col min-w-0">
+        {/* Header com controle da sidebar */}
+        <header className="sticky top-0 z-40 h-14 flex items-center border-b px-4 bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <SidebarTrigger className="mr-2" />
+          {page && (
+            <div
+              ref={titleRef}
+              contentEditable
+              suppressContentEditableWarning
+              onFocus={handleTitleFocus}
+              onBlur={handleTitleChange}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  (e.target as HTMLElement).blur();
+                }
+              }}
+              className="text-2xl font-bold bg-transparent outline-none leading-tight min-h-[1.2em] empty:before:content-['Título_da_página'] empty:before:text-muted-foreground flex-1"
+              style={{ minHeight: '1.2em' }}
+            />
+          )}
+        </header>
 
-            {/* Editor de conteúdo */}
-            <div className="flex-1 p-6">
-              {isChangingPage ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="text-muted-foreground">Carregando página...</div>
-                </div>
-              ) : (
-                <RichNoteEditor
-                  key={`${activePageId}-${pageVersion}`} // Force re-render on page change
-                  html={page.content || ""}
-                  onChange={(content) => setContent(page.id, content)}
-                  onConvertToPage={handleConvertToPage}
-                  onOpenPage={setActivePage}
-                />
-              )}
-            </div>
-          </>
+        {page ? (
+          <div className="flex-1 p-6">
+            {isChangingPage ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="text-muted-foreground">Carregando página...</div>
+              </div>
+            ) : (
+              <RichNoteEditor
+                key={`${activePageId}-${pageVersion}`}
+                html={page.content || ""}
+                onChange={(content) => setContent(page.id, content)}
+                onConvertToPage={handleConvertToPage}
+                onOpenPage={setActivePage}
+              />
+            )}
+          </div>
         ) : (
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
             <div className="text-center">
@@ -471,5 +495,18 @@ export default function Organizacao() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function Organizacao() {
+  setPageSEO(
+    "Organização - Sistema de Gestão Pessoal",
+    "Organize suas tarefas e projetos de forma livre e flexível com nosso sistema de páginas hierárquicas."
+  );
+
+  return (
+    <SidebarProvider defaultOpen={!useIsMobile()}>
+      <OrganizacaoContent />
+    </SidebarProvider>
   );
 }
