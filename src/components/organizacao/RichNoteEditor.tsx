@@ -5,15 +5,11 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
   ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
 } from "@/components/ui/context-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// Simple freeform rich note editor with right-click actions
-// Props keep persistence and navigation in parent component
+// Simplified freeform rich note editor with bold and image support
 interface RichNoteEditorProps {
   html: string;
   onChange: (html: string) => void; // persist debounced
@@ -21,94 +17,24 @@ interface RichNoteEditorProps {
   onOpenPage: (pageId: string) => void;
 }
 
-const COLORS = [
-  "default",
-  "gray",
-  "brown",
-  "orange",
-  "yellow",
-  "green",
-  "blue",
-  "purple",
-  "pink",
-  "red",
-] as const;
-
-type ColorName = typeof COLORS[number];
-
-const colorClass = (c: ColorName) => (c === "default" ? "org-text-default" : `org-text-${c}`);
-const bgColorClass = (c: ColorName) => (c === "default" ? "org-bg-default" : `org-bg-${c}`);
-
 export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpenPage }: RichNoteEditorProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const saveTimer = useRef<number | null>(null);
-  const isActivelyEditingRef = useRef(false);
   const isComposingRef = useRef(false);
   const lastHtmlRef = useRef(html);
   
-  // Preservar cursor position durante updates
-  const preserveCursor = (callback: () => void) => {
-    if (!editorRef.current || isActivelyEditingRef.current || isComposingRef.current) return;
-    
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) {
-      callback();
-      return;
-    }
-
-    const range = sel.getRangeAt(0);
-    const preCaretRange = range.cloneRange();
-    preCaretRange.selectNodeContents(editorRef.current);
-    preCaretRange.setEnd(range.startContainer, range.startOffset);
-    const caretOffset = preCaretRange.toString().length;
-
-    callback();
-
-    // Restaurar cursor após update
-    setTimeout(() => {
-      if (!editorRef.current) return;
-      const walker = document.createTreeWalker(
-        editorRef.current,
-        NodeFilter.SHOW_TEXT,
-        null
-      );
-      
-      let charCount = 0;
-      let node;
-      
-      while (node = walker.nextNode()) {
-        const nodeLength = node.textContent?.length || 0;
-        if (charCount + nodeLength >= caretOffset) {
-          const newRange = document.createRange();
-          newRange.setStart(node, Math.max(0, caretOffset - charCount));
-          newRange.collapse(true);
-          sel.removeAllRanges();
-          sel.addRange(newRange);
-          break;
-        }
-        charCount += nodeLength;
-      }
-    }, 0);
-  };
-
   // Initial mount effect - ensure content is set immediately
   useEffect(() => {
-    if (editorRef.current) {
-      console.debug('RichNoteEditor mounted with content:', html ? 'with content' : 'empty');
+    if (editorRef.current && editorRef.current.innerHTML !== html) {
       editorRef.current.innerHTML = html || "";
       lastHtmlRef.current = html;
     }
   }, []); // Only on mount
 
-  // Content sync effect - update when html changes
+  // Content sync effect - update when html changes from outside (only when not focused)
   useEffect(() => {
-    if (html !== lastHtmlRef.current && editorRef.current && !isActivelyEditingRef.current && !isComposingRef.current) {
-      console.debug('Updating editor content:', html ? 'with content' : 'empty');
-      preserveCursor(() => {
-        if (editorRef.current) {
-          editorRef.current.innerHTML = html || "";
-        }
-      });
+    if (html !== lastHtmlRef.current && editorRef.current && document.activeElement !== editorRef.current && !isComposingRef.current) {
+      editorRef.current.innerHTML = html || "";
       lastHtmlRef.current = html;
     }
   }, [html]);
@@ -116,7 +42,6 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
   // Unmount effect - flush any pending saves
   useEffect(() => {
     return () => {
-      console.debug('RichNoteEditor unmounting - flushing saves');
       if (saveTimer.current) {
         window.clearTimeout(saveTimer.current);
         saveTimer.current = null;
@@ -156,63 +81,6 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
     scheduleSave(next);
   };
 
-  const applyColor = (c: ColorName) => {
-    if (!withinEditor()) return;
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed) return;
-    const range = sel.getRangeAt(0);
-    // Wrap selection in a span with our color class
-    const span = document.createElement("span");
-    span.className = colorClass(c);
-    try {
-      const extracted = range.extractContents();
-      span.appendChild(extracted);
-      range.insertNode(span);
-      // Move caret after inserted span
-      sel.removeAllRanges();
-      const after = document.createRange();
-      after.setStartAfter(span);
-      after.collapse(true);
-      sel.addRange(after);
-    } catch {
-      // Fallback: insert plain text wrapped (may drop nested markup)
-      const text = sel.toString();
-      span.textContent = text;
-      range.deleteContents();
-      range.insertNode(span);
-    }
-    const next = editorRef.current?.innerHTML || "";
-    scheduleSave(next);
-  };
-
-  const applyBackgroundColor = (c: ColorName) => {
-    if (!withinEditor()) return;
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed) return;
-    const range = sel.getRangeAt(0);
-    // Wrap selection in a span with our background color class
-    const span = document.createElement("span");
-    span.className = bgColorClass(c);
-    try {
-      const extracted = range.extractContents();
-      span.appendChild(extracted);
-      range.insertNode(span);
-      // Move caret after inserted span
-      sel.removeAllRanges();
-      const after = document.createRange();
-      after.setStartAfter(span);
-      after.collapse(true);
-      sel.addRange(after);
-    } catch {
-      // Fallback: insert plain text wrapped (may drop nested markup)
-      const text = sel.toString();
-      span.textContent = text;
-      range.deleteContents();
-      range.insertNode(span);
-    }
-    const next = editorRef.current?.innerHTML || "";
-    scheduleSave(next);
-  };
 
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
@@ -411,15 +279,9 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
   const handleInput = () => {
     if (isComposingRef.current) return; // Don't save during composition
     
-    isActivelyEditingRef.current = true;
     const next = editorRef.current?.innerHTML || "";
     lastHtmlRef.current = next;
     scheduleSave(next);
-    
-    // Reset editing flag after a delay
-    setTimeout(() => {
-      isActivelyEditingRef.current = false;
-    }, 1000);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -440,16 +302,6 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
     const next = editorRef.current?.innerHTML || "";
     lastHtmlRef.current = next;
     scheduleSave(next);
-  };
-
-  const handleFocus = () => {
-    isActivelyEditingRef.current = true;
-  };
-
-  const handleBlur = () => {
-    setTimeout(() => {
-      isActivelyEditingRef.current = false;
-    }, 100);
   };
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -481,8 +333,6 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
           onKeyDown={handleKeyDown}
           onCompositionStart={handleCompositionStart}
           onCompositionEnd={handleCompositionEnd}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
           onClick={handleClick}
           onPaste={handlePaste}
           onDrop={handleDrop}
@@ -491,29 +341,6 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
       </ContextMenuTrigger>
       <ContextMenuContent className="z-50">
         <ContextMenuItem onSelect={applyBold}>Negrito</ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuSub>
-          <ContextMenuSubTrigger>Cor do texto</ContextMenuSubTrigger>
-          <ContextMenuSubContent>
-            {COLORS.map((c) => (
-              <ContextMenuItem key={c} onSelect={() => applyColor(c)}>
-                <span className={colorClass(c)}>{c}</span>
-              </ContextMenuItem>
-            ))}
-          </ContextMenuSubContent>
-        </ContextMenuSub>
-        <ContextMenuSub>
-          <ContextMenuSubTrigger>Cor de fundo</ContextMenuSubTrigger>
-          <ContextMenuSubContent>
-            {COLORS.map((c) => (
-              <ContextMenuItem key={c} onSelect={() => applyBackgroundColor(c)}>
-                <span className={bgColorClass(c)} style={{ padding: '2px 8px', borderRadius: '4px' }}>
-                  {c}
-                </span>
-              </ContextMenuItem>
-            ))}
-          </ContextMenuSubContent>
-        </ContextMenuSub>
         <ContextMenuSeparator />
         <ContextMenuItem onSelect={convertSelectionToPage}>Converter em página</ContextMenuItem>
       </ContextMenuContent>
