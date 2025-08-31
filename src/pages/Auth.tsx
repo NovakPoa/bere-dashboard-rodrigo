@@ -90,7 +90,7 @@ export default function Auth() {
       // Se não estamos em modo de recuperação e há sessão, redirecionar para app
       if (session && !isRecoveryMode) {
         console.log('[Auth] Redirecting to /app - session exists and not in recovery mode');
-        navigate("/app", { replace: true });
+        navigate("/organizacao", { replace: true });
       } else if (session && isRecoveryMode) {
         console.log('[Auth] Session exists in recovery mode - staying on auth page');
       }
@@ -100,7 +100,7 @@ export default function Auth() {
       console.log('[Auth] Initial session check:', { hasSession: !!session, isRecoveryMode });
       if (session && !isRecoveryMode) {
         console.log('[Auth] Redirecting to /app - initial session exists and not in recovery mode');
-        navigate("/app", { replace: true });
+        navigate("/organizacao", { replace: true });
       }
     });
     
@@ -117,7 +117,7 @@ export default function Auth() {
       });
       if (error) throw error;
       toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
-      navigate("/app", { replace: true });
+      navigate("/organizacao", { replace: true });
     } catch (err: any) {
       toast({ title: "Erro ao entrar", description: err?.message ?? "Tente novamente." });
     } finally {
@@ -232,7 +232,7 @@ export default function Auth() {
       setIsRecoveryMode(false);
       setNewPassword("");
       setConfirmPassword("");
-      navigate("/app", { replace: true });
+      navigate("/organizacao", { replace: true });
     } catch (err: any) {
       console.error('Error updating password:', err);
       toast({
