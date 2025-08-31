@@ -310,7 +310,7 @@ function OrganizacaoContent() {
 
   return (
     <div className="flex w-full">
-      <aside className={`${panelOpen ? 'w-64' : 'hidden'} md:block md:w-64 border-r`}>
+      <aside className={`${panelOpen ? 'w-64' : 'hidden'} border-r transition-all duration-200`}>
         <div className="h-full overflow-y-auto">
           <section className="p-3">
             <div className="flex items-center justify-between mb-2">
