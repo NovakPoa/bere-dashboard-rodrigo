@@ -30,12 +30,7 @@ export default function Habitos() {
   return (
     <div className="min-h-screen w-full min-w-0 overflow-x-hidden">
       <div className="py-4 md:py-6 px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold mb-2">Gestão de Hábitos</h1>
-          <p className="text-muted-foreground mb-6">
-            Desenvolva rotinas consistentes e monitore seu progresso diário
-          </p>
-        </div>
+        <h1 className="text-2xl font-semibold">Hábitos</h1>
       </div>
 
       <main className="px-4 sm:px-6 lg:px-8 space-y-6 md:space-y-8 pb-8">
