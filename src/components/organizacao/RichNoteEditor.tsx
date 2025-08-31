@@ -43,11 +43,12 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
   const editorRef = useRef<HTMLDivElement | null>(null);
   const saveTimer = useRef<number | null>(null);
   const isActivelyEditingRef = useRef(false);
+  const isComposingRef = useRef(false);
   const lastHtmlRef = useRef(html);
   
   // Preservar cursor position durante updates
   const preserveCursor = (callback: () => void) => {
-    if (!editorRef.current || isActivelyEditingRef.current) return;
+    if (!editorRef.current || isActivelyEditingRef.current || isComposingRef.current) return;
     
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) {
@@ -101,7 +102,7 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
 
   // Content sync effect - update when html changes
   useEffect(() => {
-    if (html !== lastHtmlRef.current && editorRef.current && !isActivelyEditingRef.current) {
+    if (html !== lastHtmlRef.current && editorRef.current && !isActivelyEditingRef.current && !isComposingRef.current) {
       console.debug('Updating editor content:', html ? 'with content' : 'empty');
       preserveCursor(() => {
         if (editorRef.current) {
@@ -355,6 +356,17 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
         }
       }
     }
+
+    // If no image was processed, handle as text paste
+    if (!imageProcessed) {
+      e.preventDefault();
+      const text = clipboardData.getData('text/plain');
+      if (text) {
+        document.execCommand('insertText', false, text);
+        const next = editorRef.current?.innerHTML || "";
+        scheduleSave(next);
+      }
+    }
   };
 
   const handleDrop = async (e: React.DragEvent) => {
@@ -397,6 +409,8 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
   };
 
   const handleInput = () => {
+    if (isComposingRef.current) return; // Don't save during composition
+    
     isActivelyEditingRef.current = true;
     const next = editorRef.current?.innerHTML || "";
     lastHtmlRef.current = next;
@@ -406,6 +420,26 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
     setTimeout(() => {
       isActivelyEditingRef.current = false;
     }, 1000);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      document.execCommand('insertHTML', false, '<br>');
+      const next = editorRef.current?.innerHTML || "";
+      scheduleSave(next);
+    }
+  };
+
+  const handleCompositionStart = () => {
+    isComposingRef.current = true;
+  };
+
+  const handleCompositionEnd = () => {
+    isComposingRef.current = false;
+    const next = editorRef.current?.innerHTML || "";
+    lastHtmlRef.current = next;
+    scheduleSave(next);
   };
 
   const handleFocus = () => {
@@ -442,8 +476,11 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
-          className="min-h-[320px] whitespace-pre-wrap bg-transparent px-0 py-2 focus:outline-none"
+          className="min-h-[320px] whitespace-pre-wrap bg-transparent px-0 py-2 focus:outline-none org-editor org-ltr"
           onInput={handleInput}
+          onKeyDown={handleKeyDown}
+          onCompositionStart={handleCompositionStart}
+          onCompositionEnd={handleCompositionEnd}
           onFocus={handleFocus}
           onBlur={handleBlur}
           onClick={handleClick}

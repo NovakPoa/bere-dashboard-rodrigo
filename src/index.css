@@ -156,7 +156,19 @@ All colors MUST be HSL.
   .org-bg-purple { background-color: hsl(271 30% 90%); padding: 2px 4px; border-radius: 4px; }
   .org-bg-pink { background-color: hsl(330 30% 90%); padding: 2px 4px; border-radius: 4px; }
   .org-bg-red { background-color: hsl(0 30% 90%); padding: 2px 4px; border-radius: 4px; }
-+
-+  /* Force left-to-right editing inside organization editors */
-+  .org-ltr, .org-ltr * { direction: ltr !important; unicode-bidi: isolate-override !important; text-align: start; }
- }
+
+  /* Force left-to-right editing inside organization editors */
+  .org-ltr, .org-ltr * { direction: ltr !important; unicode-bidi: isolate-override !important; text-align: start; }
+
+  /* Editor styling to prevent double line spacing */
+  .org-editor p, .org-editor div, .org-editor h1, .org-editor h2, .org-editor h3, 
+  .org-editor h4, .org-editor h5, .org-editor h6, .org-editor ul, .org-editor ol, 
+  .org-editor li {
+    margin: 0 !important;
+    line-height: 1.5;
+  }
+
+  .org-editor br {
+    line-height: 1.5;
+  }
+}
