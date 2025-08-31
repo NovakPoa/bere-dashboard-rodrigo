@@ -53,7 +53,7 @@ const Index = () => {
       <main className="py-4 md:py-8 space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
         <section aria-labelledby="filters" className="space-y-4 md:space-y-6 min-w-0">
           <h2 id="filters" className="sr-only">Filtros</h2>
-          <div className="grid gap-4 md:gap-6 md:grid-cols-2 min-w-0">
+          <div className="grid gap-3 md:gap-6 grid-cols-1 md:grid-cols-2 min-w-0">
             <div className="flex flex-col md:flex-row gap-3 min-w-0">
               <div className="flex-1 min-w-0">
                 <label className="text-sm text-muted-foreground">Categoria</label>
