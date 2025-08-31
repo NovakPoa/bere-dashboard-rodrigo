@@ -45,17 +45,17 @@ const Index = () => {
   const currency = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   return (
-    <div className="min-h-screen">
-      <header className="container py-6">
-        <h1 className="text-3xl md:text-4xl font-semibold text-foreground">Financeiro</h1>
+    <div className="min-h-screen overflow-x-hidden">
+      <header className="container py-4 md:py-6">
+        <h1 className="text-2xl md:text-4xl font-semibold text-foreground">Financeiro</h1>
       </header>
 
-      <main className="container py-8 space-y-8">
-        <section aria-labelledby="filters" className="space-y-6">
+      <main className="container py-4 md:py-8 space-y-6 md:space-y-8">
+        <section aria-labelledby="filters" className="space-y-4 md:space-y-6 min-w-0">
           <h2 id="filters" className="sr-only">Filtros</h2>
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="flex flex-col md:flex-row gap-3">
-              <div className="flex-1">
+          <div className="grid gap-4 md:gap-6 md:grid-cols-2 min-w-0">
+            <div className="flex flex-col md:flex-row gap-3 min-w-0">
+              <div className="flex-1 min-w-0">
                 <label className="text-sm text-muted-foreground">Categoria</label>
                 <Select value={category} onValueChange={(v) => setCategory(v as any)}>
                   <SelectTrigger className="w-full mt-1">
@@ -71,7 +71,7 @@ const Index = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <label className="text-sm text-muted-foreground">Forma de pagamento</label>
                 <Select value={method} onValueChange={(v) => setMethod(v as any)}>
                   <SelectTrigger className="w-full mt-1">
@@ -86,16 +86,18 @@ const Index = () => {
                 </Select>
               </div>
             </div>
-            <DateRangePicker
-              startDate={startDate}
-              endDate={endDate}
-              onStartDateChange={setStartDate}
-              onEndDateChange={setEndDate}
-            />
+            <div className="min-w-0">
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+              />
+            </div>
           </div>
         </section>
 
-        <section aria-labelledby="stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section aria-labelledby="stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
           <h2 id="stats" className="sr-only">Métricas principais</h2>
           <StatCard title="Gasto no Período" value={currency(totalInPeriod)} />
           <StatCard title="Gasto no Mês" value={currency(totalThisMonth)} />
@@ -106,25 +108,31 @@ const Index = () => {
           />
         </section>
 
-        <section aria-labelledby="add-message">
+        <section aria-labelledby="add-message" className="min-w-0">
           <h2 id="add-message" className="sr-only">Adicionar despesa por mensagem</h2>
           <AddExpenseFromMessage onAdded={refresh} />
         </section>
 
-        <section aria-labelledby="charts" className="grid gap-6 md:grid-cols-2">
+        <section aria-labelledby="charts" className="grid gap-4 md:gap-6 md:grid-cols-2 min-w-0">
           <h2 id="charts" className="sr-only">Gráficos de distribuição</h2>
-          <CategoryChart expenses={filtered} />
-          <MethodChart expenses={filtered} />
+          <div className="min-w-0">
+            <CategoryChart expenses={filtered} />
+          </div>
+          <div className="min-w-0">
+            <MethodChart expenses={filtered} />
+          </div>
         </section>
 
         <Separator />
 
-        <section aria-labelledby="list">
+        <section aria-labelledby="list" className="min-w-0">
           <h2 id="list" className="text-lg font-medium mb-3">Despesas</h2>
-          <ExpensesTable 
-            expenses={filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())} 
-            onChange={refresh} 
-          />
+          <div className="min-w-0">
+            <ExpensesTable 
+              expenses={filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())} 
+              onChange={refresh} 
+            />
+          </div>
         </section>
       </main>
     </div>

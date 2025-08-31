@@ -29,23 +29,23 @@ export default function MethodChart({ expenses }: { expenses: Expense[] }) {
 
   if (data.length === 0) {
     return (
-      <Card>
+      <Card className="min-w-0">
         <CardHeader>
-          <CardTitle className="text-lg font-medium">Gastos por Forma de Pagamento</CardTitle>
+          <CardTitle className="text-base md:text-lg font-medium">Gastos por Forma de Pagamento</CardTitle>
         </CardHeader>
-        <CardContent className="h-80 flex items-center justify-center">
-          <p className="text-muted-foreground">Nenhum dado disponível para exibir</p>
+        <CardContent className="h-64 md:h-80 flex items-center justify-center">
+          <p className="text-muted-foreground text-sm">Nenhum dado disponível para exibir</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card>
+    <Card className="min-w-0">
       <CardHeader>
-        <CardTitle className="text-lg font-medium">Gastos por Forma de Pagamento</CardTitle>
+        <CardTitle className="text-base md:text-lg font-medium">Gastos por Forma de Pagamento</CardTitle>
       </CardHeader>
-      <CardContent className="h-80">
+      <CardContent className="h-64 md:h-80">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie 
@@ -53,8 +53,8 @@ export default function MethodChart({ expenses }: { expenses: Expense[] }) {
               data={data} 
               cx="50%" 
               cy="50%" 
-              innerRadius={60} 
-              outerRadius={120}
+              innerRadius={40} 
+              outerRadius={80}
               fill="hsl(var(--primary))"
             >
               {data.map((_, index) => (
@@ -62,7 +62,7 @@ export default function MethodChart({ expenses }: { expenses: Expense[] }) {
               ))}
             </Pie>
             <Tooltip formatter={(value) => currency(Number(value))} />
-            <Legend />
+            <Legend wrapperStyle={{ maxWidth: "100%", overflow: "hidden", fontSize: "12px" }} />
           </PieChart>
         </ResponsiveContainer>
       </CardContent>

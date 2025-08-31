@@ -27,11 +27,11 @@ export default function CategoryChart({ expenses }: { expenses: Expense[] }) {
   const currency = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   return (
-    <Card>
+    <Card className="min-w-0">
       <CardHeader>
-        <CardTitle className="text-lg font-medium">Gastos por Categoria</CardTitle>
+        <CardTitle className="text-base md:text-lg font-medium">Gastos por Categoria</CardTitle>
       </CardHeader>
-      <CardContent className="h-80">
+      <CardContent className="h-64 md:h-80">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie 
@@ -39,8 +39,8 @@ export default function CategoryChart({ expenses }: { expenses: Expense[] }) {
               data={data} 
               cx="50%" 
               cy="50%" 
-              innerRadius={60} 
-              outerRadius={120}
+              innerRadius={40} 
+              outerRadius={80}
               fill="hsl(var(--primary))"
             >
               {data.map((_, index) => (
@@ -48,7 +48,7 @@ export default function CategoryChart({ expenses }: { expenses: Expense[] }) {
               ))}
             </Pie>
             <Tooltip formatter={(value) => currency(Number(value))} />
-            <Legend />
+            <Legend wrapperStyle={{ maxWidth: "100%", overflow: "hidden", fontSize: "12px" }} />
           </PieChart>
         </ResponsiveContainer>
       </CardContent>

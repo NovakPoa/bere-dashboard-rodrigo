@@ -28,32 +28,32 @@ export default function ExpensesTable({ expenses, onChange }: { expenses: Expens
   };
 
   return (
-    <Card>
+    <Card className="min-w-0">
       <CardHeader>
         <CardTitle className="text-sm text-muted-foreground">Despesas recentes</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
+      <CardContent className="p-3 md:p-6">
+        <div className="max-w-full overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Forma de pagamento</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead></TableHead>
+                <TableHead className="min-w-[100px] text-xs md:text-sm">Data</TableHead>
+                <TableHead className="min-w-[80px] text-xs md:text-sm">Categoria</TableHead>
+                <TableHead className="min-w-[100px] text-xs md:text-sm">Forma de pagamento</TableHead>
+                <TableHead className="text-right min-w-[80px] text-xs md:text-sm">Valor</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((e) => (
                 <TableRow key={e.id}>
-                  <TableCell className="text-muted-foreground">{new Date(e.date).toLocaleString()}</TableCell>
-                  <TableCell className="capitalize">{e.category}</TableCell>
-                  <TableCell className="capitalize">{METHOD_LABELS[e.method]}</TableCell>
-                  <TableCell className="text-right font-medium">{e.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs md:text-sm">{new Date(e.date).toLocaleDateString()}</TableCell>
+                  <TableCell className="capitalize text-xs md:text-sm">{e.category}</TableCell>
+                  <TableCell className="capitalize text-xs md:text-sm">{METHOD_LABELS[e.method]}</TableCell>
+                  <TableCell className="text-right font-medium text-xs md:text-sm">{e.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" aria-label="Excluir" onClick={() => handleDelete(e.id)}>
-                      <Trash2 />
+                    <Button variant="ghost" size="sm" aria-label="Excluir" onClick={() => handleDelete(e.id)} className="h-8 w-8 p-0">
+                      <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
