@@ -29,9 +29,6 @@ export default function Home() {
       <header>
         <h1 className="text-2xl font-semibold">Página principal</h1>
       </header>
-      <div className="text-sm">
-        <Link to="/auth" className="underline underline-offset-4">Ir para autenticação</Link>
-      </div>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
