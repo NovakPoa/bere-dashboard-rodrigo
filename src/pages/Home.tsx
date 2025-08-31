@@ -10,7 +10,7 @@ export default function Home() {
   const { data: topTodo, isLoading: todoLoading } = useTopPriorityTodo();
 
   useEffect(() => {
-    setPageSEO("Principal", "Resumo dos últimos 7 dias");
+    setPageSEO("Visão Geral", "Resumo dos últimos 7 dias");
   }, []);
 
   const formatCurrency = (value: number) => {
@@ -27,7 +27,7 @@ export default function Home() {
   return (
     <main className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold">Página principal</h1>
+        <h1 className="text-2xl font-semibold">Visão geral</h1>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

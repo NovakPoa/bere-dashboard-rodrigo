@@ -21,7 +21,7 @@ const items = [
   { title: "Atividades Físicas", url: "/atividades", icon: HeartPulse },
   { title: "Alimentação", url: "/alimentacao", icon: Utensils },
   { title: "Cultura", url: "/cultura", icon: Film },
-  { title: "Principal", url: "/app", icon: Home },
+  { title: "Visão Geral", url: "/app", icon: Home },
   { title: "Perfil", url: "/profile", icon: User },
 ];
 
