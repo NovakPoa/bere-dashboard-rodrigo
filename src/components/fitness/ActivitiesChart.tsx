@@ -18,13 +18,23 @@ export default function ActivitiesChart({ data, modalities }: { data: SeriesRow[
   }, {} as any);
 
   return (
-    <ChartContainer config={config} className="w-full">
-      <BarChart data={data} margin={{ left: 8, right: 8 }}>
+    <ChartContainer config={config} className="w-full h-full">
+      <BarChart data={data} margin={{ left: 8, right: 8, top: 8, bottom: 8 }}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="dia" />
-        <YAxis tickFormatter={(v) => `${v}`}/>
+        <XAxis 
+          dataKey="dia" 
+          fontSize={12}
+          tick={{ fontSize: 12 }}
+        />
+        <YAxis 
+          tickFormatter={(v) => `${v}m`}
+          fontSize={12}
+          tick={{ fontSize: 12 }}
+        />
         <ChartTooltip content={<ChartTooltipContent />} />
-        <Legend />
+        <Legend 
+          wrapperStyle={{ fontSize: '12px' }}
+        />
         {modalities.map((m, i) => (
           <Bar key={m} dataKey={m} stackId="a" fill={colors[i % colors.length]} />
         ))}

@@ -163,18 +163,24 @@ export default function Atividades() {
 
   return (
     <div className="min-h-screen">
-      <header className="container py-6">
-        <h1 className="text-3xl md:text-4xl font-semibold text-foreground">Atividades Físicas</h1>
+      <header className="container px-4 py-6">
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-foreground">Atividades Físicas</h1>
       </header>
 
-      <main className="container py-8 space-y-8">
-        <section aria-labelledby="filters" className="flex justify-end">
-          <div className="flex items-center gap-2">
+      <main className="container px-4 py-6 md:py-8 space-y-6 md:space-y-8">
+        <section aria-labelledby="filters" className="flex flex-col sm:flex-row sm:justify-end gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
             <span className="text-sm text-muted-foreground">Período</span>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-[280px] justify-start text-left font-normal">
-                  {range?.from && range?.to ? `${format(range.from, "PPP")} – ${format(range.to, "PPP")}` : "Selecione o período"}
+                <Button variant="outline" className="w-full sm:w-[280px] justify-start text-left font-normal text-xs sm:text-sm">
+                  {range?.from && range?.to ? (
+                    <span className="truncate">
+                      {format(range.from, "dd/MM")} – {format(range.to, "dd/MM")}
+                    </span>
+                  ) : (
+                    "Selecione o período"
+                  )}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
@@ -197,17 +203,17 @@ export default function Atividades() {
             </Popover>
           </div>
         </section>
-        <section aria-labelledby="stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section aria-labelledby="stats" className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <h2 id="stats" className="sr-only">Métricas</h2>
-          <StatCard title="Sessões (período)" value={String(sessionsCount)} />
-          <StatCard title="Tempo total (período)" value={formatHm(totalMinutes)} />
-          <StatCard title="Distância total (período)" value={`${totalKm.toFixed(1)} km`} />
-          <StatCard title="Calorias médias (dia)" value={`${avgCalories.toLocaleString()} kcal/dia`} />
+          <StatCard title="Sessões" value={String(sessionsCount)} />
+          <StatCard title="Tempo total" value={formatHm(totalMinutes)} />
+          <StatCard title="Distância total" value={`${totalKm.toFixed(1)} km`} />
+          <StatCard title="Calorias/dia" value={`${avgCalories.toLocaleString()}`} />
         </section>
 
-        <section aria-labelledby="add-message" className="grid gap-6 md:grid-cols-5">
+        <section aria-labelledby="add-message" className="grid gap-4 lg:gap-6 grid-cols-1 lg:grid-cols-5">
           <h2 id="add-message" className="sr-only">Registrar por mensagem</h2>
-          <div className="md:col-span-2">
+          <div className="lg:col-span-2">
             <FitnessSim
               title="Cole a mensagem (ex.: 'Corrida 30min 5km')"
               placeholder="Ex.: Corrida 30min 5km"
@@ -241,14 +247,14 @@ export default function Atividades() {
               }}
             />
           </div>
-          <div className="md:col-span-3">
+          <div className="lg:col-span-3">
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm text-muted-foreground">Resumo (período)</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="text-sm text-muted-foreground grid gap-1">
-                  <li>Calorias (estimadas no período): {totalCal.toLocaleString()} kcal</li>
+                  <li>Calorias (estimadas): {totalCal.toLocaleString()} kcal</li>
                   {Object.entries(totals).map(([m, t]) => (
                     <li key={m} className="capitalize">
                       {m}: {t.distanciaKm ? `${t.distanciaKm.toFixed(1)} km - ` : ""}{formatHm(t.minutos)}
@@ -267,10 +273,12 @@ export default function Atividades() {
           <h2 id="chart" className="sr-only">Desempenho por modalidade e dia</h2>
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">Minutos por dia (stack por modalidade)</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">Minutos por dia</CardTitle>
             </CardHeader>
-            <CardContent>
-              <ActivitiesChart data={series.data} modalities={series.modalities} />
+            <CardContent className="px-2 sm:px-6">
+              <div className="h-[300px] w-full">
+                <ActivitiesChart data={series.data} modalities={series.modalities} />
+              </div>
             </CardContent>
           </Card>
         </section>

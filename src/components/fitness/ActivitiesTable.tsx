@@ -15,31 +15,33 @@ export default function ActivitiesTable({ entries }: { entries: FitnessEntry[] }
       <CardHeader>
         <CardTitle className="text-sm text-muted-foreground">Atividades recentes</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-2 sm:px-6">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Modalidade</TableHead>
-                <TableHead className="text-right">Distância</TableHead>
-                <TableHead className="text-right">Duração</TableHead>
-                <TableHead className="text-right">Calorias</TableHead>
+                <TableHead className="min-w-[120px]">Data</TableHead>
+                <TableHead className="min-w-[100px]">Modalidade</TableHead>
+                <TableHead className="text-right min-w-[80px]">Distância</TableHead>
+                <TableHead className="text-right min-w-[80px]">Duração</TableHead>
+                <TableHead className="text-right min-w-[80px]">Calorias</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((e, idx) => (
                 <TableRow key={e.data + idx}>
-                  <TableCell className="text-muted-foreground">{new Date(e.data).toLocaleString()}</TableCell>
-                  <TableCell className="capitalize">{e.tipo || "atividade"}</TableCell>
-                  <TableCell className="text-right">{(e.distanciaKm ?? 0).toFixed(1)} km</TableCell>
-                  <TableCell className="text-right">{fmtHm(e.minutos || 0)}</TableCell>
-                  <TableCell className="text-right">{((e.calorias ?? estimateCalories(e)) || 0).toLocaleString()} kcal</TableCell>
+                  <TableCell className="text-muted-foreground text-xs sm:text-sm whitespace-nowrap">
+                    {new Date(e.data).toLocaleDateString('pt-BR')}
+                  </TableCell>
+                  <TableCell className="capitalize text-xs sm:text-sm">{e.tipo || "atividade"}</TableCell>
+                  <TableCell className="text-right text-xs sm:text-sm">{(e.distanciaKm ?? 0).toFixed(1)} km</TableCell>
+                  <TableCell className="text-right text-xs sm:text-sm">{fmtHm(e.minutos || 0)}</TableCell>
+                  <TableCell className="text-right text-xs sm:text-sm whitespace-nowrap">{((e.calorias ?? estimateCalories(e)) || 0).toLocaleString()}</TableCell>
                 </TableRow>
               ))}
               {rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-10">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-10 text-sm">
                     Ainda não há atividades. Cole uma mensagem para adicionar a primeira.
                   </TableCell>
                 </TableRow>
