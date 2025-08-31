@@ -124,6 +124,8 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 }
 

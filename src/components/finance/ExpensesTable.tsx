@@ -37,10 +37,10 @@ export default function ExpensesTable({ expenses, onChange }: { expenses: Expens
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[100px] text-xs md:text-sm">Data</TableHead>
-                <TableHead className="min-w-[80px] text-xs md:text-sm">Categoria</TableHead>
-                <TableHead className="min-w-[100px] text-xs md:text-sm">Forma de pagamento</TableHead>
-                <TableHead className="text-right min-w-[80px] text-xs md:text-sm">Valor</TableHead>
+                <TableHead className="min-w-[70px] text-xs md:text-sm">Data</TableHead>
+                <TableHead className="min-w-[60px] text-xs md:text-sm">Categoria</TableHead>
+                <TableHead className="min-w-[70px] text-xs md:text-sm">Forma de pagamento</TableHead>
+                <TableHead className="text-right min-w-[60px] text-xs md:text-sm">Valor</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
