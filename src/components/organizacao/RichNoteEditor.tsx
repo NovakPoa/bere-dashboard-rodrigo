@@ -291,17 +291,42 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
+        const root = editorRef.current;
         
-        // Insert just a br element
-        const br = document.createElement('br');
+        // Check if caret is at the very end of the editor
+        let atEnd = false;
+        if (root) {
+          const endRange = document.createRange();
+          endRange.selectNodeContents(root);
+          endRange.collapse(false);
+          atEnd = range.compareBoundaryPoints(Range.END_TO_END, endRange) === 0;
+        }
+        
         range.deleteContents();
-        range.insertNode(br);
         
-        // Position cursor after the br
-        range.setStartAfter(br);
-        range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
+        if (atEnd) {
+          // Insert two <br> when at the end so a visible new line is created
+          const br1 = document.createElement('br');
+          const br2 = document.createElement('br');
+          range.insertNode(br1);
+          br1.insertAdjacentElement('afterend', br2);
+          
+          // Place caret after the second <br>
+          range.setStartAfter(br2);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } else {
+          // Insert a single <br> when splitting within content
+          const br = document.createElement('br');
+          range.insertNode(br);
+          
+          // Position cursor after the <br>
+          range.setStartAfter(br);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
       }
       
       const next = editorRef.current?.innerHTML || "";
