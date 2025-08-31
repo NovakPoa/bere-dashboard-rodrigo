@@ -6,17 +6,17 @@ import { Outlet } from "react-router-dom";
 export default function AppLayout() {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <aside>
+      <div className="min-h-screen flex w-full overflow-x-hidden">
+        <aside className="shrink-0">
           <AppSidebar />
         </aside>
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           <header className="sticky top-0 z-40 h-14 flex items-center border-b px-4 bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             {/* Único trigger global */}
             <SidebarTrigger className="mr-2" />
             
           </header>
-          <main className="flex-1 p-4 md:p-8 max-w-screen-2xl mx-auto w-full">
+          <main className="flex-1 min-w-0 w-full p-4 md:p-8 max-w-screen-2xl mx-auto">
             <Outlet />
           </main>
         </div>

@@ -45,7 +45,7 @@ const Index = () => {
   const currency = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   return (
-    <div className="min-h-screen overflow-x-hidden max-w-full">
+    <div className="min-h-screen w-full min-w-0 overflow-x-hidden">
       <header className="py-4 md:py-6">
         <h1 className="text-2xl md:text-4xl font-semibold text-foreground">Financeiro</h1>
       </header>
