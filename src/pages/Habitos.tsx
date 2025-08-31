@@ -28,59 +28,64 @@ export default function Habitos() {
   };
 
   return (
-    <div className="container max-w-4xl mx-auto py-8 space-y-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold mb-2">Gestão de Hábitos</h1>
-        <p className="text-muted-foreground mb-6">
-          Desenvolva rotinas consistentes e monitore seu progresso diário
-        </p>
+    <div className="min-h-screen w-full min-w-0 overflow-x-hidden">
+      <div className="py-4 md:py-6 px-4 sm:px-6 lg:px-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold mb-2">Gestão de Hábitos</h1>
+          <p className="text-muted-foreground mb-6">
+            Desenvolva rotinas consistentes e monitore seu progresso diário
+          </p>
+        </div>
       </div>
 
-      <HabitForm 
-        onHabitAdded={refresh} 
-        canAddMore={habits.length < 5} 
-      />
+      <main className="px-4 sm:px-6 lg:px-8 space-y-6 md:space-y-8 pb-8">
 
-      {habits.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-8">
-            <Target className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">Nenhum hábito criado ainda</h3>
-            <p className="text-muted-foreground">
-              Comece criando seu primeiro hábito usando o formulário acima.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            {habits.map((habit) => (
-              <HabitCard
-                key={habit.id}
-                habit={habit}
-                onClick={() => handleHabitClick(habit.id)}
-              />
-            ))}
-          </div>
+        <HabitForm 
+          onHabitAdded={refresh} 
+          canAddMore={habits.length < 5} 
+        />
 
+        {habits.length === 0 ? (
           <Card>
-            <CardHeader>
-              <CardTitle>Progresso de Hoje</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {habits.map((habit) => (
-                <DailyHabitTracker
-                  key={`${habit.id}-${refreshKey}`}
-                  habit={habit}
-                  date={currentDate}
-                  onUpdate={refresh}
-                  onDelete={refresh}
-                />
-              ))}
+            <CardContent className="text-center py-8">
+              <Target className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">Nenhum hábito criado ainda</h3>
+              <p className="text-muted-foreground">
+                Comece criando seu primeiro hábito usando o formulário acima.
+              </p>
             </CardContent>
           </Card>
-        </div>
-      )}
+        ) : (
+          <div className="space-y-6 md:space-y-8">
+            <div className="grid gap-4 md:grid-cols-2">
+              {habits.map((habit) => (
+                <HabitCard
+                  key={habit.id}
+                  habit={habit}
+                  onClick={() => handleHabitClick(habit.id)}
+                />
+              ))}
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Progresso de Hoje</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {habits.map((habit) => (
+                  <DailyHabitTracker
+                    key={`${habit.id}-${refreshKey}`}
+                    habit={habit}
+                    date={currentDate}
+                    onUpdate={refresh}
+                    onDelete={refresh}
+                  />
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
