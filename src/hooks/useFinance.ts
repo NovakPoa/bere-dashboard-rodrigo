@@ -14,12 +14,28 @@ interface FinanceRecord {
   descricao?: string;
 }
 
+// Payment method normalization mapping
+const normalizePaymentMethod = (method: string): PaymentMethod => {
+  const normalized = method?.toLowerCase().trim() || "";
+  
+  if (normalized.includes("pix")) return "pix";
+  if (normalized.includes("boleto")) return "boleto";
+  if (normalized.includes("credit") || normalized.includes("crédito") || 
+      normalized.includes("credito") || normalized.includes("cartão") || 
+      normalized.includes("cartao") || normalized === "cartão de crédito") {
+    return "credit";
+  }
+  
+  // Fallback para PIX se não conseguir identificar
+  return "pix";
+};
+
 // Convert Supabase record to Expense type
 const convertToExpense = (record: FinanceRecord): Expense => ({
   id: record.id.toString(),
   amount: record.valor,
   category: record.categoria as Category,
-  method: record.forma_pagamento as PaymentMethod,
+  method: normalizePaymentMethod(record.forma_pagamento),
   date: record.data,
   source: record.origem as "whatsapp" | "manual",
   note: record.descricao || undefined,

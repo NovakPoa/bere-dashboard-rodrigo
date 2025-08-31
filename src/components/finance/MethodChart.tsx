@@ -27,6 +27,19 @@ export default function MethodChart({ expenses }: { expenses: Expense[] }) {
 
   const currency = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-medium">Gastos por Forma de Pagamento</CardTitle>
+        </CardHeader>
+        <CardContent className="h-80 flex items-center justify-center">
+          <p className="text-muted-foreground">Nenhum dado disponível para exibir</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>

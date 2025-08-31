@@ -249,5 +249,14 @@ export function groupByCategory(expenses: Expense[]): Record<Category, number> {
 export function groupByMethod(expenses: Expense[]): Record<PaymentMethod, number> {
   const base: Record<PaymentMethod, number> = { pix: 0, boleto: 0, credit: 0 };
   for (const e of expenses) base[e.method] += e.amount;
-  return base;
+  
+  // Filtrar apenas métodos com valores > 0
+  const filtered: Record<PaymentMethod, number> = {} as Record<PaymentMethod, number>;
+  for (const [method, amount] of Object.entries(base)) {
+    if (amount > 0) {
+      filtered[method as PaymentMethod] = amount;
+    }
+  }
+  
+  return filtered;
 }
