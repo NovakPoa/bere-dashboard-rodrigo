@@ -7,16 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Calendar } from "@/components/ui/calendar";
-import { DateRange } from "react-day-picker";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format, subDays } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import NutritionCharts from "@/components/nutrition/NutritionCharts";
 import RecentMeals from "@/components/nutrition/RecentMeals";
 import { useFoodEntries, useAddFoodEntry, type FoodEntry } from "@/hooks/useNutrition";
+import DateRangePicker from "@/components/finance/DateRangePicker";
 
 type LegacyFoodEntry = {
   descricao: string;
@@ -50,8 +46,11 @@ export default function Alimentacao() {
   const addFoodEntry = useAddFoodEntry();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [range, setRange] = useState<DateRange | undefined>(
-    () => ({ from: subDays(new Date(), 6), to: new Date() })
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    () => subDays(new Date(), 6)
+  );
+  const [endDate, setEndDate] = useState<Date | undefined>(
+    () => new Date()
   );
   const fieldsRef = useRef<Partial<FoodEntry>>({});
 
@@ -116,23 +115,22 @@ export default function Alimentacao() {
   ];
 
   const handlePeriodChange = (days: number, label: string) => {
-    const currentPeriod = range?.from && range?.to ? 
-      Math.ceil((range.to.getTime() - range.from.getTime()) / (1000 * 60 * 60 * 24)) + 1 : 7;
+    const currentPeriod = startDate && endDate ? 
+      Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1 : 7;
     
     if (currentPeriod === days) {
       // Deselect if same period
-      setRange({ from: subDays(new Date(), 6), to: new Date() });
+      setStartDate(subDays(new Date(), 6));
+      setEndDate(new Date());
     } else {
-      setRange({
-        from: subDays(new Date(), days - 1),
-        to: new Date(),
-      });
+      setStartDate(subDays(new Date(), days - 1));
+      setEndDate(new Date());
     }
   };
 
   const getCurrentPeriodLabel = () => {
-    if (!range?.from || !range?.to) return "Últimos 7 dias";
-    const days = Math.ceil((range.to.getTime() - range.from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    if (!startDate || !endDate) return "Últimos 7 dias";
+    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     const period = periods.find(p => p.days === days);
     return period?.label || "Período personalizado";
   };
@@ -165,35 +163,26 @@ export default function Alimentacao() {
                 size="sm"
                 onClick={() => handlePeriodChange(period.days, period.label)}
                 className={cn(
-                  range?.from && range?.to &&
-                  Math.ceil((range.to.getTime() - range.from.getTime()) / (1000 * 60 * 60 * 24)) + 1 === period.days &&
+                  startDate && endDate &&
+                  Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1 === period.days &&
                   "bg-primary text-primary-foreground"
                 )}
               >
                 {period.label}
               </Button>
             ))}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  {getCurrentPeriodLabel()}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="range"
-                  selected={range}
-                  onSelect={setRange}
-                  numberOfMonths={2}
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
+            <div className="min-w-0">
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+              />
+            </div>
           </div>
         </section>
 
-      <NutritionCharts entries={entries} dateRange={range?.from && range?.to ? { from: range.from, to: range.to } : undefined} />
+      <NutritionCharts entries={entries} dateRange={startDate && endDate ? { from: startDate, to: endDate } : undefined} />
 
       <section className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2">
         <FoodSim
@@ -238,7 +227,7 @@ export default function Alimentacao() {
         </Card>
       </section>
 
-      <RecentMeals entries={entries} dateRange={range?.from && range?.to ? { from: range.from, to: range.to } : undefined} />
+      <RecentMeals entries={entries} dateRange={startDate && endDate ? { from: startDate, to: endDate } : undefined} />
       </main>
     </div>
   );
