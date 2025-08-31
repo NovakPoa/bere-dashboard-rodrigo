@@ -150,14 +150,14 @@ export default function Alimentacao() {
   const FoodSim = MessageSimulator<Omit<FoodEntry, "id">>;
 
   return (
-    <div className="min-h-screen">
-      <header className="container py-6">
-        <h1 className="text-3xl md:text-4xl font-semibold text-foreground">Alimentação</h1>
+    <div className="min-h-screen w-full min-w-0 overflow-x-hidden">
+      <header className="py-4 md:py-6">
+        <h1 className="text-2xl md:text-4xl font-semibold text-foreground">Alimentação</h1>
       </header>
 
-      <main className="container py-8 space-y-8">
+      <main className="space-y-6 md:space-y-8">
         <section aria-labelledby="filters" className="flex justify-end">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {periods.map((period) => (
               <Button
                 key={period.days}
@@ -195,7 +195,7 @@ export default function Alimentacao() {
 
       <NutritionCharts entries={entries} dateRange={range?.from && range?.to ? { from: range.from, to: range.to } : undefined} />
 
-      <section className="grid gap-4 lg:grid-cols-2">
+      <section className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2">
         <FoodSim
           title="Cole a mensagem (ex.: 'Almoço: frango com arroz')"
           placeholder="Ex.: Almoço: frango com arroz"

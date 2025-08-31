@@ -83,7 +83,7 @@ export default function NutritionCharts({ entries, dateRange }: NutritionChartsP
   };
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2">
       <Card>
         <CardHeader className="space-y-1">
           <CardTitle className="text-sm text-muted-foreground">Média diária de macronutrientes</CardTitle>

@@ -25,8 +25,8 @@ export default function RecentMeals({ entries, dateRange }: RecentMealsProps) {
       <CardHeader>
         <CardTitle className="text-sm text-muted-foreground">Refeições recentes</CardTitle>
       </CardHeader>
-      <CardContent>
-        <Table>
+      <CardContent className="overflow-x-auto">
+        <Table className="min-w-[500px]">
           <TableHeader>
             <TableRow>
               <TableHead>Data</TableHead>
