@@ -287,7 +287,23 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      document.execCommand('insertHTML', false, '<br>&nbsp;');
+      
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        
+        // Insert just a br element
+        const br = document.createElement('br');
+        range.deleteContents();
+        range.insertNode(br);
+        
+        // Position cursor after the br
+        range.setStartAfter(br);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+      
       const next = editorRef.current?.innerHTML || "";
       scheduleSave(next);
     }
