@@ -11,14 +11,27 @@ const RecoveryRedirector = () => {
   React.useEffect(() => {
     console.log('[RecoveryRedirector] useEffect triggered', { path: window.location.pathname, hash: window.location.hash });
     const hash = window.location.hash;
-    
-    // Redirecionar para /auth se há recovery token ou erro
+
+    // 1) Redirecionar para /auth se há recovery token ou erro na hash
     if ((hash.includes('type=recovery') || hash.includes('error=')) && window.location.pathname !== '/auth') {
       console.log('[RecoveryRedirector] Redirecting to /auth with hash params');
       window.location.replace(`/auth${hash}`);
+      return; // evita processar abaixo neste ciclo
     } else if (hash.includes('type=recovery') || hash.includes('error=')) {
       console.log('[RecoveryRedirector] Already on /auth with hash params');
     }
+
+    // 2) Listener global para PASSWORD_RECOVERY (quando Supabase já consumiu a hash)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        console.log('[RecoveryRedirector] PASSWORD_RECOVERY detected, redirecting to /auth?recovery=1');
+        if (window.location.pathname !== '/auth') {
+          window.location.replace('/auth?recovery=1');
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
   return null;
 };
