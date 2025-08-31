@@ -287,33 +287,7 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        
-        // Create a br element and a text node for cursor positioning
-        const br = document.createElement('br');
-        const textNode = document.createTextNode('\u00A0'); // Non-breaking space
-        
-        range.deleteContents();
-        range.insertNode(br);
-        range.insertNode(textNode);
-        
-        // Position cursor after the br
-        range.setStartAfter(textNode);
-        range.setEndAfter(textNode);
-        selection.removeAllRanges();
-        selection.addRange(range);
-        
-        // Remove the text node immediately to avoid visual artifacts
-        setTimeout(() => {
-          if (textNode.parentNode) {
-            textNode.parentNode.removeChild(textNode);
-          }
-        }, 0);
-      }
-      
+      document.execCommand('insertHTML', false, '<br>&nbsp;');
       const next = editorRef.current?.innerHTML || "";
       scheduleSave(next);
     }
