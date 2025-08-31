@@ -49,7 +49,7 @@ export default function Calendario() {
             <CardHeader>
               <CardTitle className="text-sm text-muted-foreground">Conectar ao Google Agenda (calendário público)</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-3 md:grid-cols-3">
+            <CardContent className="grid gap-4 md:grid-cols-3">
               <div className="md:col-span-2 grid gap-2">
                 <label className="text-sm text-muted-foreground">ID do Calendário (público)</label>
                 <Input placeholder="ex.: seu_email@gmail.com ou ID público" value={draftId} onChange={(e) => setDraftId(e.target.value)} />
@@ -68,7 +68,7 @@ export default function Calendario() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="md:col-span-3 flex justify-end gap-2">
+              <div className="md:col-span-3 flex flex-col sm:flex-row justify-end gap-2">
                 <Button variant="secondary" onClick={() => { setDraftId(settings.calendarId); setDraftTz(settings.timezone); }}>Cancelar</Button>
                 <Button onClick={() => setSettings({ calendarId: draftId.trim(), timezone: draftTz })}>Salvar</Button>
                 {settings.calendarId && (
