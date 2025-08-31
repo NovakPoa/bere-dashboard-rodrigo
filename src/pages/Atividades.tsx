@@ -3,14 +3,12 @@ import { format, eachDayOfInterval, startOfDay, addDays, differenceInCalendarDay
 import { setPageSEO } from "@/lib/seo";
 import { MessageSimulator } from "@/components/common/MessageSimulator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import StatCard from "@/components/finance/StatCard";
 import ActivitiesChart from "@/components/fitness/ActivitiesChart";
 import ActivitiesTable from "@/components/fitness/ActivitiesTable";
+import DateRangePicker from "@/components/finance/DateRangePicker";
 import { FitnessEntry, groupTotalsByModality, totalCalories, fetchActivitiesFromSupabase, estimateCalories } from "@/lib/fitness";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 const STORAGE_KEY = "fitness_activities_v1";
@@ -57,14 +55,13 @@ function save(entry: FitnessEntryLocal) {
 }
 
 export default function Atividades() {
-  const [range, setRange] = useState<Partial<{ from: Date; to: Date }> | undefined>(
-    () => ({ from: subDays(new Date(), 6), to: new Date() })
-  );
+  const [startDate, setStartDate] = useState<Date | undefined>(() => subDays(new Date(), 6));
+  const [endDate, setEndDate] = useState<Date | undefined>(() => new Date());
 
   useEffect(() => setPageSEO("Atividades Físicas", "Registre exercícios por mensagem"), []);
 
-  const efFrom = startOfDay(range?.from ?? subDays(new Date(), 6));
-  const efTo = startOfDay(range?.to ?? new Date());
+  const efFrom = startOfDay(startDate ?? subDays(new Date(), 6));
+  const efTo = startOfDay(endDate ?? new Date());
   const { data: dbEntries, isLoading, error } = useQuery({
     queryKey: ["activities", efFrom.toISOString(), efTo.toISOString()],
     queryFn: () => fetchActivitiesFromSupabase(efFrom, efTo),
@@ -106,20 +103,20 @@ export default function Atividades() {
   const FitnessSim = MessageSimulator<FitnessEntryLocal>;
 
   const periodEntries = useMemo(() => {
-    const efFrom = startOfDay(range?.from ?? subDays(new Date(), 6));
-    const efToEnd = addDays(startOfDay(range?.to ?? new Date()), 1);
+    const efFrom = startOfDay(startDate ?? subDays(new Date(), 6));
+    const efToEnd = addDays(startOfDay(endDate ?? new Date()), 1);
     return entries.filter((e) => {
       const d = new Date(e.data);
       return d >= efFrom && d < efToEnd;
     });
-  }, [entries, range]);
+  }, [entries, startDate, endDate]);
 
   const totals = useMemo(() => groupTotalsByModality(periodEntries), [periodEntries]);
 
   const modalities = useMemo(() => Array.from(new Set(periodEntries.map((e) => e.tipo?.toLowerCase() || "atividade"))), [periodEntries]);
   const series = useMemo(() => {
-    const efFrom = startOfDay(range?.from ?? subDays(new Date(), 6));
-    const efTo = startOfDay(range?.to ?? new Date());
+    const efFrom = startOfDay(startDate ?? subDays(new Date(), 6));
+    const efTo = startOfDay(endDate ?? new Date());
     const days = eachDayOfInterval({ start: efFrom, end: efTo });
     return {
       data: days.map((day) => {
@@ -138,15 +135,15 @@ export default function Atividades() {
       }),
       modalities,
     };
-  }, [periodEntries, range, modalities]);
+  }, [periodEntries, startDate, endDate, modalities]);
 
   const sessionsCount = periodEntries.length;
   const totalMinutes = periodEntries.reduce((s, e) => s + (e.minutos || 0), 0);
   const totalKm = periodEntries.reduce((s, e) => s + (e.distanciaKm || 0), 0);
   const totalCal = useMemo(() => totalCalories(periodEntries), [periodEntries]);
   const daysCount = (() => {
-    const efFrom = startOfDay(range?.from ?? subDays(new Date(), 6));
-    const efTo = startOfDay(range?.to ?? new Date());
+    const efFrom = startOfDay(startDate ?? subDays(new Date(), 6));
+    const efTo = startOfDay(endDate ?? new Date());
     return differenceInCalendarDays(efTo, efFrom) + 1;
   })();
   const avgCalories = useMemo(() => Math.round(totalCal / Math.max(daysCount, 1)), [totalCal, daysCount]);
@@ -168,39 +165,14 @@ export default function Atividades() {
       </header>
 
       <main className="container px-4 py-6 md:py-8 space-y-6 md:space-y-8">
-        <section aria-labelledby="filters" className="flex flex-col sm:flex-row sm:justify-end gap-2">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-            <span className="text-sm text-muted-foreground">Período</span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full sm:w-[280px] justify-start text-left font-normal text-xs sm:text-sm">
-                  {range?.from && range?.to ? (
-                    <span className="truncate">
-                      {format(range.from, "dd/MM")} – {format(range.to, "dd/MM")}
-                    </span>
-                  ) : (
-                    "Selecione o período"
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  mode="range"
-                  selected={range as any}
-                  onSelect={(r: any) => {
-                    if (r?.from && r?.to) {
-                      if (range && r.from.getTime() === range.from.getTime() && r.to.getTime() === range.to.getTime()) {
-                        setRange(undefined);
-                      } else {
-                        setRange({ from: r.from, to: r.to });
-                      }
-                    }
-                  }}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
+        <section aria-labelledby="filters" className="flex justify-end">
+          <div className="w-full max-w-lg">
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+            />
           </div>
         </section>
         <section aria-labelledby="stats" className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
