@@ -9,7 +9,7 @@ interface StarRatingProps {
 }
 
 export function StarRating({ rating = 0, onRatingChange, readonly = false, size = "sm" }: StarRatingProps) {
-  const starSize = size === "sm" ? 16 : 20;
+  const starSize = size === "sm" ? 14 : 20;
   
   const handleStarClick = (newRating: number) => {
     if (readonly || !onRatingChange) return;
@@ -18,7 +18,7 @@ export function StarRating({ rating = 0, onRatingChange, readonly = false, size 
   };
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((star) => (
         <button
           key={star}

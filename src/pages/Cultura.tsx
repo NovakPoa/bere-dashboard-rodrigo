@@ -199,12 +199,12 @@ export default function Cultura() {
   );
 
   return (
-    <div className="min-h-screen">
-      <header className="container py-6">
-        <h1 className="text-3xl md:text-4xl font-semibold text-foreground">Cultura</h1>
+    <div className="min-h-screen w-full min-w-0 overflow-x-hidden">
+      <header className="py-4 md:py-6">
+        <h1 className="text-2xl md:text-4xl font-semibold text-foreground">Cultura</h1>
       </header>
 
-      <main className="container py-8 space-y-8">
+      <main className="space-y-6 md:space-y-8">
         {/* Vídeos */}
         <section aria-labelledby="videos" className="grid gap-6 grid-cols-1">
           <h2 id="videos" className="sr-only">Filmes e séries</h2>

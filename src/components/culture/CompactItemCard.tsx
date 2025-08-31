@@ -48,45 +48,50 @@ export function CompactItemCard({ item, onUpdate, onRemove }: CompactItemCardPro
   if (isEditing) {
     return (
       <div 
-        className="flex items-center gap-3 p-2 bg-muted/50 rounded-md"
+        className="p-2 bg-muted/50 rounded-md space-y-3"
         draggable={false}
       >
+        {/* Title input - full width */}
         <Input
           value={editValues.title}
           onChange={(e) => setEditValues(prev => ({ ...prev, title: e.target.value }))}
-          className="flex-1 min-w-0"
+          className="w-full"
           placeholder="Título"
         />
-        <Input
-          value={editValues.genre}
-          onChange={(e) => setEditValues(prev => ({ ...prev, genre: e.target.value }))}
-          className="w-24 flex-shrink-0"
-          placeholder="Gênero"
-        />
-        <Input
-          type="number"
-          value={editValues.year}
-          onChange={(e) => setEditValues(prev => ({ ...prev, year: e.target.value }))}
-          className="w-20 flex-shrink-0"
-          placeholder="Ano"
-        />
-        {item.domain === "videos" && (
-          <Select 
-            value={editValues.subtype} 
-            onValueChange={(v) => setEditValues(prev => ({ ...prev, subtype: v as "movie" | "series" }))}
-          >
-            <SelectTrigger className="w-20 flex-shrink-0">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="movie">Filme</SelectItem>
-              <SelectItem value="series">Série</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-        <div className="flex gap-1">
-          <Button size="sm" onClick={handleSave}>Salvar</Button>
+        
+        {/* Other fields in responsive grid */}
+        <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
+          <Input
+            value={editValues.genre}
+            onChange={(e) => setEditValues(prev => ({ ...prev, genre: e.target.value }))}
+            placeholder="Gênero"
+          />
+          <Input
+            type="number"
+            value={editValues.year}
+            onChange={(e) => setEditValues(prev => ({ ...prev, year: e.target.value }))}
+            placeholder="Ano"
+          />
+          {item.domain === "videos" && (
+            <Select 
+              value={editValues.subtype} 
+              onValueChange={(v) => setEditValues(prev => ({ ...prev, subtype: v as "movie" | "series" }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="movie">Filme</SelectItem>
+                <SelectItem value="series">Série</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+        
+        {/* Action buttons */}
+        <div className="flex gap-2 justify-end">
           <Button size="sm" variant="outline" onClick={handleCancel}>Cancelar</Button>
+          <Button size="sm" onClick={handleSave}>Salvar</Button>
         </div>
       </div>
     );
@@ -94,67 +99,77 @@ export function CompactItemCard({ item, onUpdate, onRemove }: CompactItemCardPro
 
   return (
     <div
-      className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded-md group transition-colors"
+      className="p-2 hover:bg-muted/50 rounded-md group transition-colors"
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData("text/plain", item.id);
         e.dataTransfer.effectAllowed = "move";
       }}
     >
-      <div className="flex-1 min-w-0">
-        <span className="font-medium truncate block">
-          {item.title}
-          {item.domain === "videos" && item.subtype && (
-            <span className="text-muted-foreground text-sm ml-1">
-              · {item.subtype === "movie" ? "Filme" : "Série"}
+      {/* Mobile: Stack vertically, Desktop: Single row */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+        {/* First row: Title + Action buttons */}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="flex-1 min-w-0">
+            <span className="font-medium truncate block">
+              {item.title}
+              {item.domain === "videos" && item.subtype && (
+                <span className="text-muted-foreground text-sm ml-1">
+                  · {item.subtype === "movie" ? "Filme" : "Série"}
+                </span>
+              )}
             </span>
-          )}
-        </span>
-      </div>
-      
-      <div className="flex-shrink-0 text-sm text-muted-foreground min-w-0">
-        {item.genre && (
-          <span className="truncate block">{item.genre}</span>
-        )}
-      </div>
-      
-      <div className="flex-shrink-0 text-sm text-muted-foreground w-12">
-        {item.year && <span>{item.year}</span>}
-      </div>
-      
-      <div className="flex-shrink-0">
-        <StarRating
-          rating={item.rating}
-          onRatingChange={handleRatingChange}
-        />
-      </div>
-      
-      <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="flex gap-1">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsEditing(true);
-            }}
-            className="h-6 w-6 p-0"
-          >
-            <Edit3 size={12} />
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onRemove(item.id);
-            }}
-            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-          >
-            <Trash2 size={12} />
-          </Button>
+          </div>
+          
+          {/* Action buttons - always visible on mobile */}
+          <div className="flex-shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsEditing(true);
+                }}
+                className="h-6 w-6 p-0"
+              >
+                <Edit3 size={12} />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onRemove(item.id);
+                }}
+                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+              >
+                <Trash2 size={12} />
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        {/* Second row on mobile / Right side on desktop: Genre + Year + Stars */}
+        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 flex-shrink-0">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
+            {item.genre && (
+              <span className="truncate max-w-20 sm:max-w-none">{item.genre}</span>
+            )}
+            {item.year && (
+              <span className="flex-shrink-0 w-8 sm:w-12">{item.year}</span>
+            )}
+          </div>
+          
+          <div className="flex-shrink-0">
+            <StarRating
+              rating={item.rating}
+              onRatingChange={handleRatingChange}
+              size="sm"
+            />
+          </div>
         </div>
       </div>
     </div>
