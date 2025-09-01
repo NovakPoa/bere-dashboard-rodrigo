@@ -1,40 +1,54 @@
-import { useState } from "react";
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Plus, Minus } from "lucide-react";
 import { HabitDefinition } from "@/hooks/useHabitDefinitions";
-import { useHabitSessionForDate, useUpdateHabitSession } from "@/hooks/useHabitSessions";
+import { useHabitSessionForDate } from "@/hooks/useHabitSessions";
 
 interface HabitCardProps {
   habit: HabitDefinition;
   onClick: () => void;
-  onUpdate: () => void;
 }
 
-export function HabitCard({ habit, onClick, onUpdate }: HabitCardProps) {
+export interface HabitCardRef {
+  getSaveData: () => {
+    habitId: string;
+    sessions: number;
+    timeSpent: number;
+    hasChanges: boolean;
+  };
+}
+
+export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onClick }, ref) => {
   const today = new Date();
   const { data: session } = useHabitSessionForDate(habit.id, today);
-  const updateSession = useUpdateHabitSession();
 
   const [sessions, setSessions] = useState(session?.sessionsCompleted || 0);
   const [timeSpent, setTimeSpent] = useState(session?.timeSpentMinutes || 0);
+  const [initialSessions, setInitialSessions] = useState(session?.sessionsCompleted || 0);
+  const [initialTimeSpent, setInitialTimeSpent] = useState(session?.timeSpentMinutes || 0);
+
+  useEffect(() => {
+    if (session) {
+      setSessions(session.sessionsCompleted || 0);
+      setTimeSpent(session.timeSpentMinutes || 0);
+      setInitialSessions(session.sessionsCompleted || 0);
+      setInitialTimeSpent(session.timeSpentMinutes || 0);
+    }
+  }, [session]);
+
+  useImperativeHandle(ref, () => ({
+    getSaveData: () => ({
+      habitId: habit.id,
+      sessions,
+      timeSpent,
+      hasChanges: sessions !== initialSessions || timeSpent !== initialTimeSpent,
+    }),
+  }));
 
   const sessionsProgress = Math.min((sessions / habit.targetSessions) * 100, 100);
   const timeProgress = Math.min((timeSpent / habit.targetTimeMinutes) * 100, 100);
-
-  const handleSave = () => {
-    updateSession.mutate({
-      habitId: habit.id,
-      date: today,
-      sessionsCompleted: sessions,
-      timeSpentMinutes: timeSpent,
-    }, {
-      onSuccess: () => {
-        onUpdate();
-      }
-    });
-  };
 
   const handleTitleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -112,16 +126,7 @@ export function HabitCard({ habit, onClick, onUpdate }: HabitCardProps) {
           <Progress value={timeProgress} className="h-2" />
         </div>
 
-        <Button 
-          onClick={handleSave}
-          disabled={updateSession.isPending}
-          variant="outline"
-          className="w-full mt-3"
-          size="sm"
-        >
-          {updateSession.isPending ? "Salvando..." : "Salvar"}
-        </Button>
       </CardContent>
     </Card>
   );
-}
+});

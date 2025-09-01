@@ -1,23 +1,45 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Target, Plus } from "lucide-react";
 import { HabitForm } from "@/components/habits/HabitForm";
-import { HabitCard } from "@/components/habits/HabitCard";
+import { HabitCard, HabitCardRef } from "@/components/habits/HabitCard";
 import { useHabitDefinitions } from "@/hooks/useHabitDefinitions";
+import { useUpdateHabitSession } from "@/hooks/useHabitSessions";
 import { setPageSEO } from "@/lib/seo";
+import { toast } from "@/hooks/use-toast";
 
 export default function Habitos() {
   const navigate = useNavigate();
   const { data: habits = [], refetch } = useHabitDefinitions();
   const [refreshKey, setRefreshKey] = useState(0);
   const [showHabitForm, setShowHabitForm] = useState(false);
+  const updateSession = useUpdateHabitSession();
+  const habitCardRefs = useRef<Record<string, HabitCardRef | null>>({});
   const currentDate = new Date();
 
   useEffect(() => {
     setPageSEO("Hábitos - Gestão de Rotinas Diárias", "Monitore e desenvolva seus hábitos diários com metas personalizáveis e acompanhamento detalhado do progresso.");
+    
+    // Cleanup function to save all changes when leaving the page
+    return () => {
+      const today = new Date();
+      Object.values(habitCardRefs.current).forEach(ref => {
+        if (ref) {
+          const saveData = ref.getSaveData();
+          if (saveData.hasChanges) {
+            updateSession.mutate({
+              habitId: saveData.habitId,
+              date: today,
+              sessionsCompleted: saveData.sessions,
+              timeSpentMinutes: saveData.timeSpent,
+            });
+          }
+        }
+      });
+    };
   }, []);
 
   const refresh = () => {
@@ -74,9 +96,9 @@ export default function Habitos() {
             {habits.map((habit) => (
               <HabitCard
                 key={`${habit.id}-${refreshKey}`}
+                ref={(ref) => habitCardRefs.current[habit.id] = ref}
                 habit={habit}
                 onClick={() => handleHabitClick(habit.id)}
-                onUpdate={refresh}
               />
             ))}
           </div>
