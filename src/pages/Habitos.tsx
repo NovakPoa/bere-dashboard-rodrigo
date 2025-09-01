@@ -73,7 +73,6 @@ export default function Habitos() {
                     habit={habit}
                     date={currentDate}
                     onUpdate={refresh}
-                    onDelete={refresh}
                   />
                 ))}
               </CardContent>

@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, Minus } from "lucide-react";
-import { HabitDefinition, useDeleteHabitDefinition } from "@/hooks/useHabitDefinitions";
+import { Plus, Minus } from "lucide-react";
+import { HabitDefinition } from "@/hooks/useHabitDefinitions";
 import { useHabitSessionForDate, useUpdateHabitSession } from "@/hooks/useHabitSessions";
 import { format } from "date-fns";
 
@@ -12,13 +12,11 @@ interface DailyHabitTrackerProps {
   habit: HabitDefinition;
   date: Date;
   onUpdate: () => void;
-  onDelete: () => void;
 }
 
-export function DailyHabitTracker({ habit, date, onUpdate, onDelete }: DailyHabitTrackerProps) {
+export function DailyHabitTracker({ habit, date, onUpdate }: DailyHabitTrackerProps) {
   const { data: session } = useHabitSessionForDate(habit.id, date);
   const updateSession = useUpdateHabitSession();
-  const deleteHabit = useDeleteHabitDefinition();
 
   const [sessions, setSessions] = useState(session?.sessionsCompleted || 0);
   const [timeSpent, setTimeSpent] = useState(session?.timeSpentMinutes || 0);
@@ -40,15 +38,6 @@ export function DailyHabitTracker({ habit, date, onUpdate, onDelete }: DailyHabi
     });
   };
 
-  const handleDelete = () => {
-    if (confirm(`Tem certeza que deseja excluir o hábito "${habit.name}"?`)) {
-      deleteHabit.mutate(habit.id, {
-        onSuccess: () => {
-          onDelete();
-        }
-      });
-    }
-  };
 
   const getProgressBadge = () => {
     if (overallProgress >= 100) return <Badge className="bg-green-500">Concluído</Badge>;
@@ -65,17 +54,7 @@ export function DailyHabitTracker({ habit, date, onUpdate, onDelete }: DailyHabi
             Meta: {habit.targetSessions} sessões • {habit.targetTimeMinutes} min
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {getProgressBadge()}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleDelete}
-            className="text-destructive hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+        {getProgressBadge()}
       </CardHeader>
 
       <CardContent className="space-y-4">
