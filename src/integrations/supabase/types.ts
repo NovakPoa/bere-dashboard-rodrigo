@@ -113,6 +113,7 @@ export type Database = {
       cultura: {
         Row: {
           data: string | null
+          genero: string | null
           id: number
           nota: number | null
           origem: string | null
@@ -127,6 +128,7 @@ export type Database = {
         }
         Insert: {
           data?: string | null
+          genero?: string | null
           id?: number
           nota?: number | null
           origem?: string | null
@@ -141,6 +143,7 @@ export type Database = {
         }
         Update: {
           data?: string | null
+          genero?: string | null
           id?: number
           nota?: number | null
           origem?: string | null

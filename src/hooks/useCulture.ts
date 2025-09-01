@@ -27,6 +27,7 @@ interface CultureRecord {
   data: string;
   origem: string;
   user_id?: string;
+  genero?: string;
 }
 
 const convertToCultureItem = (record: CultureRecord): Item => {
@@ -91,6 +92,7 @@ const convertToCultureItem = (record: CultureRecord): Item => {
     subtype: mapSubtype(record.tipo, domain),
     rating: record.nota || undefined,
     year: record.data ? new Date(record.data).getFullYear() : undefined,
+    genre: record.genero || undefined,
   };
 };
 
@@ -142,6 +144,7 @@ const convertFromCultureItem = (item: Omit<Item, "id">) => {
     nota: item.rating || null,
     data: item.year ? `${item.year}-01-01` : new Date().toISOString().split('T')[0],
     origem: "manual",
+    genero: item.genre || null,
   };
 };
 
@@ -260,8 +263,7 @@ const convertPatchToRecord = (patch: Partial<Item>) => {
     record.data = patch.year ? `${patch.year}-01-01` : null;
   }
   if (patch.genre !== undefined) {
-    // Note: There's no genre column in the database schema, this might be stored in texto or need a migration
-    // For now, we'll skip it to avoid errors
+    record.genero = patch.genre;
   }
   
   return record;
