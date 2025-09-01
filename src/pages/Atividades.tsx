@@ -58,7 +58,7 @@ export default function Atividades() {
   const [startDate, setStartDate] = useState<Date | undefined>(() => subDays(new Date(), 6));
   const [endDate, setEndDate] = useState<Date | undefined>(() => new Date());
 
-  useEffect(() => setPageSEO("Atividades Físicas", "Registre exercícios por mensagem"), []);
+  useEffect(() => setPageSEO("Atividade Física", "Registre exercícios por mensagem"), []);
 
   const efFrom = startOfDay(startDate ?? subDays(new Date(), 6));
   const efTo = startOfDay(endDate ?? new Date());
@@ -161,7 +161,7 @@ export default function Atividades() {
   return (
     <div className="min-h-screen">
       <header className="container px-4 py-6">
-        <h1 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-foreground">Atividades Físicas</h1>
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-foreground">Atividade Física</h1>
       </header>
 
       <main className="container px-4 py-6 md:py-8 space-y-6 md:space-y-8">
