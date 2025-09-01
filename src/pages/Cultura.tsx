@@ -211,7 +211,7 @@ export default function Cultura() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm text-muted-foreground">Próximos a ver</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">Filmes e séries para ver</CardTitle>
               <Button variant="outline" size="sm" onClick={() => toggleNew("video-backlog")}>+</Button>
             </CardHeader>
             <CardContent
@@ -260,7 +260,7 @@ export default function Cultura() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm text-muted-foreground">Assistidos</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">Filmes e séries assistidos</CardTitle>
               <Button variant="outline" size="sm" onClick={() => toggleNew("video-done")}>+</Button>
             </CardHeader>
             <CardContent
@@ -291,7 +291,7 @@ export default function Cultura() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm text-muted-foreground">Próximos a ler</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">Livros para ler</CardTitle>
               <Button variant="outline" size="sm" onClick={() => toggleNew("book-backlog")}>+</Button>
             </CardHeader>
             <CardContent
@@ -317,7 +317,7 @@ export default function Cultura() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm text-muted-foreground">Lidos</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">Livros lidos</CardTitle>
               <Button variant="outline" size="sm" onClick={() => toggleNew("book-done")}>+</Button>
             </CardHeader>
             <CardContent
