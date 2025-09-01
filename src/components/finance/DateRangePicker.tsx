@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,7 @@ export default function DateRangePicker({
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {startDate ? format(startDate, "PPP") : <span>Selecionar data</span>}
+              {startDate ? format(startDate, "dd/MM/yyyy", { locale: ptBR }) : <span>Selecionar data</span>}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -58,7 +59,7 @@ export default function DateRangePicker({
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {endDate ? format(endDate, "PPP") : <span>Selecionar data</span>}
+              {endDate ? format(endDate, "dd/MM/yyyy", { locale: ptBR }) : <span>Selecionar data</span>}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">

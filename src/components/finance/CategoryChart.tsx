@@ -29,7 +29,7 @@ export default function CategoryChart({ expenses }: { expenses: Expense[] }) {
   return (
     <Card className="min-w-0">
       <CardHeader>
-        <CardTitle className="text-base md:text-lg font-medium">Gastos por Categoria</CardTitle>
+        <CardTitle className="text-base md:text-lg font-medium">Despesas por Categoria</CardTitle>
       </CardHeader>
       <CardContent className="h-64 md:h-80">
         <ResponsiveContainer width="100%" height="100%">

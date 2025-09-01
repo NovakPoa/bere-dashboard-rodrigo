@@ -123,7 +123,7 @@ const Index = () => {
 
         <section aria-labelledby="stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
           <h2 id="stats" className="sr-only">Métricas principais</h2>
-          <StatCard title="Gastos" value={currency(totalInPeriod)} />
+          <StatCard title="Despesas" value={currency(totalInPeriod)} />
           <StatCard title="Total de Transações" value={String(filteredByDate.length)} />
           <StatCard 
             title="Ticket Médio"
