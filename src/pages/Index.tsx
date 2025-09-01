@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { Plus } from "lucide-react";
 import { filterExpenses, filterExpensesByDateRange, getMonthlyTotal } from "@/lib/finance";
 import type { Category, PaymentMethod } from "@/types/expense";
 import StatCard from "@/components/finance/StatCard";
@@ -18,8 +21,14 @@ const Index = () => {
   const [method, setMethod] = useState<"all" | PaymentMethod>("all");
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
+  const [showExpenseForm, setShowExpenseForm] = useState(false);
 
   const refresh = () => refetch();
+  
+  const handleExpenseAdded = () => {
+    refresh();
+    setShowExpenseForm(false);
+  };
 
   useEffect(() => {
     document.title = "Financeiro";
@@ -46,8 +55,23 @@ const Index = () => {
 
   return (
     <div className="min-h-screen w-full min-w-0 overflow-x-hidden">
-      <header className="py-4 md:py-6">
+      <header className="py-4 md:py-6 flex justify-between items-center">
         <h1 className="text-2xl md:text-4xl font-semibold text-foreground">Financeiro</h1>
+        <Drawer open={showExpenseForm} onOpenChange={setShowExpenseForm}>
+          <DrawerTrigger asChild>
+            <Button variant="outline" size="icon" className="shrink-0">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Nova Despesa</DrawerTitle>
+            </DrawerHeader>
+            <div className="px-6 pb-6">
+              <AddExpenseFromMessage onAdded={handleExpenseAdded} />
+            </div>
+          </DrawerContent>
+        </Drawer>
       </header>
 
       <main className="py-4 md:py-8 space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
@@ -108,10 +132,6 @@ const Index = () => {
           />
         </section>
 
-        <section aria-labelledby="add-message" className="min-w-0">
-          <h2 id="add-message" className="sr-only">Adicionar despesa por mensagem</h2>
-          <AddExpenseFromMessage onAdded={refresh} />
-        </section>
 
         <section aria-labelledby="charts" className="grid gap-4 md:gap-6 md:grid-cols-2 min-w-0">
           <h2 id="charts" className="sr-only">Gráficos de distribuição</h2>
