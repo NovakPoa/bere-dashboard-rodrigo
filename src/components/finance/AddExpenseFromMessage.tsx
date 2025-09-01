@@ -40,7 +40,7 @@ export default function AddExpenseFromMessage({ onAdded }: { onAdded: () => void
   return (
     <Card className="bg-card/60 backdrop-blur">
       <CardHeader>
-        <CardTitle className="text-sm text-muted-foreground">Cole a mensagem do WhatsApp</CardTitle>
+        <CardTitle className="text-sm text-muted-foreground">Inclua sua nova despesa</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <Textarea
@@ -51,7 +51,7 @@ export default function AddExpenseFromMessage({ onAdded }: { onAdded: () => void
         />
         <div className="flex justify-end">
           <Button variant="hero" onClick={handleAdd} disabled={addExpense.isPending} className="transition-smooth">
-            {addExpense.isPending ? "Adicionando..." : "Interpretar e adicionar"}
+            {addExpense.isPending ? "Adicionando..." : "Adicionar"}
           </Button>
         </div>
       </CardContent>
