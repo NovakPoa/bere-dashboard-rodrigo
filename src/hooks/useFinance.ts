@@ -50,6 +50,7 @@ const convertFromExpense = (expense: Omit<Expense, "id">) => ({
   origem: expense.source,
   descricao: expense.note || null,
   tipo: 'financeira',
+  user_id: null, // Will be set by RLS automatically when inserting
 });
 
 export function useExpenses() {
@@ -74,10 +75,19 @@ export function useAddExpense() {
 
   return useMutation({
     mutationFn: async (expense: Omit<Expense, "id" | "date">) => {
-      const record = convertFromExpense({
-        ...expense,
-        date: new Date().toISOString().split('T')[0],
-      });
+      // Get current user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error("Usuário não autenticado");
+      }
+
+      const record = {
+        ...convertFromExpense({
+          ...expense,
+          date: new Date().toISOString().split('T')[0],
+        }),
+        user_id: user.id, // Explicitly set user_id
+      };
 
       const { data, error } = await supabase
         .from("financeiro")
