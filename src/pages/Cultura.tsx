@@ -202,74 +202,74 @@ export default function Cultura() {
       </header>
 
       {/* Filters Section */}
-      <section className="space-y-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-lg font-medium">Filtros</h2>
+      <section className="space-y-4 mb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="grid gap-3 sm:grid-cols-3 flex-1">
+            {/* Genre Filter */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Gênero</label>
+              <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os gêneros" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-genres">Todos os gêneros</SelectItem>
+                  {uniqueGenres.map((genre) => (
+                    <SelectItem key={genre} value={genre}>
+                      {genre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Year Filter */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Ano</label>
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os anos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-years">Todos os anos</SelectItem>
+                  {uniqueYears.map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Rating Filter */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Avaliação</label>
+              <Select value={selectedRating} onValueChange={setSelectedRating}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas as notas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-ratings">Todas as notas</SelectItem>
+                  <SelectItem value="5">⭐⭐⭐⭐⭐ (5)</SelectItem>
+                  <SelectItem value="4">⭐⭐⭐⭐ (4)</SelectItem>
+                  <SelectItem value="3">⭐⭐⭐ (3)</SelectItem>
+                  <SelectItem value="2">⭐⭐ (2)</SelectItem>
+                  <SelectItem value="1">⭐ (1)</SelectItem>
+                  <SelectItem value="no-rating">Sem nota</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
           <Button 
             variant="outline" 
             size="sm" 
             onClick={clearFilters}
             disabled={selectedGenre === "all-genres" && selectedYear === "all-years" && selectedRating === "all-ratings"}
+            className="sm:ml-4"
           >
             Limpar Filtros
           </Button>
-        </div>
-        
-        <div className="grid gap-3 sm:grid-cols-3">
-          {/* Genre Filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Gênero</label>
-            <Select value={selectedGenre} onValueChange={setSelectedGenre}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todos os gêneros" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-genres">Todos os gêneros</SelectItem>
-                {uniqueGenres.map((genre) => (
-                  <SelectItem key={genre} value={genre}>
-                    {genre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Year Filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Ano</label>
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todos os anos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-years">Todos os anos</SelectItem>
-                {uniqueYears.map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Rating Filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Avaliação</label>
-            <Select value={selectedRating} onValueChange={setSelectedRating}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todas as notas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-ratings">Todas as notas</SelectItem>
-                <SelectItem value="5">⭐⭐⭐⭐⭐ (5)</SelectItem>
-                <SelectItem value="4">⭐⭐⭐⭐ (4)</SelectItem>
-                <SelectItem value="3">⭐⭐⭐ (3)</SelectItem>
-                <SelectItem value="2">⭐⭐ (2)</SelectItem>
-                <SelectItem value="1">⭐ (1)</SelectItem>
-                <SelectItem value="no-rating">Sem nota</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
       </section>
 
