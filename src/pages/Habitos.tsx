@@ -6,7 +6,6 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from 
 import { Target, Plus } from "lucide-react";
 import { HabitForm } from "@/components/habits/HabitForm";
 import { HabitCard } from "@/components/habits/HabitCard";
-import { DailyHabitTracker } from "@/components/habits/DailyHabitTracker";
 import { useHabitDefinitions } from "@/hooks/useHabitDefinitions";
 import { setPageSEO } from "@/lib/seo";
 
@@ -71,32 +70,15 @@ export default function Habitos() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-6 md:space-y-8">
-            <div className="grid gap-4 md:grid-cols-2">
-              {habits.map((habit) => (
-                <HabitCard
-                  key={habit.id}
-                  habit={habit}
-                  onClick={() => handleHabitClick(habit.id)}
-                />
-              ))}
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Progresso de Hoje</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {habits.map((habit) => (
-                  <DailyHabitTracker
-                    key={`${habit.id}-${refreshKey}`}
-                    habit={habit}
-                    date={currentDate}
-                    onUpdate={refresh}
-                  />
-                ))}
-              </CardContent>
-            </Card>
+          <div className="grid gap-4">
+            {habits.map((habit) => (
+              <HabitCard
+                key={`${habit.id}-${refreshKey}`}
+                habit={habit}
+                onClick={() => handleHabitClick(habit.id)}
+                onUpdate={refresh}
+              />
+            ))}
           </div>
         )}
       </main>
