@@ -14,6 +14,32 @@ interface FinanceRecord {
   descricao?: string;
 }
 
+// Category normalization mapping
+const normalizeCategory = (category: string): Category => {
+  const normalized = category?.toLowerCase().trim() || "";
+  
+  // Map old categories to new ones
+  const categoryMap: Record<string, Category> = {
+    "alimentação": "Alimentação",
+    "moradia": "Moradia", 
+    "transporte": "Transporte",
+    "combustível": "Transporte", // Map combustível to Transporte
+    "saúde": "Saúde",
+    "educação": "Educação",
+    "trabalho": "Trabalho",
+    "assinaturas": "Assinaturas",
+    "lazer": "Lazer",
+    "viagens": "Viagens",
+    "vestuário": "Vestuário",
+    "família": "Família",
+    "impostos": "Impostos",
+    "doações & presentes": "Doações & Presentes",
+    "outros": "Outros"
+  };
+  
+  return categoryMap[normalized] || "Outros";
+};
+
 // Payment method normalization mapping
 const normalizePaymentMethod = (method: string): PaymentMethod => {
   const normalized = method?.toLowerCase().trim() || "";
@@ -31,15 +57,22 @@ const normalizePaymentMethod = (method: string): PaymentMethod => {
 };
 
 // Convert Supabase record to Expense type
-const convertToExpense = (record: FinanceRecord): Expense => ({
-  id: record.id.toString(),
-  amount: record.valor,
-  category: record.categoria as Category,
-  method: normalizePaymentMethod(record.forma_pagamento),
-  date: record.data,
-  source: record.origem as "whatsapp" | "manual",
-  note: record.descricao || undefined,
-});
+const convertToExpense = (record: FinanceRecord): Expense => {
+  console.log("Converting record:", record); // Debug log
+  
+  const expense = {
+    id: record.id.toString(),
+    amount: record.valor,
+    category: normalizeCategory(record.categoria),
+    method: normalizePaymentMethod(record.forma_pagamento),
+    date: record.data,
+    source: record.origem as "whatsapp" | "manual",
+    note: record.descricao || undefined,
+  };
+  
+  console.log("Converted expense:", expense); // Debug log
+  return expense;
+};
 
 // Convert Expense to Supabase record format
 const convertFromExpense = (expense: Omit<Expense, "id">) => ({
