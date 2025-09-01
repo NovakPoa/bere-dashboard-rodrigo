@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { startOfMonth, endOfMonth } from "date-fns";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Plus } from "lucide-react";
-import { filterExpenses, filterExpensesByDateRange, getMonthlyTotal } from "@/lib/finance";
+import { filterExpenses, filterExpensesByDateRange } from "@/lib/finance";
 import type { Category, PaymentMethod } from "@/types/expense";
 import StatCard from "@/components/finance/StatCard";
 import AddExpenseFromMessage from "@/components/finance/AddExpenseFromMessage";
@@ -19,8 +20,8 @@ const Index = () => {
   const { data: expenses = [], refetch } = useExpenses();
   const [category, setCategory] = useState<"all" | Category>("all");
   const [method, setMethod] = useState<"all" | PaymentMethod>("all");
-  const [startDate, setStartDate] = useState<Date>();
-  const [endDate, setEndDate] = useState<Date>();
+  const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
+  const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
   const [showExpenseForm, setShowExpenseForm] = useState(false);
 
   const refresh = () => refetch();
@@ -49,7 +50,6 @@ const Index = () => {
     [filteredByDate]
   );
   
-  const totalThisMonth = useMemo(() => getMonthlyTotal(expenses), [expenses]);
   const categoriesList = useMemo(() => Array.from(new Set(expenses.map((e) => e.category))).sort(), [expenses]);
   const currency = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -121,10 +121,9 @@ const Index = () => {
           </div>
         </section>
 
-        <section aria-labelledby="stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
+        <section aria-labelledby="stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
           <h2 id="stats" className="sr-only">Métricas principais</h2>
           <StatCard title="Gasto no Período" value={currency(totalInPeriod)} />
-          <StatCard title="Gasto no Mês" value={currency(totalThisMonth)} />
           <StatCard title="Total de Transações" value={String(filteredByDate.length)} />
           <StatCard 
             title="Ticket Médio no Período" 
