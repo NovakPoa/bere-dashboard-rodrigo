@@ -97,9 +97,11 @@ export function parseExpenseMessage(message: string): Omit<Expense, "id" | "date
 
   // category from synonyms first
   let category: Category | undefined;
+  let matchedCategoryKey: string | undefined;
   for (const key of Object.keys(CATEGORY_SYNONYMS)) {
     if (lower.includes(key)) {
       category = CATEGORY_SYNONYMS[key];
+      matchedCategoryKey = key;
       break;
     }
   }
@@ -118,12 +120,29 @@ export function parseExpenseMessage(message: string): Omit<Expense, "id" | "date
     return null;
   }
 
+  // Extract a cleaner description from the original message
+  let description = message.trim();
+  // Remove the amount part
+  if (currencyMatch?.[0]) {
+    description = description.replace(new RegExp(currencyMatch[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '');
+  }
+  // Remove the method part
+  if (matchedMethodKey) {
+    description = description.replace(new RegExp(matchedMethodKey, 'gi'), '');
+  }
+  // Remove the category part if it was matched from synonyms
+  if (matchedCategoryKey) {
+    description = description.replace(new RegExp(matchedCategoryKey, 'gi'), '');
+  }
+  // Clean up extra spaces and trim
+  description = description.replace(/\s+/g, ' ').trim();
+
   return {
     amount,
     category: (typeof category === "string" ? category.toLowerCase() : (category as string)) as Category,
     method,
     source: "whatsapp",
-    note: message.trim(),
+    note: description || message.trim(),
   };
 }
 

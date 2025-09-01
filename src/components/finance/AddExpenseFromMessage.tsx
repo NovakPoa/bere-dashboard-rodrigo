@@ -44,7 +44,7 @@ export default function AddExpenseFromMessage({ onAdded }: { onAdded: () => void
       </CardHeader>
       <CardContent className="space-y-3">
         <Textarea
-          placeholder="Ex.: R$ 45,90 alimentação crédito"
+          placeholder="Ex.: R$ 45,90 almoço restaurante alimentação crédito"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           className="min-h-24"

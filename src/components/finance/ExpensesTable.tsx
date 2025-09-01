@@ -34,20 +34,24 @@ export default function ExpensesTable({ expenses, onChange }: { expenses: Expens
       </CardHeader>
       <CardContent className="p-3 md:p-6">
         <div className="max-w-full overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="min-w-[70px] text-xs md:text-sm">Data</TableHead>
-                <TableHead className="min-w-[60px] text-xs md:text-sm">Categoria</TableHead>
-                <TableHead className="min-w-[70px] text-xs md:text-sm">Forma de pagamento</TableHead>
-                <TableHead className="text-right min-w-[60px] text-xs md:text-sm">Valor</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[70px] text-xs md:text-sm">Data</TableHead>
+                  <TableHead className="min-w-[80px] text-xs md:text-sm">Descrição</TableHead>
+                  <TableHead className="min-w-[60px] text-xs md:text-sm">Categoria</TableHead>
+                  <TableHead className="min-w-[70px] text-xs md:text-sm">Forma de pagamento</TableHead>
+                  <TableHead className="text-right min-w-[60px] text-xs md:text-sm">Valor</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {rows.map((e) => (
                 <TableRow key={e.id}>
                   <TableCell className="text-muted-foreground text-xs md:text-sm">{new Date(e.date).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-xs md:text-sm truncate max-w-[120px]" title={e.note || ''}>
+                    {e.note || '-'}
+                  </TableCell>
                   <TableCell className="capitalize text-xs md:text-sm">{e.category}</TableCell>
                   <TableCell className="capitalize text-xs md:text-sm">{METHOD_LABELS[e.method]}</TableCell>
                   <TableCell className="text-right font-medium text-xs md:text-sm">{e.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
@@ -60,7 +64,7 @@ export default function ExpensesTable({ expenses, onChange }: { expenses: Expens
               ))}
               {rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-10">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
                     Ainda não há despesas. Cole uma mensagem do WhatsApp para adicionar a primeira.
                   </TableCell>
                 </TableRow>
