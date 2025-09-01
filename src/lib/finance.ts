@@ -2,6 +2,12 @@ import { Expense, Category, PaymentMethod } from "@/types/expense";
 
 const STORAGE_KEY = "finance_expenses_v1";
 
+// Parse date string as local date without timezone shift
+export function parseDateOnly(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day, 12, 0, 0); // Set to noon to avoid DST issues
+}
+
 const CATEGORY_SYNONYMS: Record<string, Category> = {
   // Alimentação
   alimentacao: "Alimentação",
@@ -302,7 +308,7 @@ export function filterExpensesByDateRange(
   endDate?: Date
 ) {
   return expenses.filter((e) => {
-    const expenseDate = new Date(e.date);
+    const expenseDate = parseDateOnly(e.date);
     if (startDate && expenseDate < startDate) return false;
     if (endDate && expenseDate > endDate) return false;
     return true;
@@ -314,7 +320,7 @@ export function getMonthlyTotal(expenses: Expense[], date = new Date()) {
   const year = date.getFullYear();
   return expenses
     .filter((e) => {
-      const d = new Date(e.date);
+      const d = parseDateOnly(e.date);
       return d.getMonth() === month && d.getFullYear() === year;
     })
     .reduce((sum, e) => sum + e.amount, 0);

@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Plus } from "lucide-react";
-import { filterExpenses, filterExpensesByDateRange } from "@/lib/finance";
+import { filterExpenses, filterExpensesByDateRange, parseDateOnly } from "@/lib/finance";
 import type { Category, PaymentMethod } from "@/types/expense";
 import StatCard from "@/components/finance/StatCard";
 import AddExpenseForm from "@/components/finance/AddExpenseForm";
@@ -162,7 +162,7 @@ const Index = () => {
           <h2 id="list" className="text-lg font-medium mb-3">Despesas</h2>
           <div className="min-w-0">
             <ExpensesTable 
-              expenses={filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())} 
+              expenses={filtered.sort((a, b) => parseDateOnly(b.date).getTime() - parseDateOnly(a.date).getTime())} 
               onChange={refresh} 
             />
           </div>

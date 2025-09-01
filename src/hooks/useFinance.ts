@@ -114,10 +114,14 @@ export function useAddExpense() {
         throw new Error("Usuário não autenticado");
       }
 
+      // Create local date string (YYYY-MM-DD) without timezone shift
+      const now = new Date();
+      const localDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
       const record = {
         ...convertFromExpense({
           ...expense,
-          date: new Date().toISOString().split('T')[0],
+          date: localDateStr,
         }),
         user_id: user.id, // Explicitly set user_id
       };

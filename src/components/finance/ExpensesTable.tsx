@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useRemoveExpense } from "@/hooks/useFinance";
 import { toast } from "@/hooks/use-toast";
 import { Trash2 } from "lucide-react";
+import { parseDateOnly } from "@/lib/finance";
 
 
 const METHOD_LABELS: Record<Expense["method"], string> = {
@@ -48,7 +49,7 @@ export default function ExpensesTable({ expenses, onChange }: { expenses: Expens
             <TableBody>
               {rows.map((e) => (
                 <TableRow key={e.id}>
-                  <TableCell className="text-muted-foreground text-xs md:text-sm">{new Date(e.date).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs md:text-sm">{parseDateOnly(e.date).toLocaleDateString()}</TableCell>
                   <TableCell className="text-xs md:text-sm truncate max-w-[120px]" title={e.note || ''}>
                     {e.note || '-'}
                   </TableCell>
