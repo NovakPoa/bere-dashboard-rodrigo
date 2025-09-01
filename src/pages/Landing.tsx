@@ -67,13 +67,13 @@ export default function Landing() {
             <FeatureCard
               icon={<Wallet className="h-5 w-5" aria-hidden />}
               title="Financeira"
-              description="Acompanhe gastos por categoria e métodos, com estatísticas claras."
+              description="Acompanhe despesas por categoria e métodos, com estatísticas claras."
               to="/financeira"
             />
             <FeatureCard
               icon={<HeartPulse className="h-5 w-5" aria-hidden />}
               title="Atividades"
-              description="Visualize treinos, evolução e calorias gastas."
+              description="Visualize treinos, evolução e calorias queimadas."
               to="/atividades"
             />
             <FeatureCard

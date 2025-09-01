@@ -31,7 +31,7 @@ export default function MethodChart({ expenses }: { expenses: Expense[] }) {
     return (
       <Card className="min-w-0">
         <CardHeader>
-          <CardTitle className="text-base md:text-lg font-medium">Gastos por Forma de Pagamento</CardTitle>
+          <CardTitle className="text-base md:text-lg font-medium">Despesas por Forma de Pagamento</CardTitle>
         </CardHeader>
         <CardContent className="h-64 md:h-80 flex items-center justify-center">
           <p className="text-muted-foreground text-sm">Nenhum dado disponível para exibir</p>
@@ -43,7 +43,7 @@ export default function MethodChart({ expenses }: { expenses: Expense[] }) {
   return (
     <Card className="min-w-0">
       <CardHeader>
-        <CardTitle className="text-base md:text-lg font-medium">Gastos por Forma de Pagamento</CardTitle>
+        <CardTitle className="text-base md:text-lg font-medium">Despesas por Forma de Pagamento</CardTitle>
       </CardHeader>
       <CardContent className="h-64 md:h-80">
         <ResponsiveContainer width="100%" height="100%">

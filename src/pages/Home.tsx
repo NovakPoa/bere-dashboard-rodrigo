@@ -76,10 +76,10 @@ export default function Home() {
               <Skeleton className="h-16 w-full" />
             ) : (
               <div className="space-y-2">
-                {Object.entries(stats?.gastosPorCategoria || {}).length === 0 ? (
-                  <p className="text-muted-foreground">Nenhum gasto registrado</p>
+                {Object.entries(stats?.despesasPorCategoria || {}).length === 0 ? (
+                  <p className="text-muted-foreground">Nenhuma despesa registrada</p>
                 ) : (
-                  Object.entries(stats?.gastosPorCategoria || {})
+                  Object.entries(stats?.despesasPorCategoria || {})
                     .sort(([,a], [,b]) => b - a)
                     .slice(0, 3)
                     .map(([categoria, valor]) => (

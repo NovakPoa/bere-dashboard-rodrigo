@@ -40,7 +40,7 @@ export function useDashboardStats() {
           .gte("data", startDate)
           .lte("data", endDate),
         
-        // Gastos por categoria (últimos 7 dias)
+        // Despesas por categoria (últimos 7 dias)
         supabase
           .from("financeiro")
           .select("valor, categoria")
@@ -63,8 +63,8 @@ export function useDashboardStats() {
         h.quantidade_sessoes && h.quantidade_sessoes > 0).length;
       const percentualHabitos = totalHabitos > 0 ? Math.round((habitosCompletados / totalHabitos) * 100) : 0;
       
-      // Agrupar gastos por categoria
-      const gastosPorCategoria = (financeiroResult.data || []).reduce((acc: Record<string, number>, item) => {
+      // Agrupar despesas por categoria
+      const despesasPorCategoria = (financeiroResult.data || []).reduce((acc: Record<string, number>, item) => {
         const categoria = item.categoria || 'Outros';
         acc[categoria] = (acc[categoria] || 0) + (Number(item.valor) || 0);
         return acc;
@@ -74,7 +74,7 @@ export function useDashboardStats() {
         caloriasConsumidas,
         caloriasGastas,
         percentualHabitos,
-        gastosPorCategoria,
+        despesasPorCategoria,
         periodoInicio: startDate,
         periodoFim: endDate
       };
