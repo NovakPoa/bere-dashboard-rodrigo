@@ -20,6 +20,11 @@ export default function Cultura() {
   
   useEffect(() => setPageSEO("Cultura", "Listas de filmes, séries e livros"), []);
 
+  // Filter states
+  const [selectedGenre, setSelectedGenre] = useState<string>("");
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [selectedRating, setSelectedRating] = useState<string>("");
+
   // Form inline por lista - using stable object structure to fix cursor issue
   const [newForm, setNewForm] = useState<{
     isOpen: boolean;
@@ -90,10 +95,41 @@ export default function Cultura() {
     });
   };
 
-  const byVideoBacklog = useMemo(() => items.filter((i) => i.domain === "videos" && i.status === "backlog"), [items]);
-  const byVideoDone = useMemo(() => items.filter((i) => i.domain === "videos" && i.status === "done"), [items]);
-  const byBookBacklog = useMemo(() => items.filter((i) => i.domain === "books" && i.status === "backlog"), [items]);
-  const byBookDone = useMemo(() => items.filter((i) => i.domain === "books" && i.status === "done"), [items]);
+  // Extract unique filter options
+  const uniqueGenres = useMemo(() => {
+    const genres = items.filter(i => i.genre?.trim()).map(i => i.genre!.trim());
+    return [...new Set(genres)].sort();
+  }, [items]);
+
+  const uniqueYears = useMemo(() => {
+    const years = items.filter(i => i.year).map(i => i.year!);
+    return [...new Set(years)].sort((a, b) => b - a);
+  }, [items]);
+
+  // Apply filters function
+  const applyFilters = (itemList: Item[]) => {
+    return itemList.filter(item => {
+      if (selectedGenre && item.genre !== selectedGenre) return false;
+      if (selectedYear && item.year?.toString() !== selectedYear) return false;
+      if (selectedRating) {
+        if (selectedRating === "no-rating" && item.rating) return false;
+        if (selectedRating !== "no-rating" && item.rating?.toString() !== selectedRating) return false;
+      }
+      return true;
+    });
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSelectedGenre("");
+    setSelectedYear("");
+    setSelectedRating("");
+  };
+
+  const byVideoBacklog = useMemo(() => applyFilters(items.filter((i) => i.domain === "videos" && i.status === "backlog")), [items, selectedGenre, selectedYear, selectedRating]);
+  const byVideoDone = useMemo(() => applyFilters(items.filter((i) => i.domain === "videos" && i.status === "done")), [items, selectedGenre, selectedYear, selectedRating]);
+  const byBookBacklog = useMemo(() => applyFilters(items.filter((i) => i.domain === "books" && i.status === "backlog")), [items, selectedGenre, selectedYear, selectedRating]);
+  const byBookDone = useMemo(() => applyFilters(items.filter((i) => i.domain === "books" && i.status === "done")), [items, selectedGenre, selectedYear, selectedRating]);
 
 
 
@@ -164,6 +200,78 @@ export default function Cultura() {
       <header className="py-4 md:py-6">
         <h1 className="text-2xl md:text-4xl font-semibold text-foreground">Cultura</h1>
       </header>
+
+      {/* Filters Section */}
+      <section className="space-y-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-lg font-medium">Filtros</h2>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={clearFilters}
+            disabled={!selectedGenre && !selectedYear && !selectedRating}
+          >
+            Limpar Filtros
+          </Button>
+        </div>
+        
+        <div className="grid gap-3 sm:grid-cols-3">
+          {/* Genre Filter */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Gênero</label>
+            <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todos os gêneros" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todos os gêneros</SelectItem>
+                {uniqueGenres.map((genre) => (
+                  <SelectItem key={genre} value={genre}>
+                    {genre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Year Filter */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Ano</label>
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todos os anos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todos os anos</SelectItem>
+                {uniqueYears.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Rating Filter */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Avaliação</label>
+            <Select value={selectedRating} onValueChange={setSelectedRating}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todas as notas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todas as notas</SelectItem>
+                <SelectItem value="5">⭐⭐⭐⭐⭐ (5)</SelectItem>
+                <SelectItem value="4">⭐⭐⭐⭐ (4)</SelectItem>
+                <SelectItem value="3">⭐⭐⭐ (3)</SelectItem>
+                <SelectItem value="2">⭐⭐ (2)</SelectItem>
+                <SelectItem value="1">⭐ (1)</SelectItem>
+                <SelectItem value="no-rating">Sem nota</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </section>
 
       <main className="space-y-6 md:space-y-8">
         {/* Vídeos */}
