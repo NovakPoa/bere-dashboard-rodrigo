@@ -10,6 +10,7 @@ import ActivitiesChart from "@/components/fitness/ActivitiesChart";
 import ActivitiesTable from "@/components/fitness/ActivitiesTable";
 import AddActivityForm from "@/components/fitness/AddActivityForm";
 import DateRangePicker from "@/components/finance/DateRangePicker";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { FitnessEntry, groupTotalsByModality, totalCalories, fetchActivitiesFromSupabase } from "@/lib/fitness";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 export default function Atividades() {
   const [startDate, setStartDate] = useState<Date | undefined>(() => subDays(new Date(), 6));
   const [endDate, setEndDate] = useState<Date | undefined>(() => new Date());
+  const [selectedModalities, setSelectedModalities] = useState<string[]>([]);
 
   useEffect(() => setPageSEO("Atividade Física", "Registre exercícios por mensagem"), []);
 
@@ -62,14 +64,23 @@ export default function Atividades() {
 
   
 
+  // Get all available modalities for filter options
+  const availableModalities = useMemo(() => {
+    const modalities = Array.from(new Set(entries.map((e) => e.tipo?.toLowerCase() || "atividade")));
+    return modalities.map(m => ({ label: m.charAt(0).toUpperCase() + m.slice(1), value: m }));
+  }, [entries]);
+
   const periodEntries = useMemo(() => {
     const efFrom = startOfDay(startDate ?? subDays(new Date(), 6));
     const efToEnd = addDays(startOfDay(endDate ?? new Date()), 1);
     return entries.filter((e) => {
       const d = new Date(e.data);
-      return d >= efFrom && d < efToEnd;
+      const inDateRange = d >= efFrom && d < efToEnd;
+      const inModalityFilter = selectedModalities.length === 0 || 
+        selectedModalities.includes(e.tipo?.toLowerCase() || "atividade");
+      return inDateRange && inModalityFilter;
     });
-  }, [entries, startDate, endDate]);
+  }, [entries, startDate, endDate, selectedModalities]);
 
   const totals = useMemo(() => groupTotalsByModality(periodEntries), [periodEntries]);
 
@@ -143,7 +154,16 @@ export default function Atividades() {
       </header>
 
       <main className="container px-4 py-6 md:py-8 space-y-6 md:space-y-8">
-        <section aria-labelledby="filters" className="flex justify-end">
+        <section aria-labelledby="filters" className="flex flex-col md:flex-row gap-4 md:justify-between md:items-center">
+          <div className="flex-1 max-w-sm">
+            <MultiSelect
+              options={availableModalities}
+              selected={selectedModalities}
+              onSelectionChange={setSelectedModalities}
+              placeholder="Todas as modalidades"
+              label="Modalidade"
+            />
+          </div>
           <div className="w-full max-w-lg">
             <DateRangePicker
               startDate={startDate}
