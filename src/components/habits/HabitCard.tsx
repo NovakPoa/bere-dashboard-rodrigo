@@ -1,10 +1,10 @@
-import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Plus, Minus } from "lucide-react";
 import { HabitDefinition } from "@/hooks/useHabitDefinitions";
-import { useHabitSessionForDate } from "@/hooks/useHabitSessions";
+import { useHabitSessionForDate, useUpdateHabitSession } from "@/hooks/useHabitSessions";
 
 interface HabitCardProps {
   habit: HabitDefinition;
@@ -23,11 +23,36 @@ export interface HabitCardRef {
 export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onClick }, ref) => {
   const today = new Date();
   const { data: session } = useHabitSessionForDate(habit.id, today);
+  const updateSession = useUpdateHabitSession(true); // silent mode
 
   const [sessions, setSessions] = useState(session?.sessionsCompleted || 0);
   const [timeSpent, setTimeSpent] = useState(session?.timeSpentMinutes || 0);
   const [initialSessions, setInitialSessions] = useState(session?.sessionsCompleted || 0);
   const [initialTimeSpent, setInitialTimeSpent] = useState(session?.timeSpentMinutes || 0);
+
+  // Debounced autosave function
+  const autosave = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout;
+      return (newSessions: number, newTimeSpent: number) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          updateSession.mutate({
+            habitId: habit.id,
+            date: today,
+            sessionsCompleted: newSessions,
+            timeSpentMinutes: newTimeSpent,
+          }, {
+            onSuccess: () => {
+              setInitialSessions(newSessions);
+              setInitialTimeSpent(newTimeSpent);
+            }
+          });
+        }, 600);
+      };
+    })(),
+    [habit.id, today, updateSession]
+  );
 
   useEffect(() => {
     if (session) {
@@ -37,6 +62,13 @@ export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onCl
       setInitialTimeSpent(session.timeSpentMinutes || 0);
     }
   }, [session]);
+
+  // Trigger autosave when sessions or timeSpent change
+  useEffect(() => {
+    if (sessions !== initialSessions || timeSpent !== initialTimeSpent) {
+      autosave(sessions, timeSpent);
+    }
+  }, [sessions, timeSpent, initialSessions, initialTimeSpent, autosave]);
 
   useImperativeHandle(ref, () => ({
     getSaveData: () => ({

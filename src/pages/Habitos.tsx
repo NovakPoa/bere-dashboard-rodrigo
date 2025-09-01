@@ -16,7 +16,7 @@ export default function Habitos() {
   const { data: habits = [], refetch } = useHabitDefinitions();
   const [refreshKey, setRefreshKey] = useState(0);
   const [showHabitForm, setShowHabitForm] = useState(false);
-  const updateSession = useUpdateHabitSession();
+  const updateSession = useUpdateHabitSession(true); // silent mode
   const habitCardRefs = useRef<Record<string, HabitCardRef | null>>({});
   const currentDate = new Date();
 

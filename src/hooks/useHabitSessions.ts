@@ -75,7 +75,7 @@ export function useHabitSessionForDate(habitId: string, date: Date) {
   });
 }
 
-export function useUpdateHabitSession() {
+export function useUpdateHabitSession(silent = false) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -138,17 +138,21 @@ export function useUpdateHabitSession() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["habit-sessions"] });
       queryClient.invalidateQueries({ queryKey: ["habit-session"] });
-      toast({
-        title: "Progresso salvo",
-        description: "Progresso do hábito foi atualizado!",
-      });
+      if (!silent) {
+        toast({
+          title: "Progresso salvo",
+          description: "Progresso do hábito foi atualizado!",
+        });
+      }
     },
     onError: (error: Error) => {
-      toast({
-        title: "Erro",
-        description: `Falha ao salvar progresso: ${error.message}`,
-        variant: "destructive",
-      });
+      if (!silent) {
+        toast({
+          title: "Erro",
+          description: `Falha ao salvar progresso: ${error.message}`,
+          variant: "destructive",
+        });
+      }
     },
   });
 }
