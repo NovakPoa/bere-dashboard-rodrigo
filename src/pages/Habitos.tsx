@@ -52,8 +52,29 @@ export default function Habitos() {
     setShowHabitForm(false);
   };
 
-  const handleHabitClick = (habitId: string) => {
-    navigate(`/habitos/${habitId}`);
+  const handleHabitClick = async (habitId: string) => {
+    try {
+      const ref = habitCardRefs.current[habitId];
+      if (ref) {
+        const saveData = ref.getSaveData();
+        if (saveData.hasChanges) {
+          await updateSession.mutateAsync({
+            habitId: saveData.habitId,
+            date: new Date(),
+            sessionsCompleted: saveData.sessions,
+            timeSpentMinutes: saveData.timeSpent,
+          });
+        }
+      }
+    } catch (err) {
+      toast({
+        title: "Não foi possível salvar alterações",
+        description: "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      navigate(`/habitos/${habitId}`);
+    }
   };
 
   return (
