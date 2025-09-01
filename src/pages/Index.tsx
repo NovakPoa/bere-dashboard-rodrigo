@@ -9,7 +9,7 @@ import { Plus } from "lucide-react";
 import { filterExpenses, filterExpensesByDateRange } from "@/lib/finance";
 import type { Category, PaymentMethod } from "@/types/expense";
 import StatCard from "@/components/finance/StatCard";
-import AddExpenseFromMessage from "@/components/finance/AddExpenseFromMessage";
+import AddExpenseForm from "@/components/finance/AddExpenseForm";
 import CategoryChart from "@/components/finance/CategoryChart";
 import MethodChart from "@/components/finance/MethodChart";
 import ExpensesTable from "@/components/finance/ExpensesTable";
@@ -94,7 +94,7 @@ const Index = () => {
               <DrawerTitle>Nova Despesa</DrawerTitle>
             </DrawerHeader>
             <div className="px-6 pb-6">
-              <AddExpenseFromMessage onAdded={handleExpenseAdded} />
+              <AddExpenseForm onAdded={handleExpenseAdded} />
             </div>
           </DrawerContent>
         </Drawer>

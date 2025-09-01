@@ -1,6 +1,20 @@
 export type PaymentMethod = "pix" | "boleto" | "credit";
 
-export type Category = string;
+export type Category = 
+  | "Alimentação"
+  | "Moradia" 
+  | "Transporte"
+  | "Saúde"
+  | "Educação"
+  | "Trabalho"
+  | "Assinaturas"
+  | "Lazer"
+  | "Viagens"
+  | "Vestuário"
+  | "Família"
+  | "Impostos"
+  | "Doações & Presentes"
+  | "Outros";
 
 export interface Expense {
   id: string;

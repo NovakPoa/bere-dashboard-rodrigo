@@ -3,66 +3,109 @@ import { Expense, Category, PaymentMethod } from "@/types/expense";
 const STORAGE_KEY = "finance_expenses_v1";
 
 const CATEGORY_SYNONYMS: Record<string, Category> = {
-  // Novas categorias
-  alimentacao: "alimentacao",
-  "alimentação": "alimentacao",
-  comida: "alimentacao",
-  refeicao: "alimentacao",
-  "refeição": "alimentacao",
-  restaurante: "alimentacao",
+  // Alimentação
+  alimentacao: "Alimentação",
+  "alimentação": "Alimentação",
+  comida: "Alimentação",
+  refeicao: "Alimentação",
+  "refeição": "Alimentação",
+  restaurante: "Alimentação",
 
-  assinaturas: "assinaturas",
-  assinatura: "assinaturas",
-  streaming: "assinaturas",
-  netflix: "assinaturas",
-  spotify: "assinaturas",
+  // Moradia
+  casa: "Moradia",
+  moradia: "Moradia",
+  aluguel: "Moradia",
+  renting: "Moradia",
+  condominio: "Moradia",
+  "condomínio": "Moradia",
 
-  casa: "casa",
-  aluguel: "casa",
-  renting: "casa",
-  condominio: "casa",
-  "condomínio": "casa",
+  // Transporte
+  transporte: "Transporte",
+  gas: "Transporte",
+  gasolina: "Transporte",
+  combustivel: "Transporte",
+  "combustível": "Transporte",
+  uber: "Transporte",
+  taxi: "Transporte",
 
-  lazer: "lazer",
-  cinema: "lazer",
-  bar: "lazer",
-  show: "lazer",
+  // Saúde
+  saude: "Saúde",
+  "saúde": "Saúde",
+  farmacia: "Saúde",
+  "farmácia": "Saúde",
+  medico: "Saúde",
+  "médico": "Saúde",
 
-  mercado: "mercado",
-  supermercado: "mercado",
-  supermarket: "mercado",
-  compras: "mercado",
+  // Educação
+  educacao: "Educação",
+  "educação": "Educação",
+  escola: "Educação",
+  curso: "Educação",
 
-  presentes: "presentes",
-  presente: "presentes",
-  gift: "presentes",
+  // Trabalho
+  trabalho: "Trabalho",
+  office: "Trabalho",
+  escritorio: "Trabalho",
 
-  saude: "saude",
-  "saúde": "saude",
-  farmacia: "saude",
-  "farmácia": "saude",
-  medico: "saude",
-  "médico": "saude",
+  // Assinaturas
+  assinaturas: "Assinaturas",
+  assinatura: "Assinaturas",
+  streaming: "Assinaturas",
+  netflix: "Assinaturas",
+  spotify: "Assinaturas",
 
-  transporte: "transporte",
-  gas: "transporte",
-  gasolina: "transporte",
-  combustivel: "transporte",
-  "combustível": "transporte",
-  uber: "transporte",
-  taxi: "transporte",
+  // Lazer
+  lazer: "Lazer",
+  cinema: "Lazer",
+  bar: "Lazer",
+  show: "Lazer",
 
-  utilidades: "utilidades",
-  conta: "utilidades",
-  luz: "utilidades",
-  energia: "utilidades",
-  agua: "utilidades",
-  "água": "utilidades",
-  internet: "utilidades",
-  telefone: "utilidades",
+  // Viagens
+  viagens: "Viagens",
+  viagem: "Viagens",
+  turismo: "Viagens",
 
-  outros: "outros",
-  outro: "outros",
+  // Vestuário
+  vestuario: "Vestuário",
+  "vestuário": "Vestuário",
+  roupa: "Vestuário",
+  roupas: "Vestuário",
+
+  // Família
+  familia: "Família",
+  "família": "Família",
+
+  // Impostos
+  impostos: "Impostos",
+  imposto: "Impostos",
+  taxa: "Impostos",
+
+  // Doações & Presentes
+  presentes: "Doações & Presentes",
+  presente: "Doações & Presentes",
+  gift: "Doações & Presentes",
+  doacoes: "Doações & Presentes",
+  "doações": "Doações & Presentes",
+
+  // Mercado (mapear para Alimentação)
+  mercado: "Alimentação",
+  supermercado: "Alimentação",
+  supermarket: "Alimentação",
+  compras: "Alimentação",
+
+  // Utilidades (mapear para Moradia)
+  utilidades: "Moradia",
+  conta: "Moradia",
+  luz: "Moradia",
+  energia: "Moradia",
+  agua: "Moradia",
+  "água": "Moradia",
+  internet: "Moradia",
+  telefone: "Moradia",
+
+  // Outros
+  outros: "Outros",
+  outro: "Outros",
 };
 
 const METHOD_SYNONYMS: Record<string, PaymentMethod> = {
@@ -139,7 +182,7 @@ export function parseExpenseMessage(message: string): Omit<Expense, "id" | "date
 
   return {
     amount,
-    category: (typeof category === "string" ? category.toLowerCase() : (category as string)) as Category,
+    category,
     method,
     source: "whatsapp",
     note: description || message.trim(),
@@ -153,43 +196,43 @@ export function getExpenses(): Expense[] {
     const parsed = JSON.parse(raw) as any[];
 
     const mapOldToNew: Record<string, Category> = {
-      restaurante: "alimentacao",
-      restaurant: "alimentacao",
-      refeicao: "alimentacao",
-      "refeição": "alimentacao",
-      comida: "alimentacao",
-      supermarket: "mercado",
-      mercado: "mercado",
-      supermercado: "mercado",
-      compras: "mercado",
-      gas: "transporte",
-      gasolina: "transporte",
-      combustivel: "transporte",
-      "combustível": "transporte",
-      renting: "casa",
-      aluguel: "casa",
-      rent: "casa",
-      presents: "presentes",
-      presentes: "presentes",
-      gift: "presentes",
+      restaurante: "Alimentação",
+      restaurant: "Alimentação",
+      refeicao: "Alimentação",
+      "refeição": "Alimentação",
+      comida: "Alimentação",
+      supermarket: "Alimentação",
+      mercado: "Alimentação",
+      supermercado: "Alimentação",
+      compras: "Alimentação",
+      gas: "Transporte",
+      gasolina: "Transporte",
+      combustivel: "Transporte",
+      "combustível": "Transporte",
+      renting: "Moradia",
+      aluguel: "Moradia",
+      rent: "Moradia",
+      casa: "Moradia",
+      presents: "Doações & Presentes",
+      presentes: "Doações & Presentes",
+      gift: "Doações & Presentes",
       // novas
-      alimentacao: "alimentacao",
-      "alimentação": "alimentacao",
-      assinaturas: "assinaturas",
-      assinatura: "assinaturas",
-      casa: "casa",
-      lazer: "lazer",
-      saude: "saude",
-      "saúde": "saude",
-      transporte: "transporte",
-      utilidades: "utilidades",
-      outros: "outros",
+      alimentacao: "Alimentação",
+      "alimentação": "Alimentação",
+      assinaturas: "Assinaturas",
+      assinatura: "Assinaturas",
+      lazer: "Lazer",
+      saude: "Saúde",
+      "saúde": "Saúde",
+      transporte: "Transporte",
+      utilidades: "Moradia",
+      outros: "Outros",
     };
 
     const normalized: Expense[] = (Array.isArray(parsed) ? parsed : []).map((e: any) => {
       const key = typeof e?.category === "string" ? e.category.toLowerCase() : "";
       const mapped = mapOldToNew[key];
-      const finalCategory: Category = (mapped ?? (typeof e?.category === "string" && e.category.trim() ? (e.category as Category) : ("outros" as Category))) as Category;
+      const finalCategory: Category = (mapped ?? (typeof e?.category === "string" && e.category.trim() ? (e.category as Category) : ("Outros" as Category))) as Category;
       return { ...e, category: finalCategory } as Expense;
     });
 
@@ -280,7 +323,7 @@ export function getMonthlyTotal(expenses: Expense[], date = new Date()) {
 export function groupByCategory(expenses: Expense[]): Record<Category, number> {
   const result: Record<Category, number> = {} as Record<Category, number>;
   for (const e of expenses) {
-    const key = (e.category as Category) || ("outros" as Category);
+    const key = (e.category as Category) || ("Outros" as Category);
     result[key] = (result[key] ?? 0) + e.amount;
   }
   return result;
