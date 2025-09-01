@@ -21,9 +21,9 @@ export default function Cultura() {
   useEffect(() => setPageSEO("Cultura", "Listas de filmes, séries e livros"), []);
 
   // Filter states
-  const [selectedGenre, setSelectedGenre] = useState<string>("");
-  const [selectedYear, setSelectedYear] = useState<string>("");
-  const [selectedRating, setSelectedRating] = useState<string>("");
+  const [selectedGenre, setSelectedGenre] = useState<string>("all-genres");
+  const [selectedYear, setSelectedYear] = useState<string>("all-years");
+  const [selectedRating, setSelectedRating] = useState<string>("all-ratings");
 
   // Form inline por lista - using stable object structure to fix cursor issue
   const [newForm, setNewForm] = useState<{
@@ -109,9 +109,9 @@ export default function Cultura() {
   // Apply filters function
   const applyFilters = (itemList: Item[]) => {
     return itemList.filter(item => {
-      if (selectedGenre && item.genre !== selectedGenre) return false;
-      if (selectedYear && item.year?.toString() !== selectedYear) return false;
-      if (selectedRating) {
+      if (selectedGenre && selectedGenre !== "all-genres" && item.genre !== selectedGenre) return false;
+      if (selectedYear && selectedYear !== "all-years" && item.year?.toString() !== selectedYear) return false;
+      if (selectedRating && selectedRating !== "all-ratings") {
         if (selectedRating === "no-rating" && item.rating) return false;
         if (selectedRating !== "no-rating" && item.rating?.toString() !== selectedRating) return false;
       }
@@ -121,9 +121,9 @@ export default function Cultura() {
 
   // Clear all filters
   const clearFilters = () => {
-    setSelectedGenre("");
-    setSelectedYear("");
-    setSelectedRating("");
+    setSelectedGenre("all-genres");
+    setSelectedYear("all-years");
+    setSelectedRating("all-ratings");
   };
 
   const byVideoBacklog = useMemo(() => applyFilters(items.filter((i) => i.domain === "videos" && i.status === "backlog")), [items, selectedGenre, selectedYear, selectedRating]);
@@ -209,7 +209,7 @@ export default function Cultura() {
             variant="outline" 
             size="sm" 
             onClick={clearFilters}
-            disabled={!selectedGenre && !selectedYear && !selectedRating}
+            disabled={selectedGenre === "all-genres" && selectedYear === "all-years" && selectedRating === "all-ratings"}
           >
             Limpar Filtros
           </Button>
@@ -224,7 +224,7 @@ export default function Cultura() {
                 <SelectValue placeholder="Todos os gêneros" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os gêneros</SelectItem>
+                <SelectItem value="all-genres">Todos os gêneros</SelectItem>
                 {uniqueGenres.map((genre) => (
                   <SelectItem key={genre} value={genre}>
                     {genre}
@@ -242,7 +242,7 @@ export default function Cultura() {
                 <SelectValue placeholder="Todos os anos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os anos</SelectItem>
+                <SelectItem value="all-years">Todos os anos</SelectItem>
                 {uniqueYears.map((year) => (
                   <SelectItem key={year} value={year.toString()}>
                     {year}
@@ -260,7 +260,7 @@ export default function Cultura() {
                 <SelectValue placeholder="Todas as notas" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as notas</SelectItem>
+                <SelectItem value="all-ratings">Todas as notas</SelectItem>
                 <SelectItem value="5">⭐⭐⭐⭐⭐ (5)</SelectItem>
                 <SelectItem value="4">⭐⭐⭐⭐ (4)</SelectItem>
                 <SelectItem value="3">⭐⭐⭐ (3)</SelectItem>
