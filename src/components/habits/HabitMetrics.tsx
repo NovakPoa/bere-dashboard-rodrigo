@@ -15,17 +15,11 @@ export function HabitMetrics({ habit, startDate, endDate }: HabitMetricsProps) {
       <div className="text-center">
         <div className="text-2xl font-bold text-primary">{metrics.totalSessions}</div>
         <div className="text-sm text-muted-foreground">Total de Sessões</div>
-        <div className="text-xs text-muted-foreground">
-          Média: {metrics.averageDailySessions.toFixed(1)}/dia
-        </div>
       </div>
       
       <div className="text-center">
         <div className="text-2xl font-bold text-primary">{metrics.totalTimeMinutes}</div>
         <div className="text-sm text-muted-foreground">Total de Minutos</div>
-        <div className="text-xs text-muted-foreground">
-          Média: {metrics.averageDailyTimeMinutes.toFixed(1)} min/dia
-        </div>
       </div>
       
       <div className="text-center">
