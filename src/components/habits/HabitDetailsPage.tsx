@@ -8,14 +8,14 @@ import { HabitProgressBars } from "./HabitProgressBars";
 import { HabitSessionsList } from "./HabitSessionsList";
 import { DateRangePicker } from "./DateRangePicker";
 import { useHabitDefinitions, useDeleteHabitDefinition } from "@/hooks/useHabitDefinitions";
-import { subDays, startOfDay } from "date-fns";
+import { startOfMonth, endOfMonth } from "date-fns";
 
 export function HabitDetailsPage() {
   const { habitId } = useParams<{ habitId: string }>();
   const navigate = useNavigate();
   
-  const [startDate, setStartDate] = useState(() => subDays(startOfDay(new Date()), 6));
-  const [endDate, setEndDate] = useState(() => startOfDay(new Date()));
+  const [startDate, setStartDate] = useState(() => startOfMonth(new Date()));
+  const [endDate, setEndDate] = useState(() => endOfMonth(new Date()));
   
   const { data: habits = [] } = useHabitDefinitions();
   const habit = habits.find(h => h.id === habitId);
@@ -76,22 +76,12 @@ export function HabitDetailsPage() {
       </div>
 
       {/* Date Range Picker */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Período
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DateRangePicker
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
-          />
-        </CardContent>
-      </Card>
+      <DateRangePicker
+        startDate={startDate}
+        endDate={endDate}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
+      />
 
       {/* Metrics */}
       <Card>
