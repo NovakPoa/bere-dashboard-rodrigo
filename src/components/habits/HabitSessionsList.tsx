@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Pencil, Save, X, Plus, Minus } from "lucide-react";
+import { AddRetroactiveSession } from "./AddRetroactiveSession";
 import { useHabitSessions, useUpdateHabitSession } from "@/hooks/useHabitSessions";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -60,7 +61,10 @@ export function HabitSessionsList({ habitId, startDate, endDate }: HabitSessions
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Histórico de Sessões</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Histórico de Sessões</CardTitle>
+          <AddRetroactiveSession habitId={habitId} />
+        </div>
       </CardHeader>
       <CardContent>
         {sessions.length === 0 ? (
