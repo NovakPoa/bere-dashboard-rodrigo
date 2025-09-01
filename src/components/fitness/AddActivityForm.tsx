@@ -33,8 +33,12 @@ const activityTypes = [
   "outro"
 ];
 
-export default function AddActivityForm() {
-  const [open, setOpen] = useState(false);
+interface AddActivityFormProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export default function AddActivityForm({ open, onOpenChange }: AddActivityFormProps) {
   const [activityType, setActivityType] = useState("");
   const [duration, setDuration] = useState("");
   const [distance, setDistance] = useState("");
@@ -121,7 +125,7 @@ export default function AddActivityForm() {
 
       queryClient.invalidateQueries({ queryKey: ["activities"] });
       resetForm();
-      setOpen(false);
+      onOpenChange(false);
     } catch (error) {
       toast({
         title: "Erro",
@@ -134,12 +138,7 @@ export default function AddActivityForm() {
   };
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Plus className="h-4 w-4" />
-        </Button>
-      </DrawerTrigger>
+    <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent>
         <div className="mx-auto w-full max-w-sm">
           <DrawerHeader>
@@ -217,7 +216,7 @@ export default function AddActivityForm() {
               <Button 
                 variant="outline" 
                 className="flex-1" 
-                onClick={() => setOpen(false)}
+                onClick={() => onOpenChange(false)}
               >
                 Cancelar
               </Button>

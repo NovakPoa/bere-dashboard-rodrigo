@@ -1,7 +1,6 @@
 import { FitnessEntry, estimateCalories } from "@/lib/fitness";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import AddActivityForm from "./AddActivityForm";
 
 export default function ActivitiesTable({ entries }: { entries: FitnessEntry[] }) {
   const rows = entries;
@@ -14,10 +13,7 @@ export default function ActivitiesTable({ entries }: { entries: FitnessEntry[] }
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm text-muted-foreground">Atividades recentes</CardTitle>
-          <AddActivityForm />
-        </div>
+        <CardTitle className="text-sm text-muted-foreground">Atividades recentes</CardTitle>
       </CardHeader>
       <CardContent className="px-2 sm:px-6">
         <div className="overflow-x-auto">
