@@ -2,14 +2,19 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { useAddExpense } from "@/hooks/useFinance";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import type { Category, PaymentMethod } from "@/types/expense";
 
 const categories: Category[] = [
@@ -40,6 +45,9 @@ const formSchema = z.object({
   category: z.enum(categories as [Category, ...Category[]], {
     required_error: "Categoria é obrigatória"
   }),
+  date: z.date({
+    required_error: "Data é obrigatória"
+  }).refine((date) => date <= new Date(), "Data não pode ser futura"),
   amount: z.string().min(1, "Valor é obrigatório").refine((val) => {
     const num = parseFloat(val.replace(",", "."));
     return !isNaN(num) && num > 0;
@@ -59,6 +67,7 @@ export default function AddExpenseForm({ onAdded }: { onAdded: () => void }) {
     defaultValues: {
       note: "",
       category: undefined,
+      date: new Date(),
       amount: "",
       method: undefined
     }
@@ -70,6 +79,7 @@ export default function AddExpenseForm({ onAdded }: { onAdded: () => void }) {
     addExpense.mutate({
       note: data.note,
       category: data.category,
+      date: data.date,
       amount,
       method: data.method,
       source: "manual"
@@ -137,6 +147,47 @@ export default function AddExpenseForm({ onAdded }: { onAdded: () => void }) {
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Data</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "dd/MM/yyyy")
+                          ) : (
+                            <span>Selecione uma data</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) => date > new Date()}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}

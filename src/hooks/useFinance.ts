@@ -107,16 +107,16 @@ export function useAddExpense() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (expense: Omit<Expense, "id" | "date">) => {
+    mutationFn: async (expense: Omit<Expense, "id" | "date"> & { date?: Date }) => {
       // Get current user
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
         throw new Error("Usuário não autenticado");
       }
 
-      // Create local date string (YYYY-MM-DD) without timezone shift
-      const now = new Date();
-      const localDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      // Use provided date or current date
+      const expenseDate = expense.date || new Date();
+      const localDateStr = `${expenseDate.getFullYear()}-${String(expenseDate.getMonth() + 1).padStart(2, '0')}-${String(expenseDate.getDate()).padStart(2, '0')}`;
 
       const record = {
         ...convertFromExpense({
