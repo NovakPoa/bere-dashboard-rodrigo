@@ -45,9 +45,9 @@ const Index = () => {
     [filteredByDate, category, method]
   );
   
-  const totalInPeriod = useMemo(() => 
-    filteredByDate.reduce((sum, e) => sum + e.amount, 0), 
-    [filteredByDate]
+  const totalFiltered = useMemo(() => 
+    filtered.reduce((sum, e) => sum + e.amount, 0), 
+    [filtered]
   );
   
   const categoriesList = useMemo(() => Array.from(new Set(expenses.map((e) => e.category))).sort(), [expenses]);
@@ -123,11 +123,11 @@ const Index = () => {
 
         <section aria-labelledby="stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
           <h2 id="stats" className="sr-only">Métricas principais</h2>
-          <StatCard title="Despesas" value={currency(totalInPeriod)} />
-          <StatCard title="Total de Transações" value={String(filteredByDate.length)} />
+          <StatCard title="Despesas" value={currency(totalFiltered)} />
+          <StatCard title="Total de Transações" value={String(filtered.length)} />
           <StatCard 
             title="Ticket Médio"
-            value={filteredByDate.length ? currency(totalInPeriod / filteredByDate.length) : "-"} 
+            value={filtered.length ? currency(totalFiltered / filtered.length) : "-"} 
           />
         </section>
 
