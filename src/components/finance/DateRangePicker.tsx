@@ -42,6 +42,7 @@ export default function DateRangePicker({
               selected={startDate}
               onSelect={onStartDateChange}
               initialFocus
+              locale={ptBR}
               className={cn("p-3 pointer-events-auto")}
             />
           </PopoverContent>
@@ -68,6 +69,7 @@ export default function DateRangePicker({
               selected={endDate}
               onSelect={onEndDateChange}
               initialFocus
+              locale={ptBR}
               className={cn("p-3 pointer-events-auto")}
             />
           </PopoverContent>
