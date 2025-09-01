@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { startOfMonth, endOfMonth } from "date-fns";
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
@@ -18,8 +18,8 @@ import { useExpenses } from "@/hooks/useFinance";
 
 const Index = () => {
   const { data: expenses = [], refetch } = useExpenses();
-  const [category, setCategory] = useState<"all" | Category>("all");
-  const [method, setMethod] = useState<"all" | PaymentMethod>("all");
+  const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
+  const [selectedMethods, setSelectedMethods] = useState<PaymentMethod[]>([]);
   const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
   const [showExpenseForm, setShowExpenseForm] = useState(false);
@@ -41,8 +41,11 @@ const Index = () => {
   );
   
   const filtered = useMemo(() => 
-    filterExpenses(filteredByDate, { category, method }), 
-    [filteredByDate, category, method]
+    filterExpenses(filteredByDate, { 
+      category: selectedCategories.length > 0 ? selectedCategories : "all",
+      method: selectedMethods.length > 0 ? selectedMethods : "all" 
+    }), 
+    [filteredByDate, selectedCategories, selectedMethods]
   );
   
   const totalFiltered = useMemo(() => 
@@ -51,6 +54,29 @@ const Index = () => {
   );
   
   const categoriesList = useMemo(() => Array.from(new Set(expenses.map((e) => e.category))).sort(), [expenses]);
+  
+  const categoryOptions = useMemo(() => 
+    categoriesList.map(cat => ({ 
+      label: cat.charAt(0).toUpperCase() + cat.slice(1), 
+      value: cat 
+    })), 
+    [categoriesList]
+  );
+  
+  const methodOptions = [
+    { label: "PIX", value: "pix" },
+    { label: "Boleto", value: "boleto" },
+    { label: "Crédito", value: "credit" }
+  ];
+
+  const handleCategoryChange = (selected: string[]) => {
+    setSelectedCategories(selected as Category[]);
+  };
+
+  const handleMethodChange = (selected: string[]) => {
+    setSelectedMethods(selected as PaymentMethod[]);
+  };
+
   const currency = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   return (
@@ -80,34 +106,22 @@ const Index = () => {
           <div className="grid gap-3 md:gap-6 grid-cols-1 md:grid-cols-2 min-w-0">
             <div className="flex flex-col md:flex-row gap-3 min-w-0">
               <div className="flex-1 min-w-0">
-                <label className="text-sm text-muted-foreground">Categoria</label>
-                <Select value={category} onValueChange={(v) => setCategory(v as any)}>
-                  <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Todas as categorias" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas</SelectItem>
-                    {categoriesList.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        <span className="capitalize">{c}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <MultiSelect
+                  label="Categoria"
+                  options={categoryOptions}
+                  selected={selectedCategories}
+                  onSelectionChange={handleCategoryChange}
+                  placeholder="Todas as categorias"
+                />
               </div>
               <div className="flex-1 min-w-0">
-                <label className="text-sm text-muted-foreground">Forma de pagamento</label>
-                <Select value={method} onValueChange={(v) => setMethod(v as any)}>
-                  <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Todas as formas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas</SelectItem>
-                    <SelectItem value="pix">PIX</SelectItem>
-                    <SelectItem value="boleto">Boleto</SelectItem>
-                    <SelectItem value="credit">Crédito</SelectItem>
-                  </SelectContent>
-                </Select>
+                <MultiSelect
+                  label="Forma de pagamento"
+                  options={methodOptions}
+                  selected={selectedMethods}
+                  onSelectionChange={handleMethodChange}
+                  placeholder="Todas as formas"
+                />
               </div>
             </div>
             <div className="min-w-0">

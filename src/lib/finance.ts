@@ -204,11 +204,32 @@ export function removeExpense(id: string) {
 
 export function filterExpenses(
   expenses: Expense[],
-  opts: { category?: Category | "all"; method?: PaymentMethod | "all" }
+  opts: { 
+    category?: Category[] | Category | "all"; 
+    method?: PaymentMethod[] | PaymentMethod | "all" 
+  }
 ) {
   return expenses.filter((e) => {
-    const okCat = opts.category && opts.category !== "all" ? e.category === opts.category : true;
-    const okMet = opts.method && opts.method !== "all" ? e.method === opts.method : true;
+    // Handle category filtering
+    let okCat = true;
+    if (opts.category && opts.category !== "all") {
+      if (Array.isArray(opts.category)) {
+        okCat = opts.category.length === 0 || opts.category.includes(e.category);
+      } else {
+        okCat = e.category === opts.category;
+      }
+    }
+
+    // Handle method filtering  
+    let okMet = true;
+    if (opts.method && opts.method !== "all") {
+      if (Array.isArray(opts.method)) {
+        okMet = opts.method.length === 0 || opts.method.includes(e.method);
+      } else {
+        okMet = e.method === opts.method;
+      }
+    }
+
     return okCat && okMet;
   });
 }
