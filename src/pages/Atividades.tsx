@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { format, eachDayOfInterval, startOfDay, addDays, differenceInCalendarDays, subDays } from "date-fns";
+import { format, eachDayOfInterval, startOfDay, addDays, differenceInCalendarDays, subDays, startOfMonth } from "date-fns";
 import { setPageSEO } from "@/lib/seo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,13 +16,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Atividades() {
-  const [startDate, setStartDate] = useState<Date | undefined>(() => subDays(new Date(), 6));
+  const [startDate, setStartDate] = useState<Date | undefined>(() => startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date | undefined>(() => new Date());
   const [selectedModalities, setSelectedModalities] = useState<string[]>([]);
 
   useEffect(() => setPageSEO("Atividade Física", "Registre exercícios por mensagem"), []);
 
-  const efFrom = startOfDay(startDate ?? subDays(new Date(), 6));
+  const efFrom = startOfDay(startDate ?? startOfMonth(new Date()));
   const efTo = startOfDay(endDate ?? new Date());
   const { data: dbEntries, isLoading, error } = useQuery({
     queryKey: ["activities", efFrom.toISOString(), efTo.toISOString()],
@@ -71,7 +71,7 @@ export default function Atividades() {
   }, [entries]);
 
   const periodEntries = useMemo(() => {
-    const efFrom = startOfDay(startDate ?? subDays(new Date(), 6));
+    const efFrom = startOfDay(startDate ?? startOfMonth(new Date()));
     const efToEnd = addDays(startOfDay(endDate ?? new Date()), 1);
     return entries.filter((e) => {
       const d = new Date(e.data);
@@ -86,7 +86,7 @@ export default function Atividades() {
 
   const modalities = useMemo(() => Array.from(new Set(periodEntries.map((e) => e.tipo?.toLowerCase() || "atividade"))), [periodEntries]);
   const series = useMemo(() => {
-    const efFrom = startOfDay(startDate ?? subDays(new Date(), 6));
+    const efFrom = startOfDay(startDate ?? startOfMonth(new Date()));
     const efTo = startOfDay(endDate ?? new Date());
     const days = eachDayOfInterval({ start: efFrom, end: efTo });
     return {
@@ -113,7 +113,7 @@ export default function Atividades() {
   const totalKm = periodEntries.reduce((s, e) => s + (e.distanciaKm || 0), 0);
   const totalCal = useMemo(() => totalCalories(periodEntries), [periodEntries]);
   const daysCount = (() => {
-    const efFrom = startOfDay(startDate ?? subDays(new Date(), 6));
+    const efFrom = startOfDay(startDate ?? startOfMonth(new Date()));
     const efTo = startOfDay(endDate ?? new Date());
     return differenceInCalendarDays(efTo, efFrom) + 1;
   })();
@@ -175,9 +175,9 @@ export default function Atividades() {
         </section>
         <section aria-labelledby="stats" className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <h2 id="stats" className="sr-only">Métricas</h2>
-          <StatCard title="Sessões" value={String(sessionsCount)} />
-          <StatCard title="Tempo total" value={formatHm(totalMinutes)} />
-          <StatCard title="Distância total" value={`${totalKm.toFixed(1)} km`} />
+          <StatCard title="Sessões/dia" value={Math.round(sessionsCount / Math.max(daysCount, 1)).toString()} />
+          <StatCard title="Tempo/dia" value={formatHm(Math.round(totalMinutes / Math.max(daysCount, 1)))} />
+          <StatCard title="Distância/dia" value={`${(totalKm / Math.max(daysCount, 1)).toFixed(1)} km`} />
           <StatCard title="Calorias/dia" value={`${avgCalories.toLocaleString()}`} />
         </section>
 
