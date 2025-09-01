@@ -1,58 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { format, eachDayOfInterval, startOfDay, addDays, differenceInCalendarDays, subDays } from "date-fns";
 import { setPageSEO } from "@/lib/seo";
-import { MessageSimulator } from "@/components/common/MessageSimulator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "@/hooks/use-toast";
 import StatCard from "@/components/finance/StatCard";
 import ActivitiesChart from "@/components/fitness/ActivitiesChart";
 import ActivitiesTable from "@/components/fitness/ActivitiesTable";
 import DateRangePicker from "@/components/finance/DateRangePicker";
-import { FitnessEntry, groupTotalsByModality, totalCalories, fetchActivitiesFromSupabase, estimateCalories } from "@/lib/fitness";
+import { FitnessEntry, groupTotalsByModality, totalCalories, fetchActivitiesFromSupabase } from "@/lib/fitness";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-const STORAGE_KEY = "fitness_activities_v1";
-
-type FitnessEntryLocal = FitnessEntry;
-
-const parseFitness = (msg: string): FitnessEntryLocal | null => {
-  const lower = msg.toLowerCase();
-  if (!lower.trim()) return null;
-  // tipo
-  const tipos = [
-    "corrida",
-    "natação",
-    "natacao",
-    "bike",
-    "ciclismo",
-    "musculação",
-    "musculacao",
-    "caminhada",
-    "jiu-jitsu",
-    "jiujitsu",
-    "bjj",
-  ];
-  const tipo = tipos.find((t) => lower.includes(t)) || "atividade";
-  // minutos
-  const minMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*(min|m|minutos|h|hora|horas)/);
-  let minutos = 0;
-  if (minMatch) {
-    const val = parseFloat(minMatch[1].replace(",", "."));
-    const unit = minMatch[2];
-    minutos = /h|hora/.test(unit) ? Math.round(val * 60) : Math.round(val);
-  }
-  // distância km
-  const distMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*km/);
-  const distanciaKm = distMatch ? parseFloat(distMatch[1].replace(",", ".")) : undefined;
-
-  return { tipo, minutos, distanciaKm, data: new Date().toISOString(), nota: msg };
-};
-
-function save(entry: FitnessEntryLocal) {
-  const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]") as FitnessEntryLocal[];
-  all.unshift(entry);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-}
 
 export default function Atividades() {
   const [startDate, setStartDate] = useState<Date | undefined>(() => subDays(new Date(), 6));
@@ -66,7 +22,7 @@ export default function Atividades() {
     queryKey: ["activities", efFrom.toISOString(), efTo.toISOString()],
     queryFn: () => fetchActivitiesFromSupabase(efFrom, efTo),
   });
-  const entries = (dbEntries as FitnessEntryLocal[] | undefined) ?? [];
+  const entries = (dbEntries as FitnessEntry[] | undefined) ?? [];
 
   const queryClient = useQueryClient();
   useEffect(() => {
@@ -100,7 +56,7 @@ export default function Atividades() {
     };
   }, [queryClient]);
 
-  const FitnessSim = MessageSimulator<FitnessEntryLocal>;
+  
 
   const periodEntries = useMemo(() => {
     const efFrom = startOfDay(startDate ?? subDays(new Date(), 6));
@@ -183,62 +139,26 @@ export default function Atividades() {
           <StatCard title="Calorias/dia" value={`${avgCalories.toLocaleString()}`} />
         </section>
 
-        <section aria-labelledby="add-message" className="grid gap-4 lg:gap-6 grid-cols-1 lg:grid-cols-5">
-          <h2 id="add-message" className="sr-only">Registrar por mensagem</h2>
-          <div className="lg:col-span-2">
-            <FitnessSim
-              title="Cole a mensagem (ex.: 'Corrida 30min 5km')"
-              placeholder="Ex.: Corrida 30min 5km"
-              parse={parseFitness}
-              onConfirm={async (data) => {
-                // Get current user session
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session?.user) {
-                  toast({ title: 'Erro', description: 'Você precisa estar logado para registrar atividades.', variant: 'destructive' });
-                  return;
-                }
-
-                const when = data?.data ? new Date(data.data) : new Date();
-                const payload = {
-                  modalidade: data.tipo,
-                  tipo: data.tipo,
-                  distancia_km: data.distanciaKm ?? null,
-                  duracao_min: data.minutos,
-                  calorias: typeof data.calorias === 'number' ? data.calorias : estimateCalories(data),
-                  data: when.toISOString().slice(0, 10),
-                  ts: when.toISOString(),
-                  user_id: session.user.id, // Include user_id for RLS
-                };
-                const { error } = await supabase.from('atividade_fisica').insert([payload]);
-                if (error) {
-                  toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
-                  return;
-                }
-                toast({ title: 'Atividade registrada', description: 'Sua atividade foi salva no Supabase.' });
-                queryClient.invalidateQueries({ queryKey: ['activities'] });
-              }}
-            />
-          </div>
-          <div className="lg:col-span-3">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm text-muted-foreground">Resumo (período)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm text-muted-foreground grid gap-1">
-                  <li>Calorias (estimadas): {totalCal.toLocaleString()} kcal</li>
-                  {Object.entries(totals).map(([m, t]) => (
-                    <li key={m} className="capitalize">
-                      {m}: {t.distanciaKm ? `${t.distanciaKm.toFixed(1)} km - ` : ""}{formatHm(t.minutos)}
-                    </li>
-                  ))}
-                  {Object.keys(totals).length === 0 && (
-                    <li>Nenhuma atividade no período.</li>
-                  )}
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
+        <section aria-labelledby="summary">
+          <h2 id="summary" className="sr-only">Resumo do período</h2>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm text-muted-foreground">Resumo (período)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="text-sm text-muted-foreground grid gap-1">
+                <li>Calorias (estimadas): {totalCal.toLocaleString()} kcal</li>
+                {Object.entries(totals).map(([m, t]) => (
+                  <li key={m} className="capitalize">
+                    {m}: {t.distanciaKm ? `${t.distanciaKm.toFixed(1)} km - ` : ""}{formatHm(t.minutos)}
+                  </li>
+                ))}
+                {Object.keys(totals).length === 0 && (
+                  <li>Nenhuma atividade no período.</li>
+                )}
+              </ul>
+            </CardContent>
+          </Card>
         </section>
 
         <section aria-labelledby="chart">
