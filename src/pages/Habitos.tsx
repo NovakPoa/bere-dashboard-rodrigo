@@ -58,6 +58,7 @@ export default function Habitos() {
                   key={habit.id}
                   habit={habit}
                   onClick={() => handleHabitClick(habit.id)}
+                  onDelete={refresh}
                 />
               ))}
             </div>
