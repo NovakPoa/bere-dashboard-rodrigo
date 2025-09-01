@@ -95,45 +95,6 @@ export default function Cultura() {
   const byBookBacklog = useMemo(() => items.filter((i) => i.domain === "books" && i.status === "backlog"), [items]);
   const byBookDone = useMemo(() => items.filter((i) => i.domain === "books" && i.status === "done"), [items]);
 
-  const genreCounts = (domain: "videos" | "books") => {
-    const map = new Map<string, number>();
-    for (const i of items) {
-      if (i.domain !== domain || i.status !== "done" || !i.genre) continue;
-      map.set(i.genre.toLowerCase(), (map.get(i.genre.toLowerCase()) || 0) + 1);
-    }
-    return [...map.entries()].sort((a, b) => b[1] - a[1]).map(([g]) => g);
-  };
-
-  const videoTopGenres = genreCounts("videos").slice(0, 2);
-  const bookTopGenres = genreCounts("books").slice(0, 2);
-
-  // Sugestões locais simples
-  const seeds: Record<string, { videos: string[]; books: string[] }> = {
-    "ação": { videos: ["Missão Impossível", "John Wick", "Mad Max: Fury Road"], books: ["O Conde de Monte Cristo"] },
-    "drama": { videos: ["Clube da Luta", "Forrest Gump"], books: ["A Menina que Roubava Livros", "1984"] },
-    "comédia": { videos: ["Superbad", "Se Beber, Não Case"], books: ["O Guia do Mochileiro das Galáxias"] },
-    "ficção": { videos: ["Blade Runner", "Ex Machina"], books: ["Duna", "Neuromancer"] },
-    "fantasia": { videos: ["O Senhor dos Anéis", "Harry Potter"], books: ["O Nome do Vento", "O Hobbit"] },
-    "romance": { videos: ["La La Land", "Orgulho e Preconceito"], books: ["Orgulho e Preconceito", "Eleanor & Park"] },
-  };
-
-  const buildSuggestions = (domain: "videos" | "books") => {
-    const top = domain === "videos" ? videoTopGenres : bookTopGenres;
-    const out: { title: string; genre: string }[] = [];
-    for (const g of top) {
-      const pool = seeds[g]?.[domain] || [];
-      for (const p of pool) out.push({ title: p, genre: g });
-      if (out.length >= 6) break;
-    }
-    if (out.length === 0) {
-      // fallback
-      out.push({ title: domain === "videos" ? "Sugestão de filme" : "Sugestão de livro", genre: "geral" });
-    }
-    return out.slice(0, 6);
-  };
-
-  const videoSuggestions = useMemo(() => buildSuggestions("videos"), [items]);
-  const bookSuggestions = useMemo(() => buildSuggestions("books"), [items]);
 
 
   const AddForm = ({ list }: { list: NonNullable<typeof newForm>["list"] }) => (
@@ -342,71 +303,6 @@ export default function Cultura() {
           </Card>
         </section>
 
-        {/* Sugestões */}
-        <section aria-labelledby="suggestions" className="grid gap-6 md:grid-cols-2">
-          <h2 id="suggestions" className="sr-only">Sugestões</h2>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">Sugestões de filmes/séries</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-2">
-              {videoSuggestions.map((s, idx) => (
-                <div key={`${s.title}-${idx}`} className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="font-medium leading-none">{s.title}</p>
-                    <p className="text-sm text-muted-foreground">Gênero: {s.genre}</p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      addItem.mutate({
-                        domain: "videos",
-                        status: "backlog",
-                        title: s.title,
-                        genre: s.genre,
-                        subtype: "movie",
-                      })
-                    }
-                  >
-                    Adicionar
-                  </Button>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">Sugestões de livros</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-2">
-              {bookSuggestions.map((s, idx) => (
-                <div key={`${s.title}-${idx}`} className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="font-medium leading-none">{s.title}</p>
-                    <p className="text-sm text-muted-foreground">Gênero: {s.genre}</p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      addItem.mutate({
-                        domain: "books",
-                        status: "backlog",
-                        title: s.title,
-                        genre: s.genre,
-                      })
-                    }
-                  >
-                    Adicionar
-                  </Button>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </section>
       </main>
     </div>
   );
