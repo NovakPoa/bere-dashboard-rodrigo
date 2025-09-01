@@ -4,6 +4,7 @@ import { setPageSEO } from "@/lib/seo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import StatCard from "@/components/finance/StatCard";
 import ActivitiesChart from "@/components/fitness/ActivitiesChart";
 import ActivitiesTable from "@/components/fitness/ActivitiesTable";
@@ -16,7 +17,6 @@ import { supabase } from "@/integrations/supabase/client";
 export default function Atividades() {
   const [startDate, setStartDate] = useState<Date | undefined>(() => subDays(new Date(), 6));
   const [endDate, setEndDate] = useState<Date | undefined>(() => new Date());
-  const [isAddActivityOpen, setIsAddActivityOpen] = useState(false);
 
   useEffect(() => setPageSEO("Atividade Física", "Registre exercícios por mensagem"), []);
 
@@ -123,19 +123,23 @@ export default function Atividades() {
       <header className="container px-4 py-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-foreground">Atividade Física</h1>
-          <Button
-            onClick={() => setIsAddActivityOpen(true)}
-            size="icon"
-            className="rounded-full"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="sr-only">Adicionar atividade</span>
-          </Button>
+          <Drawer>
+            <DrawerTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Plus className="h-4 w-4" />
+                <span className="sr-only">Adicionar atividade</span>
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent>
+              <div className="mx-auto w-full max-w-sm">
+                <DrawerHeader>
+                  <DrawerTitle>Adicionar Atividade</DrawerTitle>
+                </DrawerHeader>
+                <AddActivityForm />
+              </div>
+            </DrawerContent>
+          </Drawer>
         </div>
-        <AddActivityForm 
-          open={isAddActivityOpen}
-          onOpenChange={setIsAddActivityOpen}
-        />
       </header>
 
       <main className="container px-4 py-6 md:py-8 space-y-6 md:space-y-8">
