@@ -21,7 +21,7 @@ const Index = () => {
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
   const [selectedMethods, setSelectedMethods] = useState<PaymentMethod[]>([]);
   const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
-  const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
+  const [endDate, setEndDate] = useState<Date>(new Date());
   const [showExpenseForm, setShowExpenseForm] = useState(false);
 
   const refresh = () => refetch();
