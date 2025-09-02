@@ -29,6 +29,7 @@ export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onCl
   const [timeSpent, setTimeSpent] = useState(session?.timeSpentMinutes || 0);
   const [initialSessions, setInitialSessions] = useState(session?.sessionsCompleted || 0);
   const [initialTimeSpent, setInitialTimeSpent] = useState(session?.timeSpentMinutes || 0);
+  const [hasPendingChanges, setHasPendingChanges] = useState(false);
 
   // Debounced autosave function
   const autosave = useCallback(
@@ -36,6 +37,7 @@ export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onCl
       let timeoutId: NodeJS.Timeout;
       return (newSessions: number, newTimeSpent: number) => {
         clearTimeout(timeoutId);
+        setHasPendingChanges(true);
         timeoutId = setTimeout(() => {
           updateSession.mutate({
             habitId: habit.id,
@@ -46,6 +48,10 @@ export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onCl
             onSuccess: () => {
               setInitialSessions(newSessions);
               setInitialTimeSpent(newTimeSpent);
+              setHasPendingChanges(false);
+            },
+            onError: () => {
+              setHasPendingChanges(false);
             }
           });
         }, 600);
@@ -55,13 +61,13 @@ export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onCl
   );
 
   useEffect(() => {
-    if (session) {
+    if (session && !hasPendingChanges) {
       setSessions(session.sessionsCompleted || 0);
       setTimeSpent(session.timeSpentMinutes || 0);
       setInitialSessions(session.sessionsCompleted || 0);
       setInitialTimeSpent(session.timeSpentMinutes || 0);
     }
-  }, [session]);
+  }, [session, hasPendingChanges]);
 
   // Trigger autosave when sessions or timeSpent change
   useEffect(() => {
