@@ -9,13 +9,33 @@ export function parseDateOnly(dateStr: string): Date {
 }
 
 const CATEGORY_SYNONYMS: Record<string, Category> = {
-  // Alimentação
-  alimentacao: "Alimentação",
-  "alimentação": "Alimentação",
-  comida: "Alimentação",
-  refeicao: "Alimentação",
-  "refeição": "Alimentação",
-  restaurante: "Alimentação",
+  // Restaurante
+  alimentacao: "Restaurante",
+  "alimentação": "Restaurante",
+  comida: "Restaurante",
+  refeicao: "Restaurante",
+  "refeição": "Restaurante",
+  restaurante: "Restaurante",
+  lanchonete: "Restaurante",
+  fast: "Restaurante",
+  food: "Restaurante",
+  delivery: "Restaurante",
+  pizza: "Restaurante",
+  hamburguer: "Restaurante",
+  "hambúrguer": "Restaurante",
+
+  // Mercado
+  mercado: "Mercado",
+  supermercado: "Mercado",
+  supermarket: "Mercado",
+  compras: "Mercado",
+  feira: "Mercado",
+  padaria: "Mercado",
+  acougue: "Mercado",
+  "açougue": "Mercado",
+  hortifruti: "Mercado",
+  atacadao: "Mercado",
+  "atacadão": "Mercado",
 
   // Moradia
   casa: "Moradia",
@@ -24,6 +44,14 @@ const CATEGORY_SYNONYMS: Record<string, Category> = {
   renting: "Moradia",
   condominio: "Moradia",
   "condomínio": "Moradia",
+  utilidades: "Moradia",
+  conta: "Moradia",
+  luz: "Moradia",
+  energia: "Moradia",
+  agua: "Moradia",
+  "água": "Moradia",
+  internet: "Moradia",
+  telefone: "Moradia",
 
   // Transporte
   transporte: "Transporte",
@@ -92,22 +120,6 @@ const CATEGORY_SYNONYMS: Record<string, Category> = {
   gift: "Doações & Presentes",
   doacoes: "Doações & Presentes",
   "doações": "Doações & Presentes",
-
-  // Mercado (mapear para Alimentação)
-  mercado: "Alimentação",
-  supermercado: "Alimentação",
-  supermarket: "Alimentação",
-  compras: "Alimentação",
-
-  // Utilidades (mapear para Moradia)
-  utilidades: "Moradia",
-  conta: "Moradia",
-  luz: "Moradia",
-  energia: "Moradia",
-  agua: "Moradia",
-  "água": "Moradia",
-  internet: "Moradia",
-  telefone: "Moradia",
 
   // Outros
   outros: "Outros",
@@ -202,15 +214,23 @@ export function getExpenses(): Expense[] {
     const parsed = JSON.parse(raw) as any[];
 
     const mapOldToNew: Record<string, Category> = {
-      restaurante: "Alimentação",
-      restaurant: "Alimentação",
-      refeicao: "Alimentação",
-      "refeição": "Alimentação",
-      comida: "Alimentação",
-      supermarket: "Alimentação",
-      mercado: "Alimentação",
-      supermercado: "Alimentação",
-      compras: "Alimentação",
+      // Migrar antigos "Alimentação" para "Restaurante"
+      "alimentação": "Restaurante",
+      alimentacao: "Restaurante",
+      comida: "Restaurante",
+      refeicao: "Restaurante",
+      "refeição": "Restaurante",
+      restaurante: "Restaurante",
+      restaurant: "Restaurante",
+      
+      // Migrar mercado/supermercado para "Mercado"
+      mercado: "Mercado",
+      supermercado: "Mercado",
+      supermarket: "Mercado",
+      compras: "Mercado",
+      feira: "Mercado",
+      
+      // Outras categorias mantidas
       gas: "Transporte",
       gasolina: "Transporte",
       combustivel: "Transporte",
@@ -222,9 +242,6 @@ export function getExpenses(): Expense[] {
       presents: "Doações & Presentes",
       presentes: "Doações & Presentes",
       gift: "Doações & Presentes",
-      // novas
-      alimentacao: "Alimentação",
-      "alimentação": "Alimentação",
       assinaturas: "Assinaturas",
       assinatura: "Assinaturas",
       lazer: "Lazer",

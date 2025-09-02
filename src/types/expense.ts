@@ -1,7 +1,8 @@
 export type PaymentMethod = "pix" | "boleto" | "credit";
 
 export type Category = 
-  | "Alimentação"
+  | "Restaurante"
+  | "Mercado"
   | "Moradia" 
   | "Transporte"
   | "Saúde"

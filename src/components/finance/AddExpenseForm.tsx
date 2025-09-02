@@ -18,7 +18,8 @@ import { cn } from "@/lib/utils";
 import type { Category, PaymentMethod } from "@/types/expense";
 
 const categories: Category[] = [
-  "Alimentação",
+  "Restaurante",
+  "Mercado",
   "Moradia",
   "Transporte", 
   "Saúde",
