@@ -135,17 +135,65 @@ export function useUpdateHabitSession(silent = false) {
         timeSpentMinutes: data.time_spent_minutes,
       };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["habit-sessions"] });
-      queryClient.invalidateQueries({ queryKey: ["habit-session"] });
-      if (!silent) {
-        toast({
-          title: "Progresso salvo",
-          description: "Progresso do hábito foi atualizado!",
+    onMutate: async (variables) => {
+      const { habitId, date, sessionsCompleted, timeSpentMinutes } = variables as {
+        habitId: string;
+        date: Date;
+        sessionsCompleted: number;
+        timeSpentMinutes: number;
+      };
+
+      const dateStr = format(date, "yyyy-MM-dd");
+
+      await queryClient.cancelQueries({ queryKey: ["habit-session", habitId, dateStr] });
+      await queryClient.cancelQueries({ queryKey: ["habit-sessions", habitId] });
+
+      const previousSingle = queryClient.getQueryData<HabitSession | null>(["habit-session", habitId, dateStr]);
+      const previousLists = queryClient.getQueriesData<HabitSession[]>({ queryKey: ["habit-sessions", habitId] });
+
+      const optimistic: HabitSession | null = (sessionsCompleted === 0 && timeSpentMinutes === 0)
+        ? null
+        : {
+            id: previousSingle?.id ?? `optimistic-${habitId}-${dateStr}`,
+            habitId,
+            date: dateStr,
+            sessionsCompleted,
+            timeSpentMinutes,
+          };
+
+      // Set single-day cache
+      queryClient.setQueryData(["habit-session", habitId, dateStr], optimistic);
+
+      // Update any list caches for this habit
+      queryClient.setQueriesData({ queryKey: ["habit-sessions", habitId] }, (old: HabitSession[] | undefined) => {
+        const list = old ? [...old] : [];
+        const idx = list.findIndex((s) => s.habitId === habitId && s.date === dateStr);
+        if (optimistic === null) {
+          if (idx !== -1) list.splice(idx, 1);
+        } else {
+          if (idx !== -1) list[idx] = optimistic;
+          else list.unshift(optimistic);
+        }
+        return list;
+      });
+
+      return { previousSingle, previousLists } as const;
+    },
+    onError: (error: Error, variables, context) => {
+      const { habitId, date } = variables as { habitId: string; date: Date };
+      const dateStr = format(date, "yyyy-MM-dd");
+
+      // Rollback caches
+      if (context && 'previousSingle' in context) {
+        // @ts-ignore
+        queryClient.setQueryData(["habit-session", habitId, dateStr], context.previousSingle);
+        // @ts-ignore
+        (context.previousLists as Array<[unknown, HabitSession[] | undefined]>)?.forEach(([key, data]) => {
+          // @ts-ignore
+          queryClient.setQueryData(key as any, data);
         });
       }
-    },
-    onError: (error: Error) => {
+
       if (!silent) {
         toast({
           title: "Erro",
@@ -153,6 +201,39 @@ export function useUpdateHabitSession(silent = false) {
           variant: "destructive",
         });
       }
+    },
+    onSuccess: (data, variables) => {
+      const { habitId, date } = variables as { habitId: string; date: Date };
+      const dateStr = format(date, "yyyy-MM-dd");
+
+      // Confirm caches with server result
+      queryClient.setQueryData(["habit-session", habitId, dateStr], data ?? null);
+
+      queryClient.setQueriesData({ queryKey: ["habit-sessions", habitId] }, (old: HabitSession[] | undefined) => {
+        const list = old ? [...old] : [];
+        const idx = list.findIndex((s) => s.habitId === habitId && s.date === dateStr);
+        if (!data) {
+          if (idx !== -1) list.splice(idx, 1);
+        } else {
+          if (idx !== -1) list[idx] = data as HabitSession;
+          else list.unshift(data as HabitSession);
+        }
+        return list;
+      });
+
+      if (!silent) {
+        toast({
+          title: "Progresso salvo",
+          description: "Progresso do hábito foi atualizado!",
+        });
+      }
+    },
+    onSettled: (_data, _error, variables) => {
+      const { habitId, date } = variables as { habitId: string; date: Date };
+      const dateStr = format(date, "yyyy-MM-dd");
+      // Soft revalidation of affected queries only
+      queryClient.invalidateQueries({ queryKey: ["habit-session", habitId, dateStr] });
+      queryClient.invalidateQueries({ queryKey: ["habit-sessions", habitId] });
     },
   });
 }

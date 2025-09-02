@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Plus, Minus } from "lucide-react";
 import { HabitDefinition } from "@/hooks/useHabitDefinitions";
 import { useHabitSessionForDate, useUpdateHabitSession } from "@/hooks/useHabitSessions";
+import { startOfDay } from "date-fns";
 
 interface HabitCardProps {
   habit: HabitDefinition;
@@ -21,7 +22,7 @@ export interface HabitCardRef {
 }
 
 export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onClick }, ref) => {
-  const today = new Date();
+  const today = useMemo(() => startOfDay(new Date()), []);
   const { data: session } = useHabitSessionForDate(habit.id, today);
   const updateSession = useUpdateHabitSession(true); // silent mode
 
@@ -115,7 +116,7 @@ export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onCl
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setSessions(Math.max(0, sessions - 1))}
+                onClick={() => { setHasPendingChanges(true); setSessions(Math.max(0, sessions - 1)); }}
                 className="h-7 w-7 p-0"
               >
                 <Minus className="h-3 w-3" />
@@ -126,7 +127,7 @@ export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onCl
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setSessions(sessions + 1)}
+                onClick={() => { setHasPendingChanges(true); setSessions(sessions + 1); }}
                 className="h-7 w-7 p-0"
               >
                 <Plus className="h-3 w-3" />
@@ -143,7 +144,7 @@ export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onCl
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setTimeSpent(Math.max(0, timeSpent - 5))}
+                onClick={() => { setHasPendingChanges(true); setTimeSpent(Math.max(0, timeSpent - 5)); }}
                 className="h-7 w-7 p-0"
               >
                 <Minus className="h-3 w-3" />
@@ -154,7 +155,7 @@ export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onCl
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setTimeSpent(timeSpent + 5)}
+                onClick={() => { setHasPendingChanges(true); setTimeSpent(timeSpent + 5); }}
                 className="h-7 w-7 p-0"
               >
                 <Plus className="h-3 w-3" />
