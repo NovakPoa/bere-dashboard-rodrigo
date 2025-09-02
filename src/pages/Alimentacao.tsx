@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { setPageSEO } from "@/lib/seo";
-import { subDays } from "date-fns";
+import { startOfMonth } from "date-fns";
 import { Plus } from "lucide-react";
 import NutritionCharts from "@/components/nutrition/NutritionCharts";
 import RecentMeals from "@/components/nutrition/RecentMeals";
@@ -14,7 +14,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from 
 export default function Alimentacao() {
   const { data: entries = [] } = useFoodEntries();
   const [startDate, setStartDate] = useState<Date | undefined>(
-    () => subDays(new Date(), 6)
+    () => startOfMonth(new Date())
   );
   const [endDate, setEndDate] = useState<Date | undefined>(
     () => new Date()
