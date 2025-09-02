@@ -20,18 +20,32 @@ const normalizeCategory = (category: string): Category => {
   
   // Map old categories to new ones
   const categoryMap: Record<string, Category> = {
-    "alimentação": "Alimentação",
+    "alimentação": "Restaurante",
+    "alimentacao": "Restaurante", 
+    "restaurante": "Restaurante",
+    "comida": "Restaurante",
+    "refeição": "Restaurante",
+    "refeicao": "Restaurante",
+    "mercado": "Mercado",
+    "supermercado": "Mercado",
+    "feira": "Mercado",
+    "compras": "Mercado",
     "moradia": "Moradia", 
     "transporte": "Transporte",
     "combustível": "Transporte", // Map combustível to Transporte
+    "combustivel": "Transporte",
     "saúde": "Saúde",
+    "saude": "Saúde",
     "educação": "Educação",
+    "educacao": "Educação",
     "trabalho": "Trabalho",
     "assinaturas": "Assinaturas",
     "lazer": "Lazer",
     "viagens": "Viagens",
     "vestuário": "Vestuário",
+    "vestuario": "Vestuário",
     "família": "Família",
+    "familia": "Família",
     "impostos": "Impostos",
     "doações & presentes": "Doações & Presentes",
     "outros": "Outros"
