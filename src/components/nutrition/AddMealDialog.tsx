@@ -1,25 +1,9 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { format } from "date-fns";
-import { Camera, Loader2, Utensils } from "lucide-react";
-import { useAddFoodEntry, type FoodEntry } from "@/hooks/useNutrition";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { DrawerClose } from "@/components/ui/drawer";
 import {
   Form,
   FormControl,
@@ -28,6 +12,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -35,9 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAddFoodEntry } from "@/hooks/useNutrition";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Upload, Loader2, Camera } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 
 const formSchema = z.object({
@@ -52,18 +42,15 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-interface AddMealDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
+interface AddMealDialogProps {}
 
-export default function AddMealDialog({ open, onOpenChange }: AddMealDialogProps) {
+export default function AddMealDialog({}: AddMealDialogProps) {
   const [activeTab, setActiveTab] = useState("manual");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { toast } = useToast();
-  const addMutation = useAddFoodEntry();
+  const addFoodEntry = useAddFoodEntry();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -146,136 +133,167 @@ export default function AddMealDialog({ open, onOpenChange }: AddMealDialogProps
   };
 
   const onSubmit = async (data: FormData) => {
-    const entry: Omit<FoodEntry, "id"> = {
-      description: data.description,
-      mealType: data.mealType,
-      calories: data.calories,
-      protein: data.protein,
-      carbs: data.carbs,
-      fat: data.fat,
-      date: data.date,
-    };
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        toast({
+          title: "Erro",
+          description: "Você precisa estar logado para adicionar refeições.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    await addMutation.mutateAsync(entry);
-    onOpenChange(false);
-    
-    // Reset form
-    form.reset();
-    setSelectedFile(null);
-    setPreviewUrl("");
-    setActiveTab("manual");
+      const foodEntry = {
+        description: data.description,
+        mealType: data.mealType,
+        meal_type: data.mealType,
+        calories: data.calories,
+        protein: data.protein,
+        carbs: data.carbs,
+        fat: data.fat,
+        date: data.date,
+        user_id: session.user.id,
+      };
+
+      await addFoodEntry.mutateAsync(foodEntry);
+      
+      toast({
+        title: "Refeição adicionada",
+        description: "Sua refeição foi salva com sucesso!",
+      });
+
+      form.reset();
+      setActiveTab("manual");
+      setSelectedFile(null);
+      setPreviewUrl("");
+    } catch (error) {
+      toast({
+        title: "Erro ao salvar",
+        description: "Ocorreu um erro ao salvar a refeição.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Utensils className="h-5 w-5" />
-            Adicionar Refeição
-          </DialogTitle>
-          <DialogDescription>
-            Adicione uma nova refeição manualmente ou analisando uma foto.
-          </DialogDescription>
-        </DialogHeader>
+    <div className="px-4 pb-4 space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="manual">Manual</TabsTrigger>
+          <TabsTrigger value="photo">Foto</TabsTrigger>
+        </TabsList>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="manual">Manual</TabsTrigger>
-            <TabsTrigger value="photo">Foto</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="photo" className="space-y-4">
-            <Card>
-              <CardContent className="pt-6">
-                {!previewUrl ? (
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                    <Camera className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <label className="cursor-pointer">
-                      <span className="text-sm text-muted-foreground">
-                        Clique para selecionar uma foto da refeição
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <img
-                      src={previewUrl}
-                      alt="Preview"
-                      className="w-full h-48 object-cover rounded-lg"
+        <TabsContent value="photo" className="space-y-4">
+          <Card>
+            <CardContent className="pt-6">
+              {!previewUrl ? (
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                  <Camera className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <label className="cursor-pointer">
+                    <span className="text-sm text-muted-foreground">
+                      Clique para selecionar uma foto da refeição
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                      className="hidden"
                     />
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={analyzeImage}
-                        disabled={isAnalyzing}
-                        className="flex-1"
-                      >
-                        {isAnalyzing ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                          <Camera className="h-4 w-4 mr-2" />
-                        )}
-                        {isAnalyzing ? "Analisando..." : "Analisar com IA"}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedFile(null);
-                          setPreviewUrl("");
-                        }}
-                      >
-                        Remover
-                      </Button>
-                    </div>
+                  </label>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    className="w-full h-48 object-cover rounded-lg"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={analyzeImage}
+                      disabled={isAnalyzing}
+                      className="flex-1"
+                    >
+                      {isAnalyzing ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Camera className="h-4 w-4 mr-2" />
+                      )}
+                      {isAnalyzing ? "Analisando..." : "Analisar com IA"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setPreviewUrl("");
+                      }}
+                    >
+                      Remover
+                    </Button>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <TabsContent value="manual">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="mealType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de Refeição</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="café da manhã">Café da Manhã</SelectItem>
-                          <SelectItem value="almoço">Almoço</SelectItem>
-                          <SelectItem value="lanche">Lanche</SelectItem>
-                          <SelectItem value="jantar">Jantar</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Descrição</FormLabel>
+        <TabsContent value="manual">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="mealType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Refeição</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <Textarea
-                          placeholder="Ex: 1 prato de arroz integral com frango grelhado e salada"
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="café da manhã">Café da Manhã</SelectItem>
+                        <SelectItem value="almoço">Almoço</SelectItem>
+                        <SelectItem value="lanche">Lanche</SelectItem>
+                        <SelectItem value="jantar">Jantar</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Ex: 1 prato de arroz integral com frango grelhado e salada"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="calories"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Calorias (kcal)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
                           {...field}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
                         />
                       </FormControl>
                       <FormMessage />
@@ -283,122 +301,98 @@ export default function AddMealDialog({ open, onOpenChange }: AddMealDialogProps
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="calories"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Calorias (kcal)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="protein"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Proteínas (g)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.1"
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="carbs"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Carboidratos (g)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.1"
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="fat"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Gorduras (g)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.1"
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
                 <FormField
                   control={form.control}
-                  name="date"
+                  name="protein"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Data</FormLabel>
+                      <FormLabel>Proteínas (g)</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input
+                          type="number"
+                          step="0.1"
+                          {...field}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <div className="flex gap-2 pt-4">
+                <FormField
+                  control={form.control}
+                  name="carbs"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Carboidratos (g)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          {...field}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="fat"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Gorduras (g)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          {...field}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex gap-2 pt-4">
+                <DrawerClose asChild>
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => onOpenChange(false)}
                     className="flex-1"
                   >
                     Cancelar
                   </Button>
-                  <Button
-                    type="submit"
-                    disabled={addMutation.isPending}
-                    className="flex-1"
-                  >
-                    {addMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : null}
+                </DrawerClose>
+                <DrawerClose asChild>
+                  <Button type="submit" className="flex-1">
                     Salvar
                   </Button>
-                </div>
-              </form>
-            </Form>
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+                </DrawerClose>
+              </div>
+            </form>
+          </Form>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
