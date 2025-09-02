@@ -25,7 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAddFoodEntry } from "@/hooks/useNutrition";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, Loader2, Camera } from "lucide-react";
+import { Upload, Loader2, Camera, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,6 +49,7 @@ export default function AddMealDialog({}: AddMealDialogProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isAnalyzingText, setIsAnalyzingText] = useState(false);
   const { toast } = useToast();
   const addFoodEntry = useAddFoodEntry();
 
@@ -129,6 +130,49 @@ export default function AddMealDialog({}: AddMealDialogProps) {
       });
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const analyzeText = async () => {
+    const description = form.getValues("description");
+    if (!description.trim()) {
+      toast({
+        title: "Descrição vazia",
+        description: "Digite uma descrição dos alimentos para analisar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAnalyzingText(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-food', {
+        body: { textDescription: description }
+      });
+
+      if (error) throw error;
+
+      // Preencher o formulário com os dados da IA
+      form.setValue("description", data.description);
+      form.setValue("mealType", data.mealType);
+      form.setValue("calories", data.calories);
+      form.setValue("protein", data.protein);
+      form.setValue("carbs", data.carbs);
+      form.setValue("fat", data.fat);
+
+      toast({
+        title: "Análise concluída!",
+        description: "Valores estimados automaticamente. Revise e ajuste se necessário.",
+      });
+    } catch (error) {
+      console.error('Erro ao analisar texto:', error);
+      toast({
+        title: "Erro na análise",
+        description: "Não foi possível analisar a descrição. Verifique o texto e tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzingText(false);
     }
   };
 
@@ -273,7 +317,7 @@ export default function AddMealDialog({}: AddMealDialogProps) {
                     <FormLabel>Descrição</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Ex: 1 prato de arroz integral com frango grelhado e salada"
+                        placeholder="Ex: 2 colheres de sopa de arroz e uma colher de sopa de feijão"
                         {...field}
                       />
                     </FormControl>
@@ -281,6 +325,24 @@ export default function AddMealDialog({}: AddMealDialogProps) {
                   </FormItem>
                 )}
               />
+
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={analyzeText}
+                  disabled={isAnalyzingText || !form.watch("description")?.trim()}
+                  className="gap-2"
+                >
+                  {isAnalyzingText ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  {isAnalyzingText ? "Analisando..." : "Estimar com IA"}
+                </Button>
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <FormField

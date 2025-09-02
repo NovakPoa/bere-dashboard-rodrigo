@@ -14,16 +14,82 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64 } = await req.json();
+    const { imageBase64, textDescription } = await req.json();
 
-    if (!imageBase64) {
+    if (!imageBase64 && !textDescription) {
       return new Response(
-        JSON.stringify({ error: 'Imagem é obrigatória' }),
+        JSON.stringify({ error: 'Imagem ou descrição de texto é obrigatória' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Analisando imagem com OpenAI...');
+    console.log('Analisando com OpenAI...', imageBase64 ? 'imagem' : 'texto');
+
+    let messages;
+    
+    if (imageBase64) {
+      // Análise de imagem
+      messages = [
+        {
+          role: 'system',
+          content: `Você é um nutricionista especializado em análise de alimentos. Analise a imagem e retorne APENAS um JSON válido com as seguintes informações:
+          {
+            "description": "descrição detalhada dos alimentos identificados",
+            "mealType": "café da manhã" | "almoço" | "lanche" | "jantar",
+            "calories": número_estimado_de_calorias,
+            "protein": gramas_de_proteína,
+            "carbs": gramas_de_carboidratos,
+            "fat": gramas_de_gordura
+          }
+          
+          Seja preciso nas estimativas baseado no tamanho das porções visíveis. Se não conseguir identificar claramente, use estimativas conservadoras.`
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: 'Analise esta imagem de comida e forneça as informações nutricionais:'
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: imageBase64
+              }
+            }
+          ]
+        }
+      ];
+    } else {
+      // Análise de texto
+      messages = [
+        {
+          role: 'system',
+          content: `Você é um nutricionista especializado em análise de alimentos. Analise a descrição textual dos alimentos e retorne APENAS um JSON válido com as seguintes informações:
+          {
+            "description": "descrição clara dos alimentos e quantidades",
+            "mealType": "café da manhã" | "almoço" | "lanche" | "jantar",
+            "calories": número_estimado_de_calorias,
+            "protein": gramas_de_proteína,
+            "carbs": gramas_de_carboidratos,
+            "fat": gramas_de_gordura
+          }
+          
+          Interpretar corretamente quantidades brasileiras como:
+          - Colheres de sopa/chá/café
+          - Xícaras de chá/café
+          - Pratos fundos/rasos
+          - Fatias, unidades, porções
+          - Copos (200ml)
+          
+          Baseie-se em alimentos brasileiros típicos e suas porções padrão. Use estimativas conservadoras quando houver dúvidas.`
+        },
+        {
+          role: 'user',
+          content: `Analise esta descrição de alimentos e forneça as informações nutricionais: "${textDescription}"`
+        }
+      ];
+    }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -33,37 +99,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: `Você é um nutricionista especializado em análise de alimentos. Analise a imagem e retorne APENAS um JSON válido com as seguintes informações:
-            {
-              "description": "descrição detalhada dos alimentos identificados",
-              "mealType": "café da manhã" | "almoço" | "lanche" | "jantar",
-              "calories": número_estimado_de_calorias,
-              "protein": gramas_de_proteína,
-              "carbs": gramas_de_carboidratos,
-              "fat": gramas_de_gordura
-            }
-            
-            Seja preciso nas estimativas baseado no tamanho das porções visíveis. Se não conseguir identificar claramente, use estimativas conservadoras.`
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'Analise esta imagem de comida e forneça as informações nutricionais:'
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: imageBase64
-                }
-              }
-            ]
-          }
-        ],
+        messages,
         max_tokens: 500,
         temperature: 0.1
       }),
