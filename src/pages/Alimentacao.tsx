@@ -107,33 +107,6 @@ export default function Alimentacao() {
     addFoodEntry.mutate(entry);
   };
 
-  const periods = [
-    { label: "Últimos 7 dias", days: 7 },
-    { label: "Últimos 15 dias", days: 15 },
-    { label: "Último mês", days: 30 },
-    { label: "Últimos 3 meses", days: 90 },
-  ];
-
-  const handlePeriodChange = (days: number, label: string) => {
-    const currentPeriod = startDate && endDate ? 
-      Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1 : 7;
-    
-    if (currentPeriod === days) {
-      // Deselect if same period
-      setStartDate(subDays(new Date(), 6));
-      setEndDate(new Date());
-    } else {
-      setStartDate(subDays(new Date(), days - 1));
-      setEndDate(new Date());
-    }
-  };
-
-  const getCurrentPeriodLabel = () => {
-    if (!startDate || !endDate) return "Últimos 7 dias";
-    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    const period = periods.find(p => p.days === days);
-    return period?.label || "Período personalizado";
-  };
 
   // Campos editáveis tipados
   const editorFields = [
@@ -155,31 +128,12 @@ export default function Alimentacao() {
 
       <main className="space-y-6 md:space-y-8">
         <section aria-labelledby="filters" className="flex justify-end">
-          <div className="flex flex-wrap gap-2">
-            {periods.map((period) => (
-              <Button
-                key={period.days}
-                variant="outline"
-                size="sm"
-                onClick={() => handlePeriodChange(period.days, period.label)}
-                className={cn(
-                  startDate && endDate &&
-                  Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1 === period.days &&
-                  "bg-primary text-primary-foreground"
-                )}
-              >
-                {period.label}
-              </Button>
-            ))}
-            <div className="min-w-0">
-              <DateRangePicker
-                startDate={startDate}
-                endDate={endDate}
-                onStartDateChange={setStartDate}
-                onEndDateChange={setEndDate}
-              />
-            </div>
-          </div>
+          <DateRangePicker
+            startDate={startDate}
+            endDate={endDate}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+          />
         </section>
 
       <NutritionCharts entries={entries} dateRange={startDate && endDate ? { from: startDate, to: endDate } : undefined} />
