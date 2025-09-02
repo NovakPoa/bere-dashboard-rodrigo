@@ -119,8 +119,30 @@ serve(async (req) => {
     
     console.log('Resposta da OpenAI:', aiResponse);
 
+    // Função para limpar markdown da resposta
+    const cleanJsonResponse = (response: string): string => {
+      // Remove markdown code blocks se presentes
+      let cleaned = response.trim();
+      
+      // Remove ```json e ``` no início e fim
+      if (cleaned.startsWith('```json')) {
+        cleaned = cleaned.replace(/^```json\s*/, '');
+      }
+      if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```\s*/, '');
+      }
+      if (cleaned.endsWith('```')) {
+        cleaned = cleaned.replace(/\s*```$/, '');
+      }
+      
+      return cleaned.trim();
+    };
+
     try {
-      const nutritionData = JSON.parse(aiResponse);
+      const cleanedResponse = cleanJsonResponse(aiResponse);
+      console.log('Resposta limpa para parsing:', cleanedResponse);
+      
+      const nutritionData = JSON.parse(cleanedResponse);
       
       // Validar se tem as propriedades necessárias
       if (!nutritionData.description || typeof nutritionData.calories !== 'number') {
@@ -132,8 +154,9 @@ serve(async (req) => {
       });
     } catch (parseError) {
       console.error('Erro ao parsear resposta da IA:', parseError);
+      console.error('Resposta original:', aiResponse);
       return new Response(
-        JSON.stringify({ error: 'Não foi possível analisar a imagem. Tente novamente.' }),
+        JSON.stringify({ error: 'Não foi possível analisar a descrição. Verifique o texto e tente novamente.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
