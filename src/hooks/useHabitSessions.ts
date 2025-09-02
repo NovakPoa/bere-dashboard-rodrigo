@@ -60,6 +60,8 @@ export function useHabitSessionForDate(habitId: string, date: Date) {
         .select("*")
         .eq("habit_id", habitId)
         .eq("date", dateStr)
+        .order("updated_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (error) throw error;
@@ -99,17 +101,8 @@ export function useUpdateHabitSession(silent = false) {
 
       const dateStr = format(date, "yyyy-MM-dd");
 
-      if (sessionsCompleted === 0 && timeSpentMinutes === 0) {
-        // Delete the session if both values are 0
-        const { error } = await supabase
-          .from("habit_sessions")
-          .delete()
-          .eq("habit_id", habitId)
-          .eq("date", dateStr);
-
-        if (error) throw error;
-        return null;
-      }
+      // Always upsert the session, even when values are zero
+      // This avoids delete/recreate loops and keeps a stable record.
 
       const { data, error } = await supabase
         .from("habit_sessions")
@@ -151,15 +144,13 @@ export function useUpdateHabitSession(silent = false) {
       const previousSingle = queryClient.getQueryData<HabitSession | null>(["habit-session", habitId, dateStr]);
       const previousLists = queryClient.getQueriesData<HabitSession[]>({ queryKey: ["habit-sessions", habitId] });
 
-      const optimistic: HabitSession | null = (sessionsCompleted === 0 && timeSpentMinutes === 0)
-        ? null
-        : {
-            id: previousSingle?.id ?? `optimistic-${habitId}-${dateStr}`,
-            habitId,
-            date: dateStr,
-            sessionsCompleted,
-            timeSpentMinutes,
-          };
+      const optimistic: HabitSession = {
+        id: previousSingle?.id ?? `optimistic-${habitId}-${dateStr}`,
+        habitId,
+        date: dateStr,
+        sessionsCompleted,
+        timeSpentMinutes,
+      };
 
       // Set single-day cache
       queryClient.setQueryData(["habit-session", habitId, dateStr], optimistic);
@@ -168,12 +159,8 @@ export function useUpdateHabitSession(silent = false) {
       queryClient.setQueriesData({ queryKey: ["habit-sessions", habitId] }, (old: HabitSession[] | undefined) => {
         const list = old ? [...old] : [];
         const idx = list.findIndex((s) => s.habitId === habitId && s.date === dateStr);
-        if (optimistic === null) {
-          if (idx !== -1) list.splice(idx, 1);
-        } else {
-          if (idx !== -1) list[idx] = optimistic;
-          else list.unshift(optimistic);
-        }
+        if (idx !== -1) list[idx] = optimistic;
+        else list.unshift(optimistic);
         return list;
       });
 
@@ -231,9 +218,11 @@ export function useUpdateHabitSession(silent = false) {
     onSettled: (_data, _error, variables) => {
       const { habitId, date } = variables as { habitId: string; date: Date };
       const dateStr = format(date, "yyyy-MM-dd");
-      // Soft revalidation of affected queries only
-      queryClient.invalidateQueries({ queryKey: ["habit-session", habitId, dateStr] });
-      queryClient.invalidateQueries({ queryKey: ["habit-sessions", habitId] });
+      if (!silent) {
+        // Soft revalidation of affected queries only when not in silent mode
+        queryClient.invalidateQueries({ queryKey: ["habit-session", habitId, dateStr] });
+        queryClient.invalidateQueries({ queryKey: ["habit-sessions", habitId] });
+      }
     },
   });
 }

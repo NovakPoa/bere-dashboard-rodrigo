@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -31,7 +31,7 @@ export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onCl
   const [initialSessions, setInitialSessions] = useState(session?.sessionsCompleted || 0);
   const [initialTimeSpent, setInitialTimeSpent] = useState(session?.timeSpentMinutes || 0);
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
-
+  const saveTokenRef = useRef(0);
   // Debounced autosave function
   const autosave = useCallback(
     (() => {
@@ -39,6 +39,7 @@ export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onCl
       return (newSessions: number, newTimeSpent: number) => {
         clearTimeout(timeoutId);
         setHasPendingChanges(true);
+        const tokenAtSchedule = saveTokenRef.current;
         timeoutId = setTimeout(() => {
           updateSession.mutate({
             habitId: habit.id,
@@ -47,12 +48,16 @@ export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onCl
             timeSpentMinutes: newTimeSpent,
           }, {
             onSuccess: () => {
-              setInitialSessions(newSessions);
-              setInitialTimeSpent(newTimeSpent);
-              setHasPendingChanges(false);
+              if (tokenAtSchedule === saveTokenRef.current) {
+                setInitialSessions(newSessions);
+                setInitialTimeSpent(newTimeSpent);
+                setHasPendingChanges(false);
+              }
             },
             onError: () => {
-              setHasPendingChanges(false);
+              if (tokenAtSchedule === saveTokenRef.current) {
+                setHasPendingChanges(false);
+              }
             }
           });
         }, 600);
@@ -116,7 +121,7 @@ export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onCl
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => { setHasPendingChanges(true); setSessions(Math.max(0, sessions - 1)); }}
+                onClick={() => { saveTokenRef.current += 1; setHasPendingChanges(true); setSessions(Math.max(0, sessions - 1)); }}
                 className="h-7 w-7 p-0"
               >
                 <Minus className="h-3 w-3" />
@@ -127,7 +132,7 @@ export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onCl
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => { setHasPendingChanges(true); setSessions(sessions + 1); }}
+                onClick={() => { saveTokenRef.current += 1; setHasPendingChanges(true); setSessions(sessions + 1); }}
                 className="h-7 w-7 p-0"
               >
                 <Plus className="h-3 w-3" />
@@ -144,7 +149,7 @@ export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onCl
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => { setHasPendingChanges(true); setTimeSpent(Math.max(0, timeSpent - 5)); }}
+                onClick={() => { saveTokenRef.current += 1; setHasPendingChanges(true); setTimeSpent(Math.max(0, timeSpent - 5)); }}
                 className="h-7 w-7 p-0"
               >
                 <Minus className="h-3 w-3" />
@@ -155,7 +160,7 @@ export const HabitCard = forwardRef<HabitCardRef, HabitCardProps>(({ habit, onCl
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => { setHasPendingChanges(true); setTimeSpent(timeSpent + 5); }}
+                onClick={() => { saveTokenRef.current += 1; setHasPendingChanges(true); setTimeSpent(timeSpent + 5); }}
                 className="h-7 w-7 p-0"
               >
                 <Plus className="h-3 w-3" />
