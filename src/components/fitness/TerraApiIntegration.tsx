@@ -63,14 +63,10 @@ export default function TerraApiIntegration() {
     setIsConnecting(true);
     try {
       console.log('🔗 Iniciando conexão Terra API...');
-      
-      // Ensure we pass an access token for the Edge Function to identify the user
-      const { data: sessionData } = await supabase.auth.getSession();
-      const access_token = sessionData.session?.access_token;
 
-      // Call Terra API integration endpoint with origin and access token
+      // Chama a Edge Function com a origem atual (para redirecionos corretos)
       const { data, error } = await supabase.functions.invoke("terra-connect", {
-        body: { origin: window.location.origin, access_token },
+        body: { origin: window.location.origin },
       });
 
       console.log('📡 Terra connect response:', { data, error });
@@ -78,6 +74,12 @@ export default function TerraApiIntegration() {
       if (error) {
         toast.error(error.message || "Erro ao conectar com Terra API");
         console.error("Terra connect error:", error);
+        return;
+      }
+
+      if (data?.message === 'Already connected') {
+        toast.success('Você já está conectado ao Garmin.');
+        await refetch();
         return;
       }
 
@@ -94,9 +96,21 @@ export default function TerraApiIntegration() {
       }
 
       if (data?.auth_url) {
-        console.log('✅ URL de autorização recebida, redirecionando...');
-        toast.success("Redirecionando para autorizar a conexão");
-        window.location.href = data.auth_url;
+        console.log('✅ URL de autorização recebida, abrindo...');
+        toast.success("Abrindo página de autorização do Garmin");
+        const opened = window.open(data.auth_url, '_blank', 'noopener,noreferrer');
+        if (!opened) {
+          // Popup bloqueado: força navegação no topo (fora do iframe)
+          if (window.top) {
+            try {
+              window.top.location.assign(data.auth_url);
+            } catch {
+              window.location.assign(data.auth_url);
+            }
+          } else {
+            window.location.assign(data.auth_url);
+          }
+        }
       } else {
         toast.error("Não foi possível obter a URL de autorização");
         console.error("Terra connect: missing auth_url", data);

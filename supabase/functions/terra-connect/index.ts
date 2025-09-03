@@ -115,7 +115,11 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           reference_id: user.id,
-          lang: 'en'
+          lang: 'pt',
+          resource: 'GARMIN',
+          auth_success_redirect_url: successUrl,
+          auth_failure_redirect_url: errorUrl,
+          webhook_url: webhookUrl
         }),
       });
 
