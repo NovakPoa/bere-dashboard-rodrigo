@@ -181,27 +181,6 @@ export default function Atividades() {
           <StatCard title="Calorias/dia" value={`${avgCalories.toLocaleString()}`} />
         </section>
 
-        <section aria-labelledby="summary">
-          <h2 id="summary" className="sr-only">Resumo do período</h2>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">Resumo (período)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="text-sm text-muted-foreground grid gap-1">
-                <li>Calorias (estimadas): {totalCal.toLocaleString()} kcal</li>
-                {Object.entries(totals).map(([m, t]) => (
-                  <li key={m} className="capitalize">
-                    {m}: {t.distanciaKm ? `${t.distanciaKm.toFixed(1)} km - ` : ""}{formatHm(t.minutos)}
-                  </li>
-                ))}
-                {Object.keys(totals).length === 0 && (
-                  <li>Nenhuma atividade no período.</li>
-                )}
-              </ul>
-            </CardContent>
-          </Card>
-        </section>
 
         <section aria-labelledby="chart">
           <h2 id="chart" className="sr-only">Desempenho por modalidade e dia</h2>
