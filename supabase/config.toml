@@ -2,3 +2,6 @@ project_id = "zvbgczsrtdqkhijpwqdl"
 
 [functions.terra-webhook]
 verify_jwt = false
+
+[functions.terra-connect]
+verify_jwt = false

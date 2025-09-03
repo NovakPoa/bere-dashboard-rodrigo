@@ -16,11 +16,31 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get authenticated user
-    const authHeader = req.headers.get('Authorization')!;
-    const { data: { user }, error: userError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
+    // Parse body once for origin and optional access token
+    let parsedBody: any = null;
+    try {
+      parsedBody = await req.json();
+    } catch (_) {
+      // Not a JSON request or empty body
+      parsedBody = null;
+    }
+
+    // Resolve access token from Authorization header or body
+    const authHeader = req.headers.get('Authorization') || '';
+    const headerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    const bodyToken = parsedBody?.access_token || '';
+    const accessToken = headerToken || bodyToken;
+
+    if (!accessToken) {
+      console.error('Missing access token: no Authorization header and no access_token in body');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: missing access token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get authenticated user from provided token
+    const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
 
     if (userError || !user) {
       console.error('Auth error:', userError);
@@ -63,15 +83,9 @@ Deno.serve(async (req) => {
     }
 
     // Generate auth URLs for success and failure
-    let defaultBaseUrl = 'https://dbc39bac-7c1b-429f-b0a3-79d695bcd6c5.sandbox.lovable.dev';
-    let bodyOrigin: string | undefined;
-    try {
-      const body = await req.json();
-      if (body?.origin) bodyOrigin = body.origin;
-    } catch (_) {
-      // no JSON body provided
-    }
+    const defaultBaseUrl = 'https://dbc39bac-7c1b-429f-b0a3-79d695bcd6c5.sandbox.lovable.dev';
     const headerOrigin = req.headers.get('origin') || undefined;
+    const bodyOrigin: string | undefined = parsedBody?.origin;
     const baseUrl = bodyOrigin || headerOrigin || defaultBaseUrl;
     const successUrl = `${baseUrl}/atividades?terra_connected=true`;
     const errorUrl = `${baseUrl}/atividades?terra_error=true`;

@@ -45,9 +45,13 @@ export default function TerraApiIntegration() {
     try {
       console.log('🔗 Iniciando conexão Terra API...');
       
-      // Call Terra API integration endpoint
+      // Ensure we pass an access token for the Edge Function to identify the user
+      const { data: sessionData } = await supabase.auth.getSession();
+      const access_token = sessionData.session?.access_token;
+
+      // Call Terra API integration endpoint with origin and access token
       const { data, error } = await supabase.functions.invoke("terra-connect", {
-        body: { origin: window.location.origin },
+        body: { origin: window.location.origin, access_token },
       });
 
       console.log('📡 Terra connect response:', { data, error });
