@@ -63,7 +63,14 @@ Deno.serve(async (req) => {
     }
 
     // Generate auth URLs for success and failure
-    const baseUrl = req.headers.get('origin') || 'https://dbc39bac-7c1b-429f-b0a3-79d695bcd6c5.sandbox.lovable.dev';
+    let baseUrl = 'https://dbc39bac-7c1b-429f-b0a3-79d695bcd6c5.sandbox.lovable.dev';
+    try {
+      const body = await req.json();
+      if (body?.origin) baseUrl = body.origin;
+    } catch (_) {
+      // no JSON body provided
+    }
+    baseUrl = req.headers.get('origin') || baseUrl;
     const successUrl = `${baseUrl}/atividades?terra_connected=true`;
     const errorUrl = `${baseUrl}/atividades?terra_error=true`;
 
@@ -85,9 +92,10 @@ Deno.serve(async (req) => {
       });
 
       if (!terraResponse.ok) {
-        console.error('Terra API error:', await terraResponse.text());
+        const errorText = await terraResponse.text();
+        console.error('Terra API error:', terraResponse.status, errorText);
         return new Response(
-          JSON.stringify({ error: 'Failed to generate Terra auth URL' }),
+          JSON.stringify({ error: 'Failed to generate Terra auth URL', details: errorText, status: terraResponse.status }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }

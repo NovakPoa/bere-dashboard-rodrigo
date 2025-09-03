@@ -45,7 +45,7 @@ export default function TerraApiIntegration() {
     try {
       // Call Terra API integration endpoint
       const { data, error } = await supabase.functions.invoke("terra-connect", {
-        body: {},
+        body: { origin: window.location.origin },
       });
 
       if (error) {
@@ -54,10 +54,19 @@ export default function TerraApiIntegration() {
         return;
       }
 
+      if (data?.error) {
+        toast.error(data.error);
+        console.error("Terra connect response error:", data);
+        return;
+      }
+
       if (data?.auth_url) {
-        // Open Terra auth URL
-        window.open(data.auth_url, "_blank");
-        toast.success("Abra a nova aba para autorizar a conexão");
+        // Abrir na mesma aba para evitar bloqueio de pop-up
+        window.location.href = data.auth_url;
+        toast.success("Redirecionando para autorizar a conexão");
+      } else {
+        toast.error("Não foi possível obter a URL de autorização");
+        console.error("Terra connect: missing auth_url", data);
       }
     } catch (error) {
       toast.error("Erro ao iniciar conexão");
