@@ -75,9 +75,18 @@ Deno.serve(async (req) => {
     const terraDevId = Deno.env.get('TERRA_DEV_ID');
     const terraApiKey = Deno.env.get('TERRA_API_KEY');
     
+    console.log('🔑 Terra credentials check:', {
+      terraDevId: terraDevId ? '***configured***' : 'missing',
+      terraApiKey: terraApiKey ? '***configured***' : 'missing'
+    });
+    
     if (!terraDevId || !terraApiKey) {
+      console.error('❌ Terra credentials missing:', { terraDevId: !!terraDevId, terraApiKey: !!terraApiKey });
       return new Response(
-        JSON.stringify({ error: 'Terra credentials not configured' }),
+        JSON.stringify({ 
+          error: 'Terra credentials not configured',
+          details: `Missing: ${!terraDevId ? 'TERRA_DEV_ID ' : ''}${!terraApiKey ? 'TERRA_API_KEY' : ''}`.trim()
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -115,7 +124,7 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           reference_id: user.id,
-          lang: 'pt',
+          language: 'pt',
           resource: 'GARMIN',
           auth_success_redirect_url: successUrl,
           auth_failure_redirect_url: errorUrl,
@@ -130,9 +139,18 @@ Deno.serve(async (req) => {
         } catch (_) {
           details = await terraResponse.text();
         }
-        console.error('Terra API error:', terraResponse.status, details);
+        console.error('❌ Terra API error:', {
+          status: terraResponse.status,
+          statusText: terraResponse.statusText,
+          details,
+          headers: Object.fromEntries(terraResponse.headers.entries())
+        });
         return new Response(
-          JSON.stringify({ error: 'Failed to generate Terra auth URL', details, status: terraResponse.status }),
+          JSON.stringify({ 
+            error: 'Failed to generate Terra auth URL', 
+            details: details,
+            status: terraResponse.status 
+          }),
           { status: terraResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -140,7 +158,11 @@ Deno.serve(async (req) => {
       const terraData = await terraResponse.json();
       const authUrl = terraData.url;
 
-      console.log('Generated Terra auth URL for user:', user.id);
+      console.log('✅ Terra API success:', {
+        user_id: user.id,
+        has_auth_url: !!authUrl,
+        response_keys: Object.keys(terraData)
+      });
 
       return new Response(
         JSON.stringify({ 

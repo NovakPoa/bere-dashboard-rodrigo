@@ -64,16 +64,22 @@ export default function TerraApiIntegration() {
     try {
       console.log('🔗 Iniciando conexão Terra API...');
 
+      // Pega o token de acesso para autenticação na Edge Function
+      const { data: sessionData } = await supabase.auth.getSession();
+      const access_token = sessionData.session?.access_token;
+
       // Chama a Edge Function com a origem atual (para redirecionos corretos)
       const { data, error } = await supabase.functions.invoke("terra-connect", {
-        body: { origin: window.location.origin },
+        body: { origin: window.location.origin, access_token },
       });
 
       console.log('📡 Terra connect response:', { data, error });
 
       if (error) {
-        toast.error(error.message || "Erro ao conectar com Terra API");
-        console.error("Terra connect error:", error);
+        const errorMessage = data?.error || error.message || "Erro ao conectar com Terra API";
+        const errorDetails = data?.details ? ` (${data.details})` : '';
+        toast.error(errorMessage + errorDetails);
+        console.error("Terra connect error:", { error, data });
         return;
       }
 
