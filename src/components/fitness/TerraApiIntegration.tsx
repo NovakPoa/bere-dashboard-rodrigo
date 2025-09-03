@@ -90,6 +90,69 @@ export default function TerraApiIntegration() {
     }
   };
 
+  const handleTestDirectCall = async () => {
+    setIsConnecting(true);
+    try {
+      console.log('🧪 TESTE: Chamando Terra API diretamente...');
+      
+      const payload = {
+        reference_id: "test-username",
+        lang: "en"
+      };
+
+      console.log('📤 TESTE: Payload:', payload);
+      console.log('📤 TESTE: Headers:', {
+        'dev-id': 'berecompax-prod-s13Jz5nijU',
+        'x-api-key': 'k3AnfLrSq3VxvjoFbz9mcaztfqsOFNEQ'
+      });
+
+      const response = await fetch('https://api.tryterra.co/v2/auth/generateWidgetSession', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'dev-id': 'berecompax-prod-s13Jz5nijU',
+          'x-api-key': 'k3AnfLrSq3VxvjoFbz9mcaztfqsOFNEQ'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      console.log('📥 TESTE: Status:', response.status);
+      console.log('📥 TESTE: Headers:', Object.fromEntries(response.headers.entries()));
+
+      const responseText = await response.text();
+      console.log('📥 TESTE: Response body (raw):', responseText);
+
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+        console.log('📥 TESTE: Response body (parsed):', responseData);
+      } catch (parseError) {
+        console.error('❌ TESTE: Erro ao fazer parse da resposta:', parseError);
+        toast.error(`TESTE: Resposta inválida (status ${response.status}): ${responseText.substring(0, 100)}`);
+        return;
+      }
+
+      if (response.ok) {
+        console.log('✅ TESTE: Sucesso! Resposta:', responseData);
+        toast.success(`TESTE: Sucesso! Status ${response.status}. Verifique o console para detalhes.`);
+        
+        if (responseData.url) {
+          console.log('🔗 TESTE: URL de autorização:', responseData.url);
+          toast.success("TESTE: URL de autorização recebida! Verifique o console.");
+        }
+      } else {
+        console.error('❌ TESTE: Erro HTTP', response.status, responseData);
+        toast.error(`TESTE: Erro ${response.status}: ${JSON.stringify(responseData)}`);
+      }
+    } catch (error) {
+      console.error('❌ TESTE: Erro de rede:', error);
+      toast.error(`TESTE: Erro de rede: ${error.message}`);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
   const handleDisconnect = async () => {
     try {
       if (!terraUser) return;
@@ -185,6 +248,20 @@ export default function TerraApiIntegration() {
                   Conectar Garmin
                   <ExternalLink className="h-4 w-4 ml-2" />
                 </>
+              )}
+            </Button>
+            
+            {/* Botão de teste temporário */}
+            <Button
+              onClick={handleTestDirectCall}
+              disabled={isConnecting}
+              variant="outline"
+              className="w-full border-orange-500 text-orange-500 hover:bg-orange-50"
+            >
+              {isConnecting ? (
+                "Testando..."
+              ) : (
+                "🧪 Testar Terra Diretamente"
               )}
             </Button>
           </div>
