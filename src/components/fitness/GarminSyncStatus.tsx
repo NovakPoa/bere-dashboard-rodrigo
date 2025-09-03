@@ -78,7 +78,7 @@ export default function GarminSyncStatus() {
       };
     }
 
-    if (terraUser.state === "AUTHENTICATED") {
+    if (terraUser.state === "AUTHENTICATED" || terraUser.state === "auth_success") {
       return {
         status: "connected",
         label: "Conectado",
