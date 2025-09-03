@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, HeartPulse, Utensils, Film, Calendar, CheckCheck, Wallet, Notebook, User } from "lucide-react";
+import { Home, HeartPulse, Utensils, Film, Calendar, CheckCheck, Wallet, Notebook, User, Watch } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -19,6 +19,7 @@ const items = [
   { title: "Hábitos", url: "/habitos", icon: CheckCheck },
   { title: "Financeiro", url: "/financeira", icon: Wallet },
   { title: "Atividade Física", url: "/atividades", icon: HeartPulse },
+  { title: "Garmin", url: "/garmin", icon: Watch },
   { title: "Alimentação", url: "/alimentacao", icon: Utensils },
   { title: "Cultura", url: "/cultura", icon: Film },
   { title: "Visão Geral", url: "/app", icon: Home },

@@ -49,6 +49,7 @@ import Habitos from "./pages/Habitos";
 import { HabitDetailsPage } from "./components/habits/HabitDetailsPage";
 import Organizacao from "./pages/Organizacao";
 import Profile from "./pages/Profile";
+import Garmin from "./pages/Garmin";
 
 import Auth from "./pages/Auth";
 
@@ -97,6 +98,7 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/habitos" element={<Habitos />} />
               <Route path="/habitos/:habitId" element={<HabitDetailsPage />} />
+              <Route path="/garmin" element={<Garmin />} />
             </Route>
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
