@@ -104,7 +104,8 @@ Deno.serve(async (req) => {
     });
 
     try {
-      // Call Terra API to generate widget session
+      // Call Terra API to generate widget session - using simplified payload
+      console.log('🌍 Calling Terra API with simplified payload for user:', user.id);
       const terraResponse = await fetch('https://api.tryterra.co/v2/auth/generateWidgetSession', {
         method: 'POST',
         headers: {
@@ -114,10 +115,7 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           reference_id: user.id,
-          language: 'en',
-          auth_success_redirect_url: successUrl,
-          auth_failure_redirect_url: errorUrl,
-          webhook_url: webhookUrl
+          lang: 'en'
         }),
       });
 
