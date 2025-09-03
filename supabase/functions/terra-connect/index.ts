@@ -51,24 +51,68 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate Terra API auth URL
-    // Note: In a real implementation, you would call Terra API to get the auth URL
-    // For now, we'll return a placeholder URL
-    const authUrl = `https://api.tryterra.co/v2/auth?resource=GARMIN&auth_success_redirect_url=${encodeURIComponent('https://your-app.com/terra-success')}&auth_failure_redirect_url=${encodeURIComponent('https://your-app.com/terra-error')}&user_id=${user.id}`;
+    // Get Terra API credentials
+    const terraApiKey = Deno.env.get('TERRA_API_KEY');
+    if (!terraApiKey) {
+      return new Response(
+        JSON.stringify({ error: 'Terra API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    console.log('Generated Terra auth URL for user:', user.id);
+    // Generate auth URLs for success and failure
+    const baseUrl = req.headers.get('origin') || 'https://dbc39bac-7c1b-429f-b0a3-79d695bcd6c5.sandbox.lovable.dev';
+    const successUrl = `${baseUrl}/atividades?terra_connected=true`;
+    const errorUrl = `${baseUrl}/atividades?terra_error=true`;
 
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        auth_url: authUrl,
-        user_id: user.id
-      }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    try {
+      // Call Terra API to generate auth URL
+      const terraResponse = await fetch('https://api.tryterra.co/v2/auth/generateAuthURL', {
+        method: 'POST',
+        headers: {
+          'dev-id': terraApiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          resource: 'GARMIN',
+          auth_success_redirect_url: successUrl,
+          auth_failure_redirect_url: errorUrl,
+          reference_id: user.id
+        }),
+      });
+
+      if (!terraResponse.ok) {
+        console.error('Terra API error:', await terraResponse.text());
+        return new Response(
+          JSON.stringify({ error: 'Failed to generate Terra auth URL' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
-    );
+
+      const terraData = await terraResponse.json();
+      const authUrl = terraData.auth_url;
+
+      console.log('Generated Terra auth URL for user:', user.id);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          auth_url: authUrl,
+          user_id: user.id
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+
+    } catch (error) {
+      console.error('Error calling Terra API:', error);
+      return new Response(
+        JSON.stringify({ error: 'Failed to connect to Terra API' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
   } catch (error) {
     console.error('Terra connect error:', error);
