@@ -11,6 +11,7 @@ import ActivitiesTable from "@/components/fitness/ActivitiesTable";
 import AddActivityForm from "@/components/fitness/AddActivityForm";
 import DateRangePicker from "@/components/finance/DateRangePicker";
 import { MultiSelect } from "@/components/ui/multi-select";
+import TerraApiIntegration from "@/components/fitness/TerraApiIntegration";
 import { FitnessEntry, groupTotalsByModality, totalCalories, fetchActivitiesFromSupabase } from "@/lib/fitness";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -154,23 +155,28 @@ export default function Atividades() {
       </header>
 
       <main className="container px-4 py-6 md:py-8 space-y-6 md:space-y-8">
-        <section aria-labelledby="filters" className="flex flex-col md:flex-row gap-4 md:justify-between md:items-center">
-          <div className="flex-1 max-w-sm">
-            <MultiSelect
-              options={availableModalities}
-              selected={selectedModalities}
-              onSelectionChange={setSelectedModalities}
-              placeholder="Todas as modalidades"
-              label="Modalidade"
-            />
+        <section aria-labelledby="filters" className="flex flex-col lg:flex-row gap-4 lg:justify-between lg:items-start">
+          <div className="flex flex-col md:flex-row gap-4 flex-1">
+            <div className="flex-1 max-w-sm">
+              <MultiSelect
+                options={availableModalities}
+                selected={selectedModalities}
+                onSelectionChange={setSelectedModalities}
+                placeholder="Todas as modalidades"
+                label="Modalidade"
+              />
+            </div>
+            <div className="w-full max-w-lg">
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+              />
+            </div>
           </div>
-          <div className="w-full max-w-lg">
-            <DateRangePicker
-              startDate={startDate}
-              endDate={endDate}
-              onStartDateChange={setStartDate}
-              onEndDateChange={setEndDate}
-            />
+          <div className="w-full lg:w-80">
+            <TerraApiIntegration />
           </div>
         </section>
         <section aria-labelledby="stats" className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
