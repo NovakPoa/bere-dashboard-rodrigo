@@ -49,19 +49,24 @@ export default function TerraApiIntegration() {
       });
 
       if (error) {
-        toast.error("Erro ao conectar com Terra API");
+        toast.error(error.message || "Erro ao conectar com Terra API");
         console.error("Terra connect error:", error);
         return;
       }
 
       if (data?.error) {
-        toast.error(data.error);
+        const status = data.status ? ` (status ${data.status})` : "";
+        const details = data.details
+          ? typeof data.details === "string"
+            ? ` - ${data.details}`
+            : ` - ${JSON.stringify(data.details)}`
+          : "";
+        toast.error(`Erro Terra: ${data.error}${status}${details}`);
         console.error("Terra connect response error:", data);
         return;
       }
 
       if (data?.auth_url) {
-        // Abrir na mesma aba para evitar bloqueio de pop-up
         window.location.href = data.auth_url;
         toast.success("Redirecionando para autorizar a conexão");
       } else {

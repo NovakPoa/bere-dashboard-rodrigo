@@ -63,14 +63,16 @@ Deno.serve(async (req) => {
     }
 
     // Generate auth URLs for success and failure
-    let baseUrl = 'https://dbc39bac-7c1b-429f-b0a3-79d695bcd6c5.sandbox.lovable.dev';
+    let defaultBaseUrl = 'https://dbc39bac-7c1b-429f-b0a3-79d695bcd6c5.sandbox.lovable.dev';
+    let bodyOrigin: string | undefined;
     try {
       const body = await req.json();
-      if (body?.origin) baseUrl = body.origin;
+      if (body?.origin) bodyOrigin = body.origin;
     } catch (_) {
       // no JSON body provided
     }
-    baseUrl = req.headers.get('origin') || baseUrl;
+    const headerOrigin = req.headers.get('origin') || undefined;
+    const baseUrl = bodyOrigin || headerOrigin || defaultBaseUrl;
     const successUrl = `${baseUrl}/atividades?terra_connected=true`;
     const errorUrl = `${baseUrl}/atividades?terra_error=true`;
 
@@ -85,19 +87,23 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           reference_id: user.id,
-          lang: 'en',
-          providers: 'GARMIN',
+          language: 'en',
           auth_success_redirect_url: successUrl,
           auth_failure_redirect_url: errorUrl
         }),
       });
 
       if (!terraResponse.ok) {
-        const errorText = await terraResponse.text();
-        console.error('Terra API error:', terraResponse.status, errorText);
+        let details: unknown;
+        try {
+          details = await terraResponse.json();
+        } catch (_) {
+          details = await terraResponse.text();
+        }
+        console.error('Terra API error:', terraResponse.status, details);
         return new Response(
-          JSON.stringify({ error: 'Failed to generate Terra auth URL', details: errorText, status: terraResponse.status }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'Failed to generate Terra auth URL', details, status: terraResponse.status }),
+          { status: terraResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
