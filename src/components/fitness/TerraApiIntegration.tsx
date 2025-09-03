@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Smartphone, ExternalLink, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 interface TerraUser {
@@ -18,6 +18,25 @@ interface TerraUser {
 
 export default function TerraApiIntegration() {
   const [isConnecting, setIsConnecting] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Handle Terra connection result from URL params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const terraConnected = urlParams.get('terra_connected');
+    const terraError = urlParams.get('terra_error');
+
+    if (terraConnected === 'true') {
+      toast.success('Garmin conectado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['terra-user'] });
+      // Clean URL
+      window.history.replaceState({}, '', '/atividades');
+    } else if (terraError === 'true') {
+      toast.error('Erro ao conectar com o Garmin. Tente novamente.');
+      // Clean URL
+      window.history.replaceState({}, '', '/atividades');
+    }
+  }, [queryClient]);
 
   // Check if user is already connected to Terra API
   const { data: terraUser, isLoading, refetch } = useQuery({
@@ -90,69 +109,6 @@ export default function TerraApiIntegration() {
     }
   };
 
-  const handleTestDirectCall = async () => {
-    setIsConnecting(true);
-    try {
-      console.log('🧪 TESTE: Chamando Terra API diretamente...');
-      
-      const payload = {
-        reference_id: "test-username",
-        lang: "en"
-      };
-
-      console.log('📤 TESTE: Payload:', payload);
-      console.log('📤 TESTE: Headers:', {
-        'dev-id': 'berecompax-prod-s13Jz5nijU',
-        'x-api-key': 'k3AnfLrSq3VxvjoFbz9mcaztfqsOFNEQ'
-      });
-
-      const response = await fetch('https://api.tryterra.co/v2/auth/generateWidgetSession', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'dev-id': 'berecompax-prod-s13Jz5nijU',
-          'x-api-key': 'k3AnfLrSq3VxvjoFbz9mcaztfqsOFNEQ'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      console.log('📥 TESTE: Status:', response.status);
-      console.log('📥 TESTE: Headers:', Object.fromEntries(response.headers.entries()));
-
-      const responseText = await response.text();
-      console.log('📥 TESTE: Response body (raw):', responseText);
-
-      let responseData: any;
-      try {
-        responseData = JSON.parse(responseText);
-        console.log('📥 TESTE: Response body (parsed):', responseData);
-      } catch (parseError) {
-        console.error('❌ TESTE: Erro ao fazer parse da resposta:', parseError);
-        toast.error(`TESTE: Resposta inválida (status ${response.status}): ${responseText.substring(0, 100)}`);
-        return;
-      }
-
-      if (response.ok) {
-        console.log('✅ TESTE: Sucesso! Resposta:', responseData);
-        if (responseData.url) {
-          console.log('🔗 TESTE: URL de autorização:', responseData.url);
-          toast.success("Abrindo o widget da Terra...");
-          window.location.href = responseData.url;
-          return;
-        }
-        toast.success(`TESTE: Sucesso! Status ${response.status}.`);
-      } else {
-        console.error('❌ TESTE: Erro HTTP', response.status, responseData);
-        toast.error(`TESTE: Erro ${response.status}: ${JSON.stringify(responseData)}`);
-      }
-    } catch (error: any) {
-      console.error('❌ TESTE: Erro de rede:', error);
-      toast.error(`TESTE: Erro de rede: ${error.message}`);
-    } finally {
-      setIsConnecting(false);
-    }
-  };
 
   const handleDisconnect = async () => {
     try {
@@ -249,20 +205,6 @@ export default function TerraApiIntegration() {
                   Conectar Garmin
                   <ExternalLink className="h-4 w-4 ml-2" />
                 </>
-              )}
-            </Button>
-            
-            {/* Botão de teste temporário */}
-            <Button
-              onClick={handleTestDirectCall}
-              disabled={isConnecting}
-              variant="outline"
-              className="w-full border-orange-500 text-orange-500 hover:bg-orange-50"
-            >
-              {isConnecting ? (
-                "Testando..."
-              ) : (
-                "🧪 Testar Terra Diretamente"
               )}
             </Button>
           </div>
