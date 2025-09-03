@@ -123,7 +123,7 @@ export default function TerraApiIntegration() {
       const responseText = await response.text();
       console.log('📥 TESTE: Response body (raw):', responseText);
 
-      let responseData;
+      let responseData: any;
       try {
         responseData = JSON.parse(responseText);
         console.log('📥 TESTE: Response body (parsed):', responseData);
@@ -135,17 +135,18 @@ export default function TerraApiIntegration() {
 
       if (response.ok) {
         console.log('✅ TESTE: Sucesso! Resposta:', responseData);
-        toast.success(`TESTE: Sucesso! Status ${response.status}. Verifique o console para detalhes.`);
-        
         if (responseData.url) {
           console.log('🔗 TESTE: URL de autorização:', responseData.url);
-          toast.success("TESTE: URL de autorização recebida! Verifique o console.");
+          toast.success("Abrindo o widget da Terra...");
+          window.location.href = responseData.url;
+          return;
         }
+        toast.success(`TESTE: Sucesso! Status ${response.status}.`);
       } else {
         console.error('❌ TESTE: Erro HTTP', response.status, responseData);
         toast.error(`TESTE: Erro ${response.status}: ${JSON.stringify(responseData)}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ TESTE: Erro de rede:', error);
       toast.error(`TESTE: Erro de rede: ${error.message}`);
     } finally {
