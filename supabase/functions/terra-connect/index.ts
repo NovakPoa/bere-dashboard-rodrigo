@@ -87,9 +87,7 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           reference_id: user.id,
-          language: 'en',
-          auth_success_redirect_url: successUrl,
-          auth_failure_redirect_url: errorUrl
+          language: 'en'
         }),
       });
 
