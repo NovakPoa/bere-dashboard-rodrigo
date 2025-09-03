@@ -75,8 +75,8 @@ Deno.serve(async (req) => {
     const errorUrl = `${baseUrl}/atividades?terra_error=true`;
 
     try {
-      // Call Terra API to generate auth URL
-      const terraResponse = await fetch('https://api.tryterra.co/v2/auth/generateAuthURL', {
+      // Call Terra API to generate widget session
+      const terraResponse = await fetch('https://api.tryterra.co/v2/auth/generateWidgetSession', {
         method: 'POST',
         headers: {
           'dev-id': terraDevId,
@@ -84,10 +84,11 @@ Deno.serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          resource: 'GARMIN',
+          reference_id: user.id,
+          lang: 'en',
+          providers: 'GARMIN',
           auth_success_redirect_url: successUrl,
-          auth_failure_redirect_url: errorUrl,
-          reference_id: user.id
+          auth_failure_redirect_url: errorUrl
         }),
       });
 
@@ -101,7 +102,7 @@ Deno.serve(async (req) => {
       }
 
       const terraData = await terraResponse.json();
-      const authUrl = terraData.auth_url;
+      const authUrl = terraData.url;
 
       console.log('Generated Terra auth URL for user:', user.id);
 
