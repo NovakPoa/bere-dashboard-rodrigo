@@ -76,6 +76,19 @@ Deno.serve(async (req) => {
     const successUrl = `${baseUrl}/atividades?terra_connected=true`;
     const errorUrl = `${baseUrl}/atividades?terra_error=true`;
 
+    // Generate webhook URL for Terra API callbacks
+    const webhookUrl = `${supabaseUrl}/functions/v1/terra-webhook`;
+
+    console.log('🔗 Terra API request details:', {
+      user_id: user.id,
+      baseUrl,
+      successUrl,
+      errorUrl,
+      webhookUrl,
+      terraDevId: terraDevId ? '***configured***' : 'missing',
+      terraApiKey: terraApiKey ? '***configured***' : 'missing'
+    });
+
     try {
       // Call Terra API to generate widget session
       const terraResponse = await fetch('https://api.tryterra.co/v2/auth/generateWidgetSession', {
@@ -87,7 +100,10 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           reference_id: user.id,
-          language: 'en'
+          language: 'en',
+          auth_success_redirect_url: successUrl,
+          auth_failure_redirect_url: errorUrl,
+          webhook_url: webhookUrl
         }),
       });
 
