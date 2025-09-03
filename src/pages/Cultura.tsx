@@ -30,6 +30,7 @@ export default function Cultura() {
     isOpen: boolean;
     list: "video-backlog" | "video-done" | "book-backlog" | "book-done";
     title: string;
+    author: string;
     subtype: "movie" | "series";
     genre: string;
     rating: number;
@@ -38,6 +39,7 @@ export default function Cultura() {
     isOpen: false,
     list: "video-backlog",
     title: "",
+    author: "",
     subtype: "movie",
     genre: "",
     rating: 0,
@@ -50,6 +52,7 @@ export default function Cultura() {
       isOpen: prev.isOpen && prev.list === list ? false : true,
       list,
       title: "",
+      author: "",
       subtype: "movie",
       genre: "",
       rating: 0,
@@ -65,13 +68,14 @@ export default function Cultura() {
       domain: domain as "videos" | "books",
       status: status as "done" | "backlog",
       title: newForm.title.trim(),
+      author: newForm.author?.trim() || undefined,
       subtype: domain === "videos" ? newForm.subtype : undefined,
       genre: newForm.genre?.trim() || undefined,
       rating: newForm.rating || undefined,
       year: newForm.year || undefined,
     };
     addItem.mutate(it);
-    setNewForm((prev) => ({ ...prev, isOpen: false, title: "", genre: "", rating: 0, year: 0 }));
+    setNewForm((prev) => ({ ...prev, isOpen: false, title: "", author: "", genre: "", rating: 0, year: 0 }));
   };
 
   const handleUpdateItem = (id: string, patch: Partial<Item>) => updateItem.mutate({ id, updates: patch });
@@ -140,6 +144,11 @@ export default function Cultura() {
         value={newForm.title} 
         onChange={(e) => setNewForm((prev) => ({ ...prev, title: e.target.value }))}
         autoFocus
+      />
+      <Input 
+        placeholder="Autor" 
+        value={newForm.author} 
+        onChange={(e) => setNewForm((prev) => ({ ...prev, author: e.target.value }))}
       />
       {list.startsWith("video") ? (
         <div className="grid gap-2 sm:grid-cols-3">

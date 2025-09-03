@@ -139,6 +139,7 @@ export type Database = {
       }
       cultura: {
         Row: {
+          autor: string | null
           data: string | null
           genero: string | null
           id: number
@@ -154,6 +155,7 @@ export type Database = {
           wa_id: string | null
         }
         Insert: {
+          autor?: string | null
           data?: string | null
           genero?: string | null
           id?: number
@@ -169,6 +171,7 @@ export type Database = {
           wa_id?: string | null
         }
         Update: {
+          autor?: string | null
           data?: string | null
           genero?: string | null
           id?: number

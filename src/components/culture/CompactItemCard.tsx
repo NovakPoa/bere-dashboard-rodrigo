@@ -16,6 +16,7 @@ export function CompactItemCard({ item, onUpdate, onRemove }: CompactItemCardPro
   const [isEditing, setIsEditing] = useState(false);
   const [editValues, setEditValues] = useState({
     title: item.title,
+    author: item.author || "",
     genre: item.genre || "",
     year: item.year || "",
     subtype: item.subtype || "movie"
@@ -24,6 +25,7 @@ export function CompactItemCard({ item, onUpdate, onRemove }: CompactItemCardPro
   const handleSave = () => {
     onUpdate(item.id, {
       title: editValues.title.trim(),
+      author: editValues.author.trim() || undefined,
       genre: editValues.genre.trim() || undefined,
       year: editValues.year ? parseInt(editValues.year.toString()) : undefined,
       subtype: item.domain === "videos" ? editValues.subtype : undefined
@@ -34,6 +36,7 @@ export function CompactItemCard({ item, onUpdate, onRemove }: CompactItemCardPro
   const handleCancel = () => {
     setEditValues({
       title: item.title,
+      author: item.author || "",
       genre: item.genre || "",
       year: item.year || "",
       subtype: item.subtype || "movie"
@@ -57,6 +60,14 @@ export function CompactItemCard({ item, onUpdate, onRemove }: CompactItemCardPro
           onChange={(e) => setEditValues(prev => ({ ...prev, title: e.target.value }))}
           className="w-full"
           placeholder="Título"
+        />
+        
+        {/* Author input - full width */}
+        <Input
+          value={editValues.author}
+          onChange={(e) => setEditValues(prev => ({ ...prev, author: e.target.value }))}
+          className="w-full"
+          placeholder="Autor"
         />
         
         {/* Other fields in responsive grid */}
@@ -119,6 +130,11 @@ export function CompactItemCard({ item, onUpdate, onRemove }: CompactItemCardPro
                 </span>
               )}
             </span>
+            {item.author && (
+              <span className="text-sm text-muted-foreground truncate block">
+                {item.author}
+              </span>
+            )}
           </div>
           
           {/* Action buttons - always visible on mobile */}

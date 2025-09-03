@@ -15,6 +15,7 @@ export interface Item {
   year?: number;
   subtype?: VideoSubtype;
   rating?: number;
+  author?: string;
 }
 
 interface CultureRecord {
@@ -28,6 +29,7 @@ interface CultureRecord {
   origem: string;
   user_id?: string;
   genero?: string;
+  autor?: string;
 }
 
 const convertToCultureItem = (record: CultureRecord): Item => {
@@ -93,6 +95,7 @@ const convertToCultureItem = (record: CultureRecord): Item => {
     rating: record.nota || undefined,
     year: record.data ? new Date(record.data).getFullYear() : undefined,
     genre: record.genero || undefined,
+    author: record.autor || undefined,
   };
 };
 
@@ -145,6 +148,7 @@ const convertFromCultureItem = (item: Omit<Item, "id">) => {
     data: item.year ? `${item.year}-01-01` : new Date().toISOString().split('T')[0],
     origem: "manual",
     genero: item.genre || null,
+    autor: item.author || null,
   };
 };
 
@@ -264,6 +268,9 @@ const convertPatchToRecord = (patch: Partial<Item>) => {
   }
   if (patch.genre !== undefined) {
     record.genero = patch.genre;
+  }
+  if (patch.author !== undefined) {
+    record.autor = patch.author;
   }
   
   return record;
