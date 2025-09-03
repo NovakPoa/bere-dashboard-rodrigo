@@ -110,6 +110,33 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_settings: {
+        Row: {
+          calendar_id: string
+          created_at: string
+          id: string
+          timezone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calendar_id: string
+          created_at?: string
+          id?: string
+          timezone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calendar_id?: string
+          created_at?: string
+          id?: string
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cultura: {
         Row: {
           data: string | null

@@ -6,31 +6,21 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Plus } from "lucide-react";
-
-const STORAGE_KEY = "calendar_settings_v2";
-
-type Settings = {
-  calendarId: string; // e.g., seu_email@gmail.com ou ID público
-  timezone: string;   // IANA tz
-};
-
-const loadSettings = (): Settings => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : { calendarId: "rodrigohcribeiro@gmail.com", timezone: "America/Sao_Paulo" };
-  } catch {
-    return { calendarId: "rodrigohcribeiro@gmail.com", timezone: "America/Sao_Paulo" };
-  }
-};
+import { useCalendarSettings } from "@/hooks/useCalendarSettings";
 
 export default function Calendario() {
-  const [settings, setSettings] = useState<Settings>(() => loadSettings());
-  const [draftId, setDraftId] = useState(settings.calendarId);
-  const [draftTz, setDraftTz] = useState(settings.timezone);
+  const { settings, loading, saveSettings, deleteSettings } = useCalendarSettings();
+  const [draftId, setDraftId] = useState("");
+  const [draftTz, setDraftTz] = useState("America/Sao_Paulo");
   const [showConnectionForm, setShowConnectionForm] = useState(false);
 
   useEffect(() => setPageSEO("Calendário", "Visualize seu Google Agenda"), []);
-  useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)), [settings]);
+  
+  // Update draft values when settings change
+  useEffect(() => {
+    setDraftId(settings.calendarId);
+    setDraftTz(settings.timezone);
+  }, [settings]);
 
   const embedUrl = useMemo(() => {
     if (!settings.calendarId) return "";
@@ -39,14 +29,18 @@ export default function Calendario() {
     return `https://calendar.google.com/calendar/embed?src=${src}&ctz=${tz}`;
   }, [settings]);
 
-  const handleSaveSettings = () => {
-    setSettings({ calendarId: draftId.trim(), timezone: draftTz });
-    setShowConnectionForm(false);
+  const handleSaveSettings = async () => {
+    const success = await saveSettings(draftId, draftTz);
+    if (success) {
+      setShowConnectionForm(false);
+    }
   };
 
-  const handleDisconnect = () => {
-    setSettings({ calendarId: "", timezone: settings.timezone });
-    setShowConnectionForm(false);
+  const handleDisconnect = async () => {
+    const success = await deleteSettings();
+    if (success) {
+      setShowConnectionForm(false);
+    }
   };
 
   return (
