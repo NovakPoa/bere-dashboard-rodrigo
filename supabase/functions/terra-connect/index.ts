@@ -52,10 +52,12 @@ Deno.serve(async (req) => {
     }
 
     // Get Terra API credentials
+    const terraDevId = Deno.env.get('TERRA_DEV_ID');
     const terraApiKey = Deno.env.get('TERRA_API_KEY');
-    if (!terraApiKey) {
+    
+    if (!terraDevId || !terraApiKey) {
       return new Response(
-        JSON.stringify({ error: 'Terra API key not configured' }),
+        JSON.stringify({ error: 'Terra credentials not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -70,7 +72,8 @@ Deno.serve(async (req) => {
       const terraResponse = await fetch('https://api.tryterra.co/v2/auth/generateAuthURL', {
         method: 'POST',
         headers: {
-          'dev-id': terraApiKey,
+          'dev-id': terraDevId,
+          'x-api-key': terraApiKey,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
