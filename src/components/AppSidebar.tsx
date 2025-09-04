@@ -17,7 +17,7 @@ const items = [
   { title: "Organização", url: "/organizacao", icon: Notebook },
   { title: "Calendário", url: "/calendario", icon: Calendar },
   { title: "Hábitos", url: "/habitos", icon: CheckCheck },
-  { title: "Financeiro", url: "/financeira", icon: Wallet },
+  { title: "Despesas", url: "/financeira", icon: Wallet },
   { title: "Atividade Física", url: "/atividades", icon: HeartPulse },
   { title: "Garmin", url: "/garmin", icon: Watch },
   { title: "Alimentação", url: "/alimentacao", icon: Utensils },

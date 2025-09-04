@@ -32,7 +32,7 @@ const Index = () => {
   };
 
   useEffect(() => {
-    document.title = "Financeiro";
+    document.title = "Despesas";
   }, []);
 
   const filteredByDate = useMemo(() => 
@@ -82,7 +82,7 @@ const Index = () => {
   return (
     <div className="min-h-screen w-full min-w-0 overflow-x-hidden">
       <header className="py-4 md:py-6 flex justify-between items-center">
-        <h1 className="text-2xl md:text-4xl font-semibold text-foreground">Financeiro</h1>
+        <h1 className="text-2xl md:text-4xl font-semibold text-foreground">Despesas</h1>
         <Drawer open={showExpenseForm} onOpenChange={setShowExpenseForm}>
           <DrawerTrigger asChild>
             <Button variant="outline" size="icon" className="shrink-0">
