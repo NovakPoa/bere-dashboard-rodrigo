@@ -138,21 +138,34 @@ async function handleDataWebhook(supabase: any, payload: TerraWebhookPayload) {
     // Store data payload for later processing by sync function
     if (payload.data && payload.data.length > 0) {
       for (const dataItem of payload.data) {
+        const payloadId =
+          dataItem?.payload_id ||
+          dataItem?.payloadId ||
+          dataItem?.id ||
+          dataItem?.uuid ||
+          dataItem?.metadata?.id ||
+          dataItem?.meta?.id ||
+          `${payload.type}_${Date.now()}_${Math.random()}`;
+
+        const user_id = payload.user?.user_id || dataItem?.user_id || dataItem?.userId || 'unknown';
+        const start_time = dataItem?.start_time || dataItem?.startDate || dataItem?.start || null;
+        const end_time = dataItem?.end_time || dataItem?.endDate || dataItem?.end || null;
+
         const { error } = await supabase
           .from('terra_data_payloads')
           .insert({
-            payload_id: `${payload.type}_${Date.now()}_${Math.random()}`,
-            user_id: payload.user?.user_id || 'unknown',
+            payload_id: payloadId,
+            user_id,
             data_type: payload.type,
-            start_time: dataItem.start_time || null,
-            end_time: dataItem.end_time || null,
+            start_time,
+            end_time,
             created_at: new Date().toISOString()
           });
 
         if (error) {
           console.error('❌ Error storing data payload:', error);
         } else {
-          console.log('✅ Stored data payload for processing');
+          console.log(`✅ Stored data payload ${payloadId} for processing`);
         }
       }
     }

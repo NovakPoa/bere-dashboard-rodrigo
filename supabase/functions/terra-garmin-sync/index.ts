@@ -79,16 +79,29 @@ serve(async (req) => {
         console.log(`👤 Mapeado Terra user ${payload.user_id} -> Supabase user ${supabaseUserId}`);
 
         // 2. Buscar dados detalhados da atividade na Terra API
-        const terraUrl = `https://api.tryterra.co/v2/activity/${payload.user_id}?payload_id=${payload.payload_id}`;
+        let terraUrl = `https://api.tryterra.co/v2/activity?user_id=${payload.user_id}&payload_id=${payload.payload_id}`;
         console.log(`🌍 Buscando dados da Terra API: ${terraUrl}`);
 
-        const terraResponse = await fetch(terraUrl, {
+        let terraResponse = await fetch(terraUrl, {
           headers: {
             'dev-id': terraDevId,
             'x-api-key': terraApiKey,
             'Accept': 'application/json'
           }
         });
+
+        // Se não encontrado por payload_id, tentar fallback por janela de tempo
+        if (!terraResponse.ok && payload.start_time && payload.end_time) {
+          const fallbackUrl = `https://api.tryterra.co/v2/activity?user_id=${payload.user_id}&start_date=${encodeURIComponent(payload.start_time)}&end_date=${encodeURIComponent(payload.end_time)}`;
+          console.warn(`⚠️ Payload não encontrado. Tentando fallback por janela de tempo: ${fallbackUrl}`);
+          terraResponse = await fetch(fallbackUrl, {
+            headers: {
+              'dev-id': terraDevId,
+              'x-api-key': terraApiKey,
+              'Accept': 'application/json'
+            }
+          });
+        }
 
         if (!terraResponse.ok) {
           const errorBody = await terraResponse.text();
@@ -146,21 +159,19 @@ serve(async (req) => {
           raw: terraData, // Guardar payload bruto para auditoria
         };
 
-        console.log('💾 Inserindo atividade Garmin:', garminActivity);
-
-        // 6. Inserir na tabela garmin_activities
-        const { error: insertError } = await supabase
+        // 6. Inserir/atualizar na tabela garmin_activities (idempotente)
+        const { error: upsertError } = await supabase
           .from('garmin_activities')
-          .insert(garminActivity);
+          .upsert(garminActivity, { onConflict: 'terra_payload_id', ignoreDuplicates: true });
 
-        if (insertError) {
-          console.error('❌ Erro ao inserir atividade:', insertError);
+        if (upsertError) {
+          console.error('❌ Erro ao inserir/atualizar atividade:', upsertError);
           processedCount.errors++;
         } else {
-          console.log(`✅ Atividade Garmin processada: ${garminActivity.activity_type} - ${garminActivity.duration_sec ? Math.round(garminActivity.duration_sec / 60) : 0}min`);
+          console.log(`✅ Atividade Garmin registrada: ${garminActivity.activity_type} - ${garminActivity.duration_sec ? Math.round(garminActivity.duration_sec / 60) : 0}min`);
           processedCount.success++;
           
-          // 7. Remover payload processado APENAS após inserção bem-sucedida
+          // 7. Remover payload processado (sempre que o upsert não falhar)
           const { error: deleteError } = await supabase
             .from('terra_data_payloads')
             .delete()
