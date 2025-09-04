@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Expense } from "@/types/expense";
 import { Income } from "@/types/income";
@@ -110,7 +110,7 @@ export default function FinancialPeriodChart({ expenses, incomes }: FinancialPer
       <CardContent className="h-80">
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
+            <ComposedChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="mes" 
@@ -127,21 +127,24 @@ export default function FinancialPeriodChart({ expenses, incomes }: FinancialPer
               <Bar 
                 dataKey="ganhos" 
                 stackId="stack"
-                fill="hsl(var(--success))" 
+                fill="hsl(var(--org-green))" 
                 name="Ganhos"
               />
               <Bar 
                 dataKey="despesas" 
                 stackId="stack"
-                fill="hsl(var(--destructive))" 
+                fill="hsl(var(--org-red))" 
                 name="Despesas"
               />
-              <Bar 
+              <Line 
+                type="monotone"
                 dataKey="saldo" 
-                fill="hsl(var(--muted-foreground))" 
+                stroke="hsl(var(--muted-foreground))" 
+                strokeWidth={3}
+                dot={{ fill: "hsl(var(--muted-foreground))", strokeWidth: 2, r: 5 }}
                 name="Saldo"
               />
-            </BarChart>
+            </ComposedChart>
           </ResponsiveContainer>
         ) : (
           <div className="flex items-center justify-center h-full">
