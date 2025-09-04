@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.terra-connect]
 verify_jwt = false
+
+[functions.terra-garmin-sync]
+verify_jwt = false
