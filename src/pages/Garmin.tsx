@@ -32,10 +32,9 @@ export default function Garmin() {
     queryFn: async () => {
       const activities = await fetchActivitiesFromSupabase(efFrom, efTo);
       return activities.filter(activity => 
-        // Verifica atividades com origem 'garmin' ou modalidades típicas do Terra/Garmin
-        activity.tipo?.includes('terra-') || 
-        activity.tipo?.includes('garmin-') ||
-        ['running', 'cycling', 'swimming'].includes(activity.tipo?.toLowerCase())
+        // Verifica atividades com origem 'garmin' 
+        activity.tipo?.includes('garmin') ||
+        ['corrida', 'ciclismo', 'natacao', 'musculacao', 'caminhada', 'yoga'].includes(activity.tipo?.toLowerCase())
       );
     },
   });
@@ -149,7 +148,13 @@ export default function Garmin() {
     const efTo = startOfDay(endDate ?? new Date());
     return differenceInCalendarDays(efTo, efFrom) + 1;
   })();
-  const avgCalories = useMemo(() => Math.round(totalCal / Math.max(daysCount, 1)), [totalCal, daysCount]);
+  
+  // Garantir que avgCalories seja sempre um número válido
+  const avgCalories = useMemo(() => {
+    const avg = totalCal / Math.max(daysCount, 1);
+    return isNaN(avg) || !isFinite(avg) ? 0 : Math.round(avg);
+  }, [totalCal, daysCount]);
+  
   const periodEntriesSorted = useMemo(() =>
     [...periodEntries].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()),
     [periodEntries]
@@ -227,10 +232,10 @@ export default function Garmin() {
           <>
             <section aria-labelledby="stats" className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               <h2 id="stats" className="sr-only">Métricas do Garmin</h2>
-              <StatCard title="Sessões/dia" value={Math.round(sessionsCount / Math.max(daysCount, 1)).toString()} />
+              <StatCard title="Sessões/dia" value={(sessionsCount / Math.max(daysCount, 1)).toFixed(0)} />
               <StatCard title="Tempo/dia" value={formatHm(Math.round(totalMinutes / Math.max(daysCount, 1)))} />
               <StatCard title="Distância/dia" value={`${(totalKm / Math.max(daysCount, 1)).toFixed(1)} km`} />
-              <StatCard title="Calorias/dia" value={`${avgCalories.toLocaleString()}`} />
+              <StatCard title="Calorias/dia" value={`${avgCalories}`} />
             </section>
 
             <section aria-labelledby="chart">
