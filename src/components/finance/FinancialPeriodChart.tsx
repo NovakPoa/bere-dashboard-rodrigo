@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Expense } from "@/types/expense";
 import { Income } from "@/types/income";
 import DateRangePicker from "./DateRangePicker";
 import { filterExpensesByDateRange } from "@/lib/finance";
 import { filterIncomesByDateRange } from "@/lib/income";
-import { format } from "date-fns";
+import { format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface FinancialPeriodChartProps {
@@ -15,7 +15,7 @@ interface FinancialPeriodChartProps {
 }
 
 interface ChartData {
-  date: string;
+  mes: string;
   despesas: number;
   ganhos: number;
   saldo: number;
@@ -23,9 +23,7 @@ interface ChartData {
 
 export default function FinancialPeriodChart({ expenses, incomes }: FinancialPeriodChartProps) {
   const [startDate, setStartDate] = useState<Date | undefined>(() => {
-    const date = new Date();
-    date.setDate(date.getDate() - 30);
-    return date;
+    return subMonths(new Date(), 12);
   });
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
 
@@ -40,30 +38,30 @@ export default function FinancialPeriodChart({ expenses, incomes }: FinancialPer
 
     // Adicionar despesas
     filteredExpenses.forEach((expense) => {
-      const dateKey = format(new Date(expense.date), "yyyy-MM-dd");
-      if (!dataMap[dateKey]) {
-        dataMap[dateKey] = {
-          date: format(new Date(expense.date), "dd/MM", { locale: ptBR }),
+      const monthKey = format(new Date(expense.date), "yyyy-MM");
+      if (!dataMap[monthKey]) {
+        dataMap[monthKey] = {
+          mes: format(new Date(expense.date), "MMM/yy", { locale: ptBR }),
           despesas: 0,
           ganhos: 0,
           saldo: 0
         };
       }
-      dataMap[dateKey].despesas += expense.amount;
+      dataMap[monthKey].despesas += expense.amount;
     });
 
     // Adicionar ganhos
     filteredIncomes.forEach((income) => {
-      const dateKey = format(new Date(income.date), "yyyy-MM-dd");
-      if (!dataMap[dateKey]) {
-        dataMap[dateKey] = {
-          date: format(new Date(income.date), "dd/MM", { locale: ptBR }),
+      const monthKey = format(new Date(income.date), "yyyy-MM");
+      if (!dataMap[monthKey]) {
+        dataMap[monthKey] = {
+          mes: format(new Date(income.date), "MMM/yy", { locale: ptBR }),
           despesas: 0,
           ganhos: 0,
           saldo: 0
         };
       }
-      dataMap[dateKey].ganhos += income.amount;
+      dataMap[monthKey].ganhos += income.amount;
     });
 
     // Calcular saldo e ordenar por data
@@ -112,10 +110,10 @@ export default function FinancialPeriodChart({ expenses, incomes }: FinancialPer
       <CardContent className="h-80">
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
+            <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
-                dataKey="date" 
+                dataKey="mes" 
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
               />
@@ -126,32 +124,24 @@ export default function FinancialPeriodChart({ expenses, incomes }: FinancialPer
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              <Line 
-                type="monotone" 
+              <Bar 
                 dataKey="ganhos" 
-                stroke="hsl(var(--success))" 
-                strokeWidth={2}
+                stackId="stack"
+                fill="hsl(var(--success))" 
                 name="Ganhos"
-                dot={{ fill: "hsl(var(--success))", strokeWidth: 2, r: 4 }}
               />
-              <Line 
-                type="monotone" 
+              <Bar 
                 dataKey="despesas" 
-                stroke="hsl(var(--destructive))" 
-                strokeWidth={2}
+                stackId="stack"
+                fill="hsl(var(--destructive))" 
                 name="Despesas"
-                dot={{ fill: "hsl(var(--destructive))", strokeWidth: 2, r: 4 }}
               />
-              <Line 
-                type="monotone" 
+              <Bar 
                 dataKey="saldo" 
-                stroke="hsl(var(--primary))" 
-                strokeWidth={2}
-                strokeDasharray="5 5"
+                fill="hsl(var(--muted-foreground))" 
                 name="Saldo"
-                dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
               />
-            </LineChart>
+            </BarChart>
           </ResponsiveContainer>
         ) : (
           <div className="flex items-center justify-center h-full">
