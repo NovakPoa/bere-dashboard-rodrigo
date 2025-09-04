@@ -1,9 +1,10 @@
-import { Investment, InvestmentType, Broker } from "@/types/investment";
+import { Investment, InvestmentType, Broker, Currency } from "@/types/investment";
 
-export const currency = (amount: number): string => {
-  return new Intl.NumberFormat("pt-BR", {
+export const currency = (amount: number, currencyType: Currency = "BRL"): string => {
+  const locale = currencyType === "USD" ? "en-US" : "pt-BR";
+  return new Intl.NumberFormat(locale, {
     style: "currency",
-    currency: "BRL",
+    currency: currencyType,
   }).format(amount);
 };
 
@@ -158,4 +159,9 @@ export const BROKER_LABELS: Record<Broker, string> = {
   modalmais: "Modal Mais",
   easynvest: "Easynvest",
   outros: "Outros",
+};
+
+export const CURRENCY_LABELS: Record<Currency, string> = {
+  BRL: "Real (R$)",
+  USD: "Dólar (US$)",
 };

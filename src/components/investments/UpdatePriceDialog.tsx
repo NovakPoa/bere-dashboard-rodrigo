@@ -45,9 +45,10 @@ export function UpdatePriceDialog({ investment, onUpdated, children }: UpdatePri
   const formatCurrency = (value: string) => {
     const numericValue = value.replace(/\D/g, "");
     const floatValue = parseFloat(numericValue) / 100;
-    return floatValue.toLocaleString("pt-BR", {
+    const locale = investment.moeda === "USD" ? "en-US" : "pt-BR";
+    return floatValue.toLocaleString(locale, {
       style: "currency",
-      currency: "BRL",
+      currency: investment.moeda,
     });
   };
 
@@ -69,7 +70,7 @@ export function UpdatePriceDialog({ investment, onUpdated, children }: UpdatePri
             <Label htmlFor="preco">Novo Preço</Label>
             <Input
               id="preco"
-              placeholder="R$ 0,00"
+              placeholder={investment.moeda === "USD" ? "US$ 0.00" : "R$ 0,00"}
               value={preco > 0 ? formatCurrency(preco.toString()) : ""}
               onChange={(e) => {
                 const value = e.target.value.replace(/\D/g, "");

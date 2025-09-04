@@ -1,3 +1,5 @@
+export type Currency = "BRL" | "USD";
+
 export type InvestmentType = 
   | "acoes"
   | "fundos_imobiliarios" 
@@ -31,6 +33,7 @@ export interface Investment {
   nome_investimento: string;
   tipo_investimento: InvestmentType;
   corretora: Broker;
+  moeda: Currency;
   valor_investido: number;
   preco_atual: number;
   quantidade: number;

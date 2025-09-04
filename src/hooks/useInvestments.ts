@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Investment, InvestmentType, Broker } from "@/types/investment";
+import { Investment, InvestmentType, Broker, Currency } from "@/types/investment";
 import { toast } from "sonner";
 
 interface InvestmentRecord {
@@ -8,6 +8,7 @@ interface InvestmentRecord {
   nome_investimento: string;
   tipo_investimento: string;
   corretora: string;
+  moeda: string;
   valor_investido: number;
   preco_atual: number;
   quantidade: number;
@@ -77,6 +78,7 @@ const convertToInvestment = (record: InvestmentRecord): Investment => {
     nome_investimento: record.nome_investimento,
     tipo_investimento: normalizeInvestmentType(record.tipo_investimento),
     corretora: normalizeBroker(record.corretora),
+    moeda: (record.moeda as Currency) || "BRL",
     valor_investido: record.valor_investido,
     preco_atual: record.preco_atual,
     quantidade: record.quantidade,
@@ -95,6 +97,7 @@ const convertFromInvestment = (investment: Omit<Investment, "id" | "valor_atual"
     nome_investimento: investment.nome_investimento,
     tipo_investimento: investment.tipo_investimento,
     corretora: investment.corretora,
+    moeda: investment.moeda,
     valor_investido: investment.valor_investido,
     preco_atual: investment.preco_atual,
     quantidade: investment.quantidade,
@@ -127,6 +130,7 @@ export const useAddInvestment = () => {
       nome_investimento: string;
       tipo_investimento: InvestmentType;
       corretora: Broker;
+      moeda: Currency;
       valor_investido: number;
       preco_atual: number;
       quantidade: number;

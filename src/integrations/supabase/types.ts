@@ -425,6 +425,7 @@ export type Database = {
           data_atualizacao_preco: string
           data_investimento: string
           id: string
+          moeda: string
           nome_investimento: string
           preco_atual: number
           quantidade: number
@@ -439,6 +440,7 @@ export type Database = {
           data_atualizacao_preco?: string
           data_investimento: string
           id?: string
+          moeda?: string
           nome_investimento: string
           preco_atual: number
           quantidade: number
@@ -453,6 +455,7 @@ export type Database = {
           data_atualizacao_preco?: string
           data_investimento?: string
           id?: string
+          moeda?: string
           nome_investimento?: string
           preco_atual?: number
           quantidade?: number

@@ -13,8 +13,8 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useAddInvestment } from "@/hooks/useInvestments";
-import { InvestmentType, Broker } from "@/types/investment";
-import { INVESTMENT_TYPE_LABELS, BROKER_LABELS } from "@/lib/investments";
+import { InvestmentType, Broker, Currency } from "@/types/investment";
+import { INVESTMENT_TYPE_LABELS, BROKER_LABELS, CURRENCY_LABELS } from "@/lib/investments";
 
 const investmentTypes: InvestmentType[] = [
   "acoes",
@@ -50,6 +50,7 @@ const formSchema = z.object({
   nome_investimento: z.string().min(1, "Nome é obrigatório"),
   tipo_investimento: z.enum(investmentTypes as [InvestmentType, ...InvestmentType[]]),
   corretora: z.enum(brokers as [Broker, ...Broker[]]),
+  moeda: z.enum(["BRL", "USD"] as const),
   valor_investido: z.number().min(0, "Valor não pode ser negativo"),
   preco_atual: z.number().min(0, "Preço não pode ser negativo"),
   quantidade: z.number().min(0.000001, "Quantidade deve ser maior que zero"),
@@ -71,6 +72,7 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
       nome_investimento: "",
       tipo_investimento: "acoes",
       corretora: "xp",
+      moeda: "BRL",
       valor_investido: 0,
       preco_atual: 0,
       quantidade: 0,
@@ -83,6 +85,7 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
       nome_investimento: data.nome_investimento,
       tipo_investimento: data.tipo_investimento,
       corretora: data.corretora,
+      moeda: data.moeda,
       valor_investido: data.valor_investido,
       preco_atual: data.preco_atual,
       quantidade: data.quantidade,
@@ -97,11 +100,12 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
     });
   };
 
-  const formatCurrency = (value: string) => {
+  const formatCurrency = (value: string, currencyType: Currency) => {
     const floatValue = parseFloat(value);
-    return floatValue.toLocaleString("pt-BR", {
+    const locale = currencyType === "USD" ? "en-US" : "pt-BR";
+    return floatValue.toLocaleString(locale, {
       style: "currency",
-      currency: "BRL",
+      currency: currencyType,
     });
   };
 
@@ -180,14 +184,36 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
 
               <FormField
                 control={form.control}
+                name="moeda"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Moeda</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a moeda" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="BRL">{CURRENCY_LABELS.BRL}</SelectItem>
+                        <SelectItem value="USD">{CURRENCY_LABELS.USD}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="valor_investido"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Valor Investido</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="R$ 0,00"
-                        value={field.value >= 0 ? formatCurrency(field.value.toString()) : ""}
+                        placeholder={form.watch("moeda") === "USD" ? "US$ 0.00" : "R$ 0,00"}
+                        value={field.value >= 0 ? formatCurrency(field.value.toString(), form.watch("moeda")) : ""}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, "");
                           const floatValue = parseFloat(value) / 100;
@@ -208,8 +234,8 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
                     <FormLabel>Preço Atual</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="R$ 0,00"
-                        value={field.value >= 0 ? formatCurrency(field.value.toString()) : ""}
+                        placeholder={form.watch("moeda") === "USD" ? "US$ 0.00" : "R$ 0,00"}
+                        value={field.value >= 0 ? formatCurrency(field.value.toString(), form.watch("moeda")) : ""}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, "");
                           const floatValue = parseFloat(value) / 100;

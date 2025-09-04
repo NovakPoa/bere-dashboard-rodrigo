@@ -83,10 +83,10 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                     {formatQuantity(investment.quantidade)}
                   </TableCell>
                   <TableCell className="text-right">
-                    {currency(investment.valor_investido)}
+                    {currency(investment.valor_investido, investment.moeda)}
                   </TableCell>
                   <TableCell className="text-right">
-                    {currency(investment.valor_atual)}
+                    {currency(investment.valor_atual, investment.moeda)}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
@@ -95,12 +95,12 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                       ) : (
                         <TrendingDown className="h-4 w-4 text-red-600" />
                       )}
-                      <div className={investment.rentabilidade_absoluta >= 0 ? "text-green-600" : "text-red-600"}>
-                        <div>{currency(investment.rentabilidade_absoluta)}</div>
-                        <div className="text-xs">
-                          {percentage(investment.rentabilidade_percentual)}
-                        </div>
-                      </div>
+                       <div className={investment.rentabilidade_absoluta >= 0 ? "text-green-600" : "text-red-600"}>
+                         <div>{currency(investment.rentabilidade_absoluta, investment.moeda)}</div>
+                         <div className="text-xs">
+                           {percentage(investment.rentabilidade_percentual)}
+                         </div>
+                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
