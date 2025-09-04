@@ -569,25 +569,40 @@ export type Database = {
       }
       profiles: {
         Row: {
+          activity_level: string | null
+          age: number | null
           created_at: string
           full_name: string | null
+          gender: string | null
+          height: number | null
           id: string
           phone_number: string | null
           updated_at: string
+          weight: number | null
         }
         Insert: {
+          activity_level?: string | null
+          age?: number | null
           created_at?: string
           full_name?: string | null
+          gender?: string | null
+          height?: number | null
           id: string
           phone_number?: string | null
           updated_at?: string
+          weight?: number | null
         }
         Update: {
+          activity_level?: string | null
+          age?: number | null
           created_at?: string
           full_name?: string | null
+          gender?: string | null
+          height?: number | null
           id?: string
           phone_number?: string | null
           updated_at?: string
+          weight?: number | null
         }
         Relationships: []
       }

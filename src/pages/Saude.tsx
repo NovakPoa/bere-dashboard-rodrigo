@@ -5,6 +5,7 @@ import { useHealthData } from "@/hooks/useHealth";
 import DateRangePicker from "@/components/finance/DateRangePicker";
 import HealthChart from "@/components/health/HealthChart";
 import HealthMetrics from "@/components/health/HealthMetrics";
+import HealthProfileForm from "@/components/health/HealthProfileForm";
 
 export default function Saude() {
   const [startDate, setStartDate] = useState<Date | undefined>(
@@ -49,6 +50,7 @@ export default function Saude() {
               onEndDateChange={setEndDate}
             />
           </div>
+          <HealthProfileForm />
         </section>
 
         <HealthMetrics metrics={metrics} />
