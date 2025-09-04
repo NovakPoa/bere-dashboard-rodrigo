@@ -107,6 +107,7 @@ export function useExpenses() {
       const { data, error } = await supabase
         .from("financeiro")
         .select("*")
+        .eq("tipo", "financeira")
         .order("data", { ascending: false });
 
       if (error) throw error;
