@@ -98,8 +98,7 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
   };
 
   const formatCurrency = (value: string) => {
-    const numericValue = value.replace(/\D/g, "");
-    const floatValue = parseFloat(numericValue) / 100;
+    const floatValue = parseFloat(value);
     return floatValue.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
