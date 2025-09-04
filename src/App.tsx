@@ -50,6 +50,7 @@ import { HabitDetailsPage } from "./components/habits/HabitDetailsPage";
 import Organizacao from "./pages/Organizacao";
 import Profile from "./pages/Profile";
 import Garmin from "./pages/Garmin";
+import Ganhos from "./pages/Ganhos";
 
 import Auth from "./pages/Auth";
 
@@ -89,6 +90,7 @@ const App = () => (
             <Route element={<AppLayout />}>
               <Route path="/app" element={<Home />} />
               <Route path="/financeira" element={<Index />} />
+              <Route path="/ganhos" element={<Ganhos />} />
               <Route path="/atividades" element={<Atividades />} />
               <Route path="/alimentacao" element={<Alimentacao />} />
               <Route path="/cultura" element={<Cultura />} />
