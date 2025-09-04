@@ -87,19 +87,21 @@ export function AppSidebar() {
               {/* Financeiro Collapsible Group */}
               <Collapsible open={shouldFinanceBeOpen} onOpenChange={handleFinanceToggle} className="group/collapsible">
                 <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={isFinanceActive}>
-                      <div className="flex items-center w-full">
+                  <div className="flex">
+                    <SidebarMenuButton asChild isActive={isFinanceActive} className="flex-1">
+                      <NavLink to="/financeiro" className={getNavCls({ isActive: currentPath === "/financeiro" })} onClick={handleNavClick}>
                         <Wallet className="mr-2 h-4 w-4" />
-                        {!collapsed && (
-                          <>
-                            <span>Financeiro</span>
-                            <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
-                          </>
-                        )}
-                      </div>
+                        {!collapsed && <span>Financeiro</span>}
+                      </NavLink>
                     </SidebarMenuButton>
-                  </CollapsibleTrigger>
+                    {!collapsed && (
+                      <CollapsibleTrigger asChild>
+                        <button className="p-2 hover:bg-muted/50 rounded-md">
+                          <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
+                        </button>
+                      </CollapsibleTrigger>
+                    )}
+                  </div>
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {financeItems.map((item) => (
