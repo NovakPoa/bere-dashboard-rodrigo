@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Investment } from "@/types/investment";
-import { groupByBroker, currency, BROKER_LABELS } from "@/lib/investments";
+import { groupByBroker, currency, formatLabel } from "@/lib/investments";
 
 interface BrokerChartProps {
   investments: Investment[];
@@ -29,7 +29,7 @@ export function BrokerChart({ investments, exchangeRate = 5.0 }: BrokerChartProp
     return Object.entries(groupedData)
       .filter(([_, value]) => value > 0)
       .map(([broker, value]) => ({
-        name: BROKER_LABELS[broker as keyof typeof BROKER_LABELS],
+        name: formatLabel(broker),
         value,
         formattedValue: currency(value),
       }));

@@ -1,32 +1,8 @@
 export type Currency = "BRL" | "USD";
 
-export type InvestmentType = 
-  | "acoes"
-  | "fundos_imobiliarios" 
-  | "renda_fixa"
-  | "criptomoedas"
-  | "fundos_investimento"
-  | "tesouro_direto"
-  | "cdb"
-  | "lci_lca"
-  | "debêntures"
-  | "outros";
+export type InvestmentType = string;
 
-export type Broker = 
-  | "xp"
-  | "rico"
-  | "inter"
-  | "nubank"
-  | "btg"
-  | "itau"
-  | "bradesco"
-  | "santander"
-  | "clear"
-  | "avenue"
-  | "c6"
-  | "modalmais"
-  | "easynvest"
-  | "outros";
+export type Broker = string;
 
 export interface Investment {
   id: string;

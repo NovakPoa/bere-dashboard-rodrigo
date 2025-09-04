@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Trash2, TrendingUp, TrendingDown, Edit } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { currency, percentage, formatQuantity, INVESTMENT_TYPE_LABELS, BROKER_LABELS } from "@/lib/investments";
+import { currency, percentage, formatQuantity, formatLabel } from "@/lib/investments";
 import { UpdatePriceDialog } from "./UpdatePriceDialog";
 
 interface InvestmentsTableProps {
@@ -73,11 +73,11 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">
-                      {INVESTMENT_TYPE_LABELS[investment.tipo_investimento]}
+                      {formatLabel(investment.tipo_investimento)}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {BROKER_LABELS[investment.corretora]}
+                    {formatLabel(investment.corretora)}
                   </TableCell>
                   <TableCell className="text-right">
                     {formatQuantity(investment.quantidade)}

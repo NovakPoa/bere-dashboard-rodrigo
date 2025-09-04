@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Investment, InvestmentType, Broker, Currency } from "@/types/investment";
+import { Investment, Currency } from "@/types/investment";
 import { fetchUSDToBRLRate } from "@/lib/currency";
 import { toast } from "sonner";
 
@@ -19,56 +19,8 @@ interface InvestmentRecord {
   updated_at: string;
 }
 
-// Normalização de tipos
-const normalizeInvestmentType = (type: string): InvestmentType => {
-  const typeMap: Record<string, InvestmentType> = {
-    "ações": "acoes",
-    "acoes": "acoes",
-    "acao": "acoes",
-    "fundos imobiliários": "fundos_imobiliarios",
-    "fundos_imobiliarios": "fundos_imobiliarios",
-    "fii": "fundos_imobiliarios",
-    "renda fixa": "renda_fixa",
-    "renda_fixa": "renda_fixa",
-    "criptomoedas": "criptomoedas",
-    "crypto": "criptomoedas",
-    "fundos de investimento": "fundos_investimento",
-    "fundos_investimento": "fundos_investimento",
-    "tesouro direto": "tesouro_direto",
-    "tesouro_direto": "tesouro_direto",
-    "cdb": "cdb",
-    "lci/lca": "lci_lca",
-    "lci_lca": "lci_lca",
-    "debentures": "debêntures",
-    "debêntures": "debêntures",
-  };
-  
-  return typeMap[type.toLowerCase()] || "outros";
-};
+// Conversão de dados sem normalização
 
-const normalizeBroker = (broker: string): Broker => {
-  const brokerMap: Record<string, Broker> = {
-    "xp": "xp",
-    "rico": "rico",
-    "inter": "inter",
-    "nubank": "nubank",
-    "btg": "btg",
-    "itaú": "itau",
-    "itau": "itau",
-    "bradesco": "bradesco",
-    "santander": "santander",
-    "clear": "clear",
-    "avenue": "avenue",
-    "c6": "c6",
-    "modal": "modalmais",
-    "modal mais": "modalmais",
-    "easynvest": "easynvest",
-  };
-  
-  return brokerMap[broker.toLowerCase()] || "outros";
-};
-
-// Conversão de dados
 const convertToInvestment = (record: InvestmentRecord): Investment => {
   const valor_atual = record.quantidade * record.preco_atual;
   const rentabilidade_absoluta = valor_atual - record.valor_investido;
@@ -77,8 +29,8 @@ const convertToInvestment = (record: InvestmentRecord): Investment => {
   return {
     id: record.id,
     nome_investimento: record.nome_investimento,
-    tipo_investimento: normalizeInvestmentType(record.tipo_investimento),
-    corretora: normalizeBroker(record.corretora),
+    tipo_investimento: record.tipo_investimento,
+    corretora: record.corretora,
     moeda: (record.moeda as Currency) || "BRL",
     valor_investido: record.valor_investido,
     preco_atual: record.preco_atual,
@@ -139,8 +91,8 @@ export const useAddInvestment = () => {
   return useMutation({
     mutationFn: async (investment: {
       nome_investimento: string;
-      tipo_investimento: InvestmentType;
-      corretora: Broker;
+      tipo_investimento: string;
+      corretora: string;
       moeda: Currency;
       valor_investido: number;
       preco_atual: number;

@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Investment } from "@/types/investment";
-import { groupByType, currency, INVESTMENT_TYPE_LABELS } from "@/lib/investments";
+import { groupByType, currency, formatLabel } from "@/lib/investments";
 
 interface TypeChartProps {
   investments: Investment[];
@@ -29,7 +29,7 @@ export function TypeChart({ investments, exchangeRate = 5.0 }: TypeChartProps) {
     return Object.entries(groupedData)
       .filter(([_, value]) => value > 0)
       .map(([type, value]) => ({
-        name: INVESTMENT_TYPE_LABELS[type as keyof typeof INVESTMENT_TYPE_LABELS],
+        name: formatLabel(type),
         value,
         formattedValue: currency(value),
       }));

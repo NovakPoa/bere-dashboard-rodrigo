@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Investment, InvestmentType, Broker } from "@/types/investment";
+import { Investment } from "@/types/investment";
 import { useInvestments, useExchangeRate } from "@/hooks/useInvestments";
 import { AddInvestmentForm } from "@/components/investments/AddInvestmentForm";
 import { InvestmentsTable } from "@/components/investments/InvestmentsTable";
@@ -17,9 +17,7 @@ import {
   filterInvestmentsByDateRange, 
   getPortfolioTotals,
   currency, 
-  percentage,
-  INVESTMENT_TYPE_LABELS,
-  BROKER_LABELS 
+  percentage 
 } from "@/lib/investments";
 import { formatExchangeRate } from "@/lib/currency";
 import { toast } from "sonner";
@@ -28,8 +26,8 @@ export default function Investimentos() {
   const { data: investments = [], isLoading, error, refetch } = useInvestments();
   const { data: exchangeRate = 5.0 } = useExchangeRate();
   
-  const [selectedTypes, setSelectedTypes] = useState<InvestmentType[]>([]);
-  const [selectedBrokers, setSelectedBrokers] = useState<Broker[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [selectedBrokers, setSelectedBrokers] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [showForm, setShowForm] = useState(false);
@@ -57,18 +55,22 @@ export default function Investimentos() {
     return getPortfolioTotals(filtered, exchangeRate);
   }, [filtered, exchangeRate]);
 
-  // Opções para filtros
-  const typesList = Object.keys(INVESTMENT_TYPE_LABELS) as InvestmentType[];
-  const typeOptions = typesList.map((type) => ({
-    label: INVESTMENT_TYPE_LABELS[type],
-    value: type,
-  }));
+  // Opções para filtros - buscar valores únicos dos investimentos
+  const typeOptions = useMemo(() => {
+    const uniqueTypes = [...new Set(investments.map(inv => inv.tipo_investimento))].filter(Boolean);
+    return uniqueTypes.map(type => ({
+      label: type.charAt(0).toUpperCase() + type.slice(1).toLowerCase(),
+      value: type,
+    }));
+  }, [investments]);
 
-  const brokersList = Object.keys(BROKER_LABELS) as Broker[];
-  const brokerOptions = brokersList.map((broker) => ({
-    label: BROKER_LABELS[broker],
-    value: broker,
-  }));
+  const brokerOptions = useMemo(() => {
+    const uniqueBrokers = [...new Set(investments.map(inv => inv.corretora))].filter(Boolean);
+    return uniqueBrokers.map(broker => ({
+      label: broker.charAt(0).toUpperCase() + broker.slice(1).toLowerCase(),
+      value: broker,
+    }));
+  }, [investments]);
 
   if (isLoading) {
     return <div className="p-4">Carregando investimentos...</div>;
@@ -105,7 +107,7 @@ export default function Investimentos() {
               <MultiSelect
                 options={typeOptions}
                 selected={selectedTypes}
-                onSelectionChange={(selected) => setSelectedTypes(selected as InvestmentType[])}
+                onSelectionChange={(selected) => setSelectedTypes(selected as string[])}
                 placeholder="Filtrar por tipo"
               />
             </div>
@@ -113,7 +115,7 @@ export default function Investimentos() {
               <MultiSelect
                 options={brokerOptions}
                 selected={selectedBrokers}
-                onSelectionChange={(selected) => setSelectedBrokers(selected as Broker[])}
+                onSelectionChange={(selected) => setSelectedBrokers(selected as string[])}
                 placeholder="Filtrar por corretora"
               />
             </div>

@@ -13,43 +13,13 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useAddInvestment } from "@/hooks/useInvestments";
-import { InvestmentType, Broker, Currency } from "@/types/investment";
-import { INVESTMENT_TYPE_LABELS, BROKER_LABELS, CURRENCY_LABELS } from "@/lib/investments";
-
-const investmentTypes: InvestmentType[] = [
-  "acoes",
-  "fundos_imobiliarios", 
-  "renda_fixa",
-  "criptomoedas",
-  "fundos_investimento",
-  "tesouro_direto",
-  "cdb",
-  "lci_lca",
-  "debêntures",
-  "outros"
-];
-
-const brokers: Broker[] = [
-  "xp",
-  "rico",
-  "inter",
-  "nubank",
-  "btg",
-  "itau",
-  "bradesco",
-  "santander",
-  "clear",
-  "avenue",
-  "c6",
-  "modalmais",
-  "easynvest",
-  "outros"
-];
+import { Currency } from "@/types/investment";
+import { CURRENCY_LABELS } from "@/lib/investments";
 
 const formSchema = z.object({
   nome_investimento: z.string().min(1, "Nome é obrigatório"),
-  tipo_investimento: z.enum(investmentTypes as [InvestmentType, ...InvestmentType[]]),
-  corretora: z.enum(brokers as [Broker, ...Broker[]]),
+  tipo_investimento: z.string().min(1, "Tipo é obrigatório"),
+  corretora: z.string().min(1, "Corretora é obrigatória"),
   moeda: z.enum(["BRL", "USD"] as const),
   valor_investido: z.number().min(0, "Valor não pode ser negativo"),
   preco_atual: z.number().min(0, "Preço não pode ser negativo"),
@@ -70,8 +40,8 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       nome_investimento: "",
-      tipo_investimento: "acoes",
-      corretora: "xp",
+      tipo_investimento: "",
+      corretora: "",
       moeda: "BRL",
       valor_investido: 0,
       preco_atual: 0,
@@ -138,20 +108,9 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {investmentTypes.map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {INVESTMENT_TYPE_LABELS[type]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <Input placeholder="Ex: Ações, Fundos Imobiliários, CDB..." {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -163,20 +122,9 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Corretora</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a corretora" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {brokers.map((broker) => (
-                          <SelectItem key={broker} value={broker}>
-                            {BROKER_LABELS[broker]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <Input placeholder="Ex: XP Investimentos, Nubank, Inter..." {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
