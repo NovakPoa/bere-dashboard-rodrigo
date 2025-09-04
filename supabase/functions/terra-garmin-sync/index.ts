@@ -35,6 +35,11 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    const terraApiKey = Deno.env.get('TERRA_API_KEY');
+    if (!terraApiKey) {
+      throw new Error('Terra API key não configurada');
+    }
+
     // Buscar dados não processados da Terra API
     const { data: terraPayloads, error: fetchError } = await supabase
       .from('terra_data_payloads')
@@ -53,54 +58,110 @@ serve(async (req) => {
 
     for (const payload of terraPayloads || []) {
       try {
-        // Simular dados de atividade (na prática viriam do payload da Terra API)
+        console.log(`🔄 Processando payload ${payload.payload_id} para usuário Terra ${payload.user_id}`);
+
+        // 1. Mapear user_id da Terra para nosso reference_id
+        const { data: terraUser, error: userError } = await supabase
+          .from('terra_users')
+          .select('reference_id')
+          .eq('user_id', payload.user_id)
+          .single();
+
+        if (userError || !terraUser) {
+          console.error('❌ Usuário Terra não encontrado:', userError);
+          processedCount.errors++;
+          continue;
+        }
+
+        const supabaseUserId = terraUser.reference_id;
+        console.log(`👤 Mapeado Terra user ${payload.user_id} -> Supabase user ${supabaseUserId}`);
+
+        // 2. Buscar dados detalhados da atividade na Terra API
+        const terraUrl = `https://api.tryterra.co/v2/activity/${payload.user_id}?payload_id=${payload.payload_id}`;
+        console.log(`🌍 Buscando dados da Terra API: ${terraUrl}`);
+
+        const terraResponse = await fetch(terraUrl, {
+          headers: {
+            'X-API-Key': terraApiKey,
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!terraResponse.ok) {
+          console.error(`❌ Erro na Terra API: ${terraResponse.status} - ${terraResponse.statusText}`);
+          processedCount.errors++;
+          continue;
+        }
+
+        const terraData = await terraResponse.json();
+        console.log('📦 Dados recebidos da Terra API:', JSON.stringify(terraData, null, 2));
+
+        // 3. Extrair dados da atividade do response da Terra
+        const activity = terraData.data?.[0]; // Primeira atividade no array
+        if (!activity) {
+          console.error('❌ Nenhuma atividade encontrada no payload da Terra');
+          processedCount.errors++;
+          continue;
+        }
+
+        // 4. Processar dados reais da atividade
         const activityData: TerraActivityData = {
-          activity_type: 'corrida', // Mapear do payload real
-          start_time: payload.start_time,
-          end_time: payload.end_time,
-          duration_seconds: 1800, // 30 min - vem do payload
-          distance_metres: 5000, // 5km - vem do payload
-          calories_burned: 300 // vem do payload
+          activity_type: activity.sport || activity.movement || 'unknown',
+          start_time: activity.start_time || payload.start_time,
+          end_time: activity.end_time || payload.end_time,
+          duration_seconds: activity.duration_seconds || null,
+          distance_metres: activity.distance_metres || null,
+          calories_burned: activity.calories_total || activity.calories_active || null
         };
 
-        // Converter para nossa estrutura atividade_fisica
+        console.log('🏃 Dados da atividade extraídos:', activityData);
+
+        // 5. Converter para nossa estrutura atividade_fisica
         const fitnessEntry = {
           modalidade: mapActivityType(activityData.activity_type),
-          data: payload.start_time ? new Date(payload.start_time).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          data: activityData.start_time ? new Date(activityData.start_time).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           duracao_min: activityData.duration_seconds ? Math.round(activityData.duration_seconds / 60) : null,
-          distancia_km: activityData.distance_metres ? activityData.distance_metres / 1000 : null,
+          distancia_km: activityData.distance_metres ? Number((activityData.distance_metres / 1000).toFixed(2)) : null,
           calorias: activityData.calories_burned || null,
           origem: 'garmin',
-          texto: `Atividade sincronizada do Garmin: ${activityData.activity_type}`,
+          texto: `Atividade ${activityData.activity_type} sincronizada do Garmin`,
           tipo: 'atividade_fisica',
-          user_id: null, // Precisa mapear user_id da Terra para nosso sistema
+          user_id: supabaseUserId,
           created_at: new Date().toISOString()
         };
 
-        // Inserir na tabela atividade_fisica
+        console.log('💾 Inserindo atividade:', fitnessEntry);
+
+        // 6. Inserir na tabela atividade_fisica
         const { error: insertError } = await supabase
           .from('atividade_fisica')
           .insert(fitnessEntry);
 
         if (insertError) {
-          console.error('Erro ao inserir atividade:', insertError);
+          console.error('❌ Erro ao inserir atividade:', insertError);
           processedCount.errors++;
         } else {
-          console.log(`✅ Atividade processada: ${fitnessEntry.modalidade}`);
+          console.log(`✅ Atividade processada: ${fitnessEntry.modalidade} - ${fitnessEntry.duracao_min}min`);
           processedCount.success++;
         }
 
-        // Remover payload processado
-        await supabase
+        // 7. Remover payload processado
+        const { error: deleteError } = await supabase
           .from('terra_data_payloads')
           .delete()
           .match({ 
             user_id: payload.user_id, 
-            created_at: payload.created_at 
+            payload_id: payload.payload_id 
           });
 
+        if (deleteError) {
+          console.error('⚠️ Erro ao remover payload processado:', deleteError);
+        } else {
+          console.log(`🗑️ Payload ${payload.payload_id} removido`);
+        }
+
       } catch (error) {
-        console.error('Erro ao processar payload:', error);
+        console.error('❌ Erro ao processar payload:', error);
         processedCount.errors++;
       }
     }
@@ -130,14 +191,54 @@ serve(async (req) => {
 
 function mapActivityType(terraType?: string): string {
   const activityMap: Record<string, string> = {
+    // Corrida e caminhada
     'running': 'corrida',
+    'trail_running': 'corrida',
+    'treadmill_running': 'corrida',
     'walking': 'caminhada',
+    'hiking': 'caminhada',
+    'treadmill_walking': 'caminhada',
+    
+    // Ciclismo
     'cycling': 'ciclismo',
+    'road_biking': 'ciclismo',
+    'mountain_biking': 'ciclismo',
+    'indoor_cycling': 'ciclismo',
+    'spinning': 'ciclismo',
+    
+    // Natação
     'swimming': 'natacao',
+    'pool_swimming': 'natacao',
+    'open_water_swimming': 'natacao',
+    
+    // Academia e força
     'gym': 'musculacao',
+    'strength_training': 'musculacao',
+    'weight_training': 'musculacao',
+    'bodybuilding': 'musculacao',
+    'functional_training': 'musculacao',
+    
+    // Flexibilidade e relaxamento
     'yoga': 'yoga',
-    'pilates': 'pilates'
+    'pilates': 'pilates',
+    'stretching': 'alongamento',
+    'meditation': 'meditacao',
+    
+    // Esportes
+    'football': 'futebol',
+    'soccer': 'futebol',
+    'basketball': 'basquete',
+    'tennis': 'tenis',
+    'volleyball': 'volei',
+    'paddle': 'padel',
+    
+    // Outros
+    'cardio': 'cardio',
+    'elliptical': 'cardio',
+    'rowing': 'remo',
+    'unknown': 'outro'
   };
 
-  return activityMap[terraType || ''] || 'outro';
+  const normalizedType = terraType?.toLowerCase().replace(/[_\s]+/g, '_') || '';
+  return activityMap[normalizedType] || 'outro';
 }
