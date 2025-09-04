@@ -22,7 +22,7 @@ interface UpdatePriceDialogProps {
 
 export function UpdatePriceDialog({ investment, onUpdated, children }: UpdatePriceDialogProps) {
   const [open, setOpen] = useState(false);
-  const [preco, setPreco] = useState(investment.preco_atual);
+  const [preco, setPreco] = useState(investment.preco_unitario_atual);
   const [precoString, setPrecoString] = useState("");
   const updateInvestment = useUpdateInvestment();
 
@@ -30,8 +30,8 @@ export function UpdatePriceDialog({ investment, onUpdated, children }: UpdatePri
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
     if (newOpen) {
-      setPreco(investment.preco_atual);
-      const formattedValue = (investment.preco_atual * 100).toString();
+      setPreco(investment.preco_unitario_atual);
+      const formattedValue = (investment.preco_unitario_atual * 100).toString();
       setPrecoString(formatCurrency(formattedValue, investment.moeda));
     }
   };
@@ -42,7 +42,7 @@ export function UpdatePriceDialog({ investment, onUpdated, children }: UpdatePri
     updateInvestment.mutate(
       {
         id: investment.id,
-        updates: { preco_atual: preco },
+        updates: { preco_unitario_atual: preco },
       },
       {
         onSuccess: () => {
@@ -70,15 +70,15 @@ export function UpdatePriceDialog({ investment, onUpdated, children }: UpdatePri
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Atualizar Preço</DialogTitle>
+          <DialogTitle>Atualizar Preço Unitário</DialogTitle>
           <DialogDescription>
-            Atualize o preço atual do investimento {investment.nome_investimento}
+            Atualize o preço unitário atual do investimento {investment.nome_investimento}
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="preco">Novo Preço</Label>
+            <Label htmlFor="preco">Novo Preço Unitário</Label>
             <Input
               id="preco"
               placeholder={investment.moeda === "USD" ? "US$ 0.00" : "R$ 0,00"}

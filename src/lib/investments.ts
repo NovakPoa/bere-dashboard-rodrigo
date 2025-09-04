@@ -67,16 +67,20 @@ export const filterInvestmentsByDateRange = (
   });
 };
 
-// Cálculos de portfolio
+// Cálculos de portfolio com lógica corrigida
 export const getPortfolioTotals = (investments: Investment[], cotacaoDolar: number = 5.0) => {
-  const totalInvestido = investments.reduce((sum, inv) => 
-    sum + convertToReais(inv.valor_investido, inv.moeda, cotacaoDolar), 0
-  );
-  const valorAtual = investments.reduce((sum, inv) => 
-    sum + convertToReais(inv.valor_atual, inv.moeda, cotacaoDolar), 0
-  );
+  const totalInvestido = investments.reduce((sum, inv) => {
+    const valorEmReais = convertToReais(inv.valor_total_investido, inv.moeda, cotacaoDolar);
+    return sum + valorEmReais;
+  }, 0);
+
+  const valorAtual = investments.reduce((sum, inv) => {
+    const valorEmReais = convertToReais(inv.valor_atual_total, inv.moeda, cotacaoDolar);
+    return sum + valorEmReais;
+  }, 0);
+
   const rentabilidadeAbsoluta = valorAtual - totalInvestido;
-  const rentabilidadePercentual = totalInvestido > 0 ? ((valorAtual - totalInvestido) / totalInvestido) * 100 : 0;
+  const rentabilidadePercentual = totalInvestido > 0 ? (rentabilidadeAbsoluta / totalInvestido) * 100 : 0;
 
   return {
     totalInvestido,
@@ -89,47 +93,27 @@ export const getPortfolioTotals = (investments: Investment[], cotacaoDolar: numb
 
 // Agrupamento por tipo
 export const groupByType = (investments: Investment[], cotacaoDolar: number = 5.0): Record<string, number> => {
-  const groups: Record<string, number> = {};
-
-  investments.forEach((investment) => {
-    const tipo = investment.tipo_investimento || "Outros";
-    if (!groups[tipo]) {
-      groups[tipo] = 0;
-    }
-    groups[tipo] += convertToReais(investment.valor_atual, investment.moeda, cotacaoDolar);
-  });
-
-  return groups;
+  return investments.reduce((acc, investment) => {
+    const valorEmReais = convertToReais(investment.valor_atual_total, investment.moeda, cotacaoDolar);
+    acc[investment.tipo_investimento] = (acc[investment.tipo_investimento] || 0) + valorEmReais;
+    return acc;
+  }, {} as Record<string, number>);
 };
 
-// Agrupamento por corretora
 export const groupByBroker = (investments: Investment[], cotacaoDolar: number = 5.0): Record<string, number> => {
-  const groups: Record<string, number> = {};
-
-  investments.forEach((investment) => {
-    const corretora = investment.corretora || "Outras";
-    if (!groups[corretora]) {
-      groups[corretora] = 0;
-    }
-    groups[corretora] += convertToReais(investment.valor_atual, investment.moeda, cotacaoDolar);
-  });
-
-  return groups;
+  return investments.reduce((acc, investment) => {
+    const valorEmReais = convertToReais(investment.valor_atual_total, investment.moeda, cotacaoDolar);
+    acc[investment.corretora] = (acc[investment.corretora] || 0) + valorEmReais;
+    return acc;
+  }, {} as Record<string, number>);
 };
 
-// Agrupamento por moeda
 export const groupByCurrency = (investments: Investment[], cotacaoDolar: number = 5.0): Record<Currency, number> => {
-  const groups: Record<Currency, number> = {
-    BRL: 0,
-    USD: 0,
-  };
-
-  investments.forEach((investment) => {
-    const valorEmReais = convertToReais(investment.valor_atual, investment.moeda, cotacaoDolar);
-    groups[investment.moeda] += valorEmReais;
-  });
-
-  return groups;
+  return investments.reduce((acc, investment) => {
+    const valorEmReais = convertToReais(investment.valor_atual_total, investment.moeda, cotacaoDolar);
+    acc[investment.moeda] = (acc[investment.moeda] || 0) + valorEmReais;
+    return acc;
+  }, {} as Record<Currency, number>);
 };
 
 // Função helper para formatação de labels

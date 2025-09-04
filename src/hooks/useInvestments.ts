@@ -10,21 +10,23 @@ interface InvestmentRecord {
   tipo_investimento: string;
   corretora: string;
   moeda: string;
-  valor_investido: number;
-  preco_atual: number;
+  preco_unitario_compra: number;
+  preco_unitario_atual: number;
   quantidade: number;
   data_investimento: string;
   data_atualizacao_preco: string;
   created_at: string;
   updated_at: string;
+  user_id: string;
 }
 
-// Conversão de dados sem normalização
+// Conversão de dados com lógica corrigida
 
 const convertToInvestment = (record: InvestmentRecord): Investment => {
-  const valor_atual = record.quantidade * record.preco_atual;
-  const rentabilidade_absoluta = valor_atual - record.valor_investido;
-  const rentabilidade_percentual = ((valor_atual - record.valor_investido) / record.valor_investido) * 100;
+  const valorTotalInvestido = record.preco_unitario_compra * record.quantidade;
+  const valorAtualTotal = record.preco_unitario_atual * record.quantidade;
+  const rentabilidadeAbsoluta = valorAtualTotal - valorTotalInvestido;
+  const rentabilidadePercentual = valorTotalInvestido > 0 ? (rentabilidadeAbsoluta / valorTotalInvestido) * 100 : 0;
 
   return {
     id: record.id,
@@ -32,27 +34,28 @@ const convertToInvestment = (record: InvestmentRecord): Investment => {
     tipo_investimento: record.tipo_investimento,
     corretora: record.corretora,
     moeda: (record.moeda as Currency) || "BRL",
-    valor_investido: record.valor_investido,
-    preco_atual: record.preco_atual,
+    preco_unitario_compra: record.preco_unitario_compra,
+    preco_unitario_atual: record.preco_unitario_atual,
     quantidade: record.quantidade,
     data_investimento: record.data_investimento,
     data_atualizacao_preco: record.data_atualizacao_preco,
     created_at: record.created_at,
     updated_at: record.updated_at,
-    valor_atual,
-    rentabilidade_absoluta,
-    rentabilidade_percentual,
+    valor_total_investido: valorTotalInvestido,
+    valor_atual_total: valorAtualTotal,
+    rentabilidade_absoluta: rentabilidadeAbsoluta,
+    rentabilidade_percentual: rentabilidadePercentual,
   };
 };
 
-const convertFromInvestment = (investment: Omit<Investment, "id" | "valor_atual" | "rentabilidade_absoluta" | "rentabilidade_percentual" | "created_at" | "updated_at" | "data_atualizacao_preco">) => {
+const convertFromInvestment = (investment: Omit<Investment, "id" | "valor_total_investido" | "valor_atual_total" | "rentabilidade_absoluta" | "rentabilidade_percentual" | "created_at" | "updated_at" | "data_atualizacao_preco">) => {
   return {
     nome_investimento: investment.nome_investimento,
     tipo_investimento: investment.tipo_investimento,
     corretora: investment.corretora,
     moeda: investment.moeda,
-    valor_investido: investment.valor_investido,
-    preco_atual: investment.preco_atual,
+    preco_unitario_compra: investment.preco_unitario_compra,
+    preco_unitario_atual: investment.preco_unitario_atual,
     quantidade: investment.quantidade,
     data_investimento: investment.data_investimento,
     user_id: null, // Será definido pelo trigger
@@ -94,8 +97,8 @@ export const useAddInvestment = () => {
       tipo_investimento: string;
       corretora: string;
       moeda: Currency;
-      valor_investido: number;
-      preco_atual: number;
+      preco_unitario_compra: number;
+      preco_unitario_atual: number;
       quantidade: number;
       data_investimento: string;
     }) => {
@@ -134,9 +137,9 @@ export const useUpdateInvestment = () => {
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Investment> }) => {
       const { data, error } = await supabase
         .from("investments")
-        .update({
-          ...updates,
-          data_atualizacao_preco: new Date().toISOString(),
+        .update({ 
+          preco_unitario_atual: updates.preco_unitario_atual,
+          data_atualizacao_preco: new Date().toISOString()
         })
         .eq("id", id)
         .select()

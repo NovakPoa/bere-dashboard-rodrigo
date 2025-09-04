@@ -83,10 +83,10 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                     {formatQuantity(investment.quantidade)}
                   </TableCell>
                   <TableCell className="text-right">
-                    {currency(investment.valor_investido, investment.moeda)}
+                    {currency(investment.valor_total_investido, investment.moeda)}
                   </TableCell>
                   <TableCell className="text-right">
-                    {currency(investment.valor_atual, investment.moeda)}
+                    {currency(investment.valor_atual_total, investment.moeda)}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">

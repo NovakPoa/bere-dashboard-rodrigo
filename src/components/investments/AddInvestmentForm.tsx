@@ -21,8 +21,8 @@ const formSchema = z.object({
   tipo_investimento: z.string().min(1, "Tipo é obrigatório"),
   corretora: z.string().min(1, "Corretora é obrigatória"),
   moeda: z.enum(["BRL", "USD"] as const),
-  valor_investido: z.number().min(0, "Valor não pode ser negativo"),
-  preco_atual: z.number().min(0, "Preço não pode ser negativo"),
+  preco_unitario_compra: z.number().min(0, "Preço unitário não pode ser negativo"),
+  preco_unitario_atual: z.number().min(0, "Preço unitário não pode ser negativo"),
   quantidade: z.number().min(0.000001, "Quantidade deve ser maior que zero"),
   data_investimento: z.date({ required_error: "Data é obrigatória" }),
 });
@@ -43,8 +43,8 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
       tipo_investimento: "",
       corretora: "",
       moeda: "BRL",
-      valor_investido: 0,
-      preco_atual: 0,
+      preco_unitario_compra: 0,
+      preco_unitario_atual: 0,
       quantidade: 0,
       data_investimento: new Date(),
     },
@@ -56,8 +56,8 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
       tipo_investimento: data.tipo_investimento,
       corretora: data.corretora,
       moeda: data.moeda,
-      valor_investido: data.valor_investido,
-      preco_atual: data.preco_atual,
+      preco_unitario_compra: data.preco_unitario_compra,
+      preco_unitario_atual: data.preco_unitario_atual,
       quantidade: data.quantidade,
       data_investimento: format(data.data_investimento, "yyyy-MM-dd"),
     };
@@ -154,10 +154,10 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
 
               <FormField
                 control={form.control}
-                name="valor_investido"
+                name="preco_unitario_compra"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Valor Investido</FormLabel>
+                    <FormLabel>Preço Unitário de Compra</FormLabel>
                     <FormControl>
                       <Input
                         placeholder={form.watch("moeda") === "USD" ? "US$ 0.00" : "R$ 0,00"}
@@ -176,10 +176,10 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
 
               <FormField
                 control={form.control}
-                name="preco_atual"
+                name="preco_unitario_atual"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Preço Atual</FormLabel>
+                    <FormLabel>Preço Unitário Atual</FormLabel>
                     <FormControl>
                       <Input
                         placeholder={form.watch("moeda") === "USD" ? "US$ 0.00" : "R$ 0,00"}

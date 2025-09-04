@@ -10,15 +10,16 @@ export interface Investment {
   tipo_investimento: InvestmentType;
   corretora: Broker;
   moeda: Currency;
-  valor_investido: number;
-  preco_atual: number;
+  preco_unitario_compra: number;
+  preco_unitario_atual: number;
   quantidade: number;
   data_investimento: string;
   data_atualizacao_preco: string;
   created_at: string;
   updated_at: string;
   // Campos calculados
-  valor_atual: number;
+  valor_total_investido: number;
+  valor_atual_total: number;
   rentabilidade_absoluta: number;
   rentabilidade_percentual: number;
 }

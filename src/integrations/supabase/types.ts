@@ -427,12 +427,12 @@ export type Database = {
           id: string
           moeda: string
           nome_investimento: string
-          preco_atual: number
+          preco_unitario_atual: number
+          preco_unitario_compra: number
           quantidade: number
           tipo_investimento: string
           updated_at: string
           user_id: string
-          valor_investido: number
         }
         Insert: {
           corretora: string
@@ -442,12 +442,12 @@ export type Database = {
           id?: string
           moeda?: string
           nome_investimento: string
-          preco_atual: number
+          preco_unitario_atual: number
+          preco_unitario_compra: number
           quantidade: number
           tipo_investimento: string
           updated_at?: string
           user_id: string
-          valor_investido: number
         }
         Update: {
           corretora?: string
@@ -457,12 +457,12 @@ export type Database = {
           id?: string
           moeda?: string
           nome_investimento?: string
-          preco_atual?: number
+          preco_unitario_atual?: number
+          preco_unitario_compra?: number
           quantidade?: number
           tipo_investimento?: string
           updated_at?: string
           user_id?: string
-          valor_investido?: number
         }
         Relationships: []
       }
