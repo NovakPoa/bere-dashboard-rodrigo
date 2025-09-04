@@ -161,12 +161,16 @@ export const useRemoveInvestment = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("investments")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .select()
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) throw new Error("Nenhum registro encontrado para exclusão.");
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["investments"] });
@@ -174,7 +178,8 @@ export const useRemoveInvestment = () => {
     },
     onError: (error) => {
       console.error("Erro ao remover investimento:", error);
-      toast.error("Erro ao remover investimento");
+      const message = (error as any)?.message || "Erro ao remover investimento";
+      toast.error(message);
     },
   });
 };

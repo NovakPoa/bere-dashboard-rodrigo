@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Trash2, TrendingUp, TrendingDown, Edit } from "lucide-react";
+import { Trash2, TrendingUp, TrendingDown, Edit, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { currency, percentage, formatQuantity, formatLabel } from "@/lib/investments";
@@ -23,6 +23,7 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
   const removeInvestment = useRemoveInvestment();
 
   const handleDelete = (id: string) => {
+    console.log("[InvestmentsTable] Deleting investment", id);
     removeInvestment.mutate(id, {
       onSuccess: () => {
         onChange();
@@ -141,10 +142,19 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
                             <AlertDialogAction 
+                              type="button"
                               onClick={() => handleDelete(investment.id)}
                               className="bg-red-600 hover:bg-red-700"
+                              disabled={removeInvestment.isPending}
                             >
-                              Excluir
+                              {removeInvestment.isPending ? (
+                                <span className="inline-flex items-center gap-2">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  Excluindo...
+                                </span>
+                              ) : (
+                                "Excluir"
+                              )}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
