@@ -77,19 +77,13 @@ export default function Investimentos() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Investimentos</h1>
-          <p className="text-muted-foreground">
-            Acompanhe e gerencie seu portfólio de investimentos
-          </p>
-        </div>
+      <header className="py-4 md:py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-2xl md:text-4xl font-semibold text-foreground">Investimentos</h1>
 
         <Drawer open={showForm} onOpenChange={setShowForm}>
           <DrawerTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Adicionar Investimento
+            <Button variant="outline" size="icon">
+              <Plus className="h-4 w-4" />
             </Button>
           </DrawerTrigger>
           <DrawerContent className="max-h-[90vh]">
