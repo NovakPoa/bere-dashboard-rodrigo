@@ -169,7 +169,7 @@ serve(async (req) => {
         // 6. Inserir/atualizar na tabela garmin_activities (idempotente)
         const { error: upsertError } = await supabase
           .from('garmin_activities')
-          .upsert(garminActivity, { onConflict: 'terra_payload_id', ignoreDuplicates: true });
+          .upsert(garminActivity, { onConflict: 'terra_payload_id' });
 
         if (upsertError) {
           console.error('❌ Erro ao inserir/atualizar atividade:', upsertError);
@@ -257,7 +257,7 @@ serve(async (req) => {
 
               const { error: upsertErr } = await supabase
                 .from('garmin_activities')
-                .upsert(garminActivity, { onConflict: 'terra_payload_id', ignoreDuplicates: true });
+                .upsert(garminActivity, { onConflict: 'terra_payload_id' });
               if (upsertErr) {
                 console.error('❌ Erro ao upsert backfill:', upsertErr);
                 processedCount.errors++;
@@ -273,6 +273,68 @@ serve(async (req) => {
         }
       } catch (bfErr) {
         console.error('❌ Erro no backfill:', bfErr);
+      }
+    }
+
+    // Passo de reparo: reprocessa atividades existentes sem modalidade/distância usando o raw
+    if (currentUserId) {
+      try {
+        const { data: toFix, error: fixSelErr } = await supabase
+          .from('garmin_activities')
+          .select('id, raw, activity_type, distance_km, duration_sec')
+          .eq('user_id', currentUserId)
+          .or('distance_km.is.null,activity_type.eq.outro');
+
+        if (fixSelErr) {
+          console.error('⚠️ Erro ao buscar atividades para reparo:', fixSelErr);
+        } else {
+          console.log(`🛠️ Reparo: ${toFix?.length || 0} atividades para reprocessar`);
+          for (const rec of toFix || []) {
+            if (!rec.raw) continue;
+            const raw = rec.raw as any;
+            const activity = raw?.data?.[0] ?? raw;
+
+            const activity_type_src = activity?.metadata?.name || activity?.metadata?.type?.toString() || '';
+            const duration_seconds = activity?.active_durations_data?.activity_seconds ?? null;
+            const distance_metres = activity?.distance_data?.summary?.distance_meters ?? null;
+            const calories_burned = activity?.calories_data?.total_burned_calories ?? null;
+            const steps = activity?.distance_data?.summary?.steps ?? null;
+            const avg_hr = activity?.heart_rate_data?.summary?.avg_hr_bpm ?? null;
+            const max_hr = activity?.heart_rate_data?.summary?.max_hr_bpm ?? null;
+            const elevation_gain_m = activity?.distance_data?.summary?.elevation?.gain_actual_meters ?? null;
+            const elevation_loss_m = activity?.distance_data?.summary?.elevation?.loss_actual_meters ?? null;
+
+            const distance_km = distance_metres ? Number((distance_metres / 1000).toFixed(2)) : null;
+            const duration_sec = (duration_seconds ?? rec.duration_sec ?? null) as number | null;
+            const pace_min_per_km = (distance_metres && duration_seconds)
+              ? Number(((duration_seconds / 60) / (distance_metres / 1000)).toFixed(2))
+              : (distance_km && duration_sec ? Number(((duration_sec / 60) / distance_km).toFixed(2)) : null);
+            const activity_type = mapActivityType(activity_type_src);
+
+            const update: Record<string, any> = {};
+            if (!rec.distance_km && distance_km) update.distance_km = distance_km;
+            if (rec.activity_type === 'outro' && activity_type && activity_type !== 'outro') update.activity_type = activity_type;
+            if (!rec.duration_sec && duration_sec) update.duration_sec = duration_sec;
+            if (pace_min_per_km) update.pace_min_per_km = pace_min_per_km;
+            if (calories_burned) update.calories = calories_burned;
+            if (steps) update.steps = steps;
+            if (avg_hr) update.avg_hr = avg_hr;
+            if (max_hr) update.max_hr = max_hr;
+            if (elevation_gain_m) update.elevation_gain_m = elevation_gain_m;
+            if (elevation_loss_m) update.elevation_loss_m = elevation_loss_m;
+
+            if (Object.keys(update).length > 0) {
+              const { error: updErr } = await supabase
+                .from('garmin_activities')
+                .update(update)
+                .eq('id', rec.id);
+              if (updErr) console.error(`❌ Erro ao atualizar atividade ${rec.id}:`, updErr);
+              else console.log(`🔧 Atividade ${rec.id} atualizada com`, update);
+            }
+          }
+        }
+      } catch (rpErr) {
+        console.error('❌ Erro no reparo de atividades:', rpErr);
       }
     }
 
