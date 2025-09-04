@@ -131,12 +131,12 @@ serve(async (req) => {
 
         // 4. Processar dados reais da atividade
         const activityData: TerraActivityData = {
-          activity_type: activity.sport || activity.movement || 'unknown',
-          start_time: activity.start_time || payload.start_time,
-          end_time: activity.end_time || payload.end_time,
-          duration_seconds: activity.duration_seconds || null,
-          distance_metres: activity.distance_metres || null,
-          calories_burned: activity.calories_total || activity.calories_active || null
+          activity_type: activity.metadata?.name || activity.metadata?.type?.toString() || 'unknown',
+          start_time: activity.metadata?.start_time || payload.start_time,
+          end_time: activity.metadata?.end_time || payload.end_time,
+          duration_seconds: activity.active_durations_data?.activity_seconds || null,
+          distance_metres: activity.distance_data?.summary?.distance_meters || null,
+          calories_burned: activity.calories_data?.total_burned_calories || null
         };
 
         console.log('🏃 Dados da atividade extraídos:', activityData);
@@ -156,11 +156,11 @@ serve(async (req) => {
               Math.round((new Date(activityData.end_time).getTime() - new Date(activityData.start_time).getTime()) / 1000) : null),
           distance_km: activityData.distance_metres ? Number((activityData.distance_metres / 1000).toFixed(2)) : null,
           calories: activityData.calories_burned || null,
-          steps: activity.steps || null,
-          avg_hr: activity.heart_rate?.summary?.avg_hr || null,
-          max_hr: activity.heart_rate?.summary?.max_hr || null,
-          elevation_gain_m: activity.elevation?.summary?.elevation_gain || null,
-          elevation_loss_m: activity.elevation?.summary?.elevation_loss || null,
+          steps: activity.distance_data?.summary?.steps || null,
+          avg_hr: activity.heart_rate_data?.summary?.avg_hr_bpm || null,
+          max_hr: activity.heart_rate_data?.summary?.max_hr_bpm || null,
+          elevation_gain_m: activity.distance_data?.summary?.elevation?.gain_actual_meters || null,
+          elevation_loss_m: activity.distance_data?.summary?.elevation?.loss_actual_meters || null,
           pace_min_per_km: activityData.distance_metres && activityData.duration_seconds ? 
             Number(((activityData.duration_seconds / 60) / (activityData.distance_metres / 1000)).toFixed(2)) : null,
           raw: terraData, // Guardar payload bruto para auditoria
@@ -224,12 +224,12 @@ serve(async (req) => {
             console.log(`📦 Backfill retornou ${activities.length} atividades`);
             for (const activity of activities) {
               const activityData = {
-                activity_type: activity.sport || activity.movement || 'unknown',
-                start_time: activity.start_time,
-                end_time: activity.end_time,
-                duration_seconds: activity.duration_seconds || null,
-                distance_metres: activity.distance_metres || null,
-                calories_burned: activity.calories_total || activity.calories_active || null,
+                activity_type: activity.metadata?.name || activity.metadata?.type?.toString() || 'unknown',
+                start_time: activity.metadata?.start_time,
+                end_time: activity.metadata?.end_time,
+                duration_seconds: activity.active_durations_data?.activity_seconds || null,
+                distance_metres: activity.distance_data?.summary?.distance_meters || null,
+                calories_burned: activity.calories_data?.total_burned_calories || null,
               };
 
               const terraPayloadId = activity.payload_id || activity.payloadId || activity.activity_uuid || `bf_${terraUserForCurrent.user_id}_${activity.start_time}`;
@@ -246,11 +246,11 @@ serve(async (req) => {
                 duration_sec: activityData.duration_seconds || (activityData.start_time && activityData.end_time ? Math.round((new Date(activityData.end_time).getTime() - new Date(activityData.start_time).getTime()) / 1000) : null),
                 distance_km: activityData.distance_metres ? Number((activityData.distance_metres / 1000).toFixed(2)) : null,
                 calories: activityData.calories_burned || null,
-                steps: activity.steps || null,
-                avg_hr: activity.heart_rate?.summary?.avg_hr || null,
-                max_hr: activity.heart_rate?.summary?.max_hr || null,
-                elevation_gain_m: activity.elevation?.summary?.elevation_gain || null,
-                elevation_loss_m: activity.elevation?.summary?.elevation_loss || null,
+                steps: activity.distance_data?.summary?.steps || null,
+                avg_hr: activity.heart_rate_data?.summary?.avg_hr_bpm || null,
+                max_hr: activity.heart_rate_data?.summary?.max_hr_bpm || null,
+                elevation_gain_m: activity.distance_data?.summary?.elevation?.gain_actual_meters || null,
+                elevation_loss_m: activity.distance_data?.summary?.elevation?.loss_actual_meters || null,
                 pace_min_per_km: activityData.distance_metres && activityData.duration_seconds ? Number(((activityData.duration_seconds / 60) / (activityData.distance_metres / 1000)).toFixed(2)) : null,
                 raw: activity,
               };
@@ -300,55 +300,58 @@ serve(async (req) => {
 });
 
 function mapActivityType(terraType?: string): string {
-  const activityMap: Record<string, string> = {
-    // Corrida e caminhada
-    'running': 'corrida',
-    'trail_running': 'corrida',
-    'treadmill_running': 'corrida',
-    'walking': 'caminhada',
-    'hiking': 'caminhada',
-    'treadmill_walking': 'caminhada',
-    
-    // Ciclismo
+  if (!terraType) return 'outro';
+  
+  // Mapear por nome da atividade (metadata.name)
+  const nameMap: Record<string, string> = {
+    'bicicleta': 'ciclismo',
+    'bike': 'ciclismo',
     'cycling': 'ciclismo',
-    'road_biking': 'ciclismo',
-    'mountain_biking': 'ciclismo',
-    'indoor_cycling': 'ciclismo',
-    'spinning': 'ciclismo',
-    
-    // Natação
+    'corrida': 'corrida',
+    'running': 'corrida',
+    'caminhada': 'caminhada',
+    'walking': 'caminhada',
+    'natação': 'natacao',
     'swimming': 'natacao',
-    'pool_swimming': 'natacao',
-    'open_water_swimming': 'natacao',
-    
-    // Academia e força
-    'gym': 'musculacao',
-    'strength_training': 'musculacao',
-    'weight_training': 'musculacao',
-    'bodybuilding': 'musculacao',
-    'functional_training': 'musculacao',
-    
-    // Flexibilidade e relaxamento
+    'musculação': 'musculacao',
+    'strength': 'musculacao',
     'yoga': 'yoga',
-    'pilates': 'pilates',
-    'stretching': 'alongamento',
-    'meditation': 'meditacao',
-    
-    // Esportes
-    'football': 'futebol',
-    'soccer': 'futebol',
-    'basketball': 'basquete',
-    'tennis': 'tenis',
-    'volleyball': 'volei',
-    'paddle': 'padel',
-    
-    // Outros
-    'cardio': 'cardio',
-    'elliptical': 'cardio',
-    'rowing': 'remo',
-    'unknown': 'outro'
+    'trilha': 'trilha',
+    'hiking': 'trilha'
   };
-
-  const normalizedType = terraType?.toLowerCase().replace(/[_\s]+/g, '_') || '';
-  return activityMap[normalizedType] || 'outro';
+  
+  // Mapear por tipo Garmin (metadata.type)
+  const typeMap: Record<string, string> = {
+    '1': 'ciclismo',     // Garmin cycling
+    '133': 'corrida',    // Garmin running
+    '4': 'natacao',      // Garmin swimming
+    '8': 'caminhada',    // Garmin walking
+    '15': 'trilha',      // Garmin hiking
+    '17': 'musculacao'   // Garmin strength training
+  };
+  
+  const lowerType = terraType.toLowerCase();
+  
+  // Tentar mapear por nome primeiro
+  for (const [key, value] of Object.entries(nameMap)) {
+    if (lowerType.includes(key)) {
+      return value;
+    }
+  }
+  
+  // Tentar mapear por tipo numérico
+  if (typeMap[terraType]) {
+    return typeMap[terraType];
+  }
+  
+  // Fallback para padrões conhecidos
+  if (lowerType.includes('run')) return 'corrida';
+  if (lowerType.includes('bike') || lowerType.includes('cycl')) return 'ciclismo';
+  if (lowerType.includes('swim')) return 'natacao';
+  if (lowerType.includes('walk')) return 'caminhada';
+  if (lowerType.includes('strength') || lowerType.includes('weight')) return 'musculacao';
+  if (lowerType.includes('yoga')) return 'yoga';
+  if (lowerType.includes('hike') || lowerType.includes('trail')) return 'trilha';
+  
+  return 'outro';
 }
