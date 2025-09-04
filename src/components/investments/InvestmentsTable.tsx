@@ -5,9 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Trash2, TrendingUp, TrendingDown, Edit, Loader2 } from "lucide-react";
+import { Trash2, TrendingUp, TrendingDown, Edit } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { currency, percentage, formatQuantity, formatLabel } from "@/lib/investments";
@@ -52,7 +50,7 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
         <CardTitle>Investimentos Recentes</CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[400px]">
+        <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -64,7 +62,7 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                 <TableHead className="text-right">Valor Atual</TableHead>
                 <TableHead className="text-right">Rentabilidade</TableHead>
                 <TableHead>Data</TableHead>
-                <TableHead className="text-center">Ações</TableHead>
+                <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -121,51 +119,22 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                           <Edit className="h-4 w-4" />
                         </Button>
                       </UpdatePriceDialog>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={removeInvestment.isPending}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Tem certeza de que deseja excluir o investimento "{investment.nome_investimento}"? 
-                              Esta ação não pode ser desfeita.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction 
-                              type="button"
-                              onClick={() => handleDelete(investment.id)}
-                              className="bg-red-600 hover:bg-red-700"
-                              disabled={removeInvestment.isPending}
-                            >
-                              {removeInvestment.isPending ? (
-                                <span className="inline-flex items-center gap-2">
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                  Excluindo...
-                                </span>
-                              ) : (
-                                "Excluir"
-                              )}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDelete(investment.id)}
+                        aria-label="Excluir investimento"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </ScrollArea>
+        </div>
       </CardContent>
     </Card>
   );
