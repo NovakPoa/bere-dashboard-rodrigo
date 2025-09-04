@@ -42,6 +42,13 @@ serve(async (req) => {
       throw new Error('Terra API key ou Dev ID não configurados');
     }
 
+    // Obter usuário autenticado (se houver) para possível backfill
+    const supabaseUrlLocal = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const authClient = createClient(supabaseUrlLocal, supabaseAnonKey, { global: { headers: { Authorization: req.headers.get('Authorization') || '' } } });
+    const { data: { user: authUser } } = await authClient.auth.getUser();
+    const currentUserId = authUser?.id || null;
+
     // Buscar dados não processados da Terra API
     const { data: terraPayloads, error: fetchError } = await supabase
       .from('terra_data_payloads')
@@ -79,7 +86,7 @@ serve(async (req) => {
         console.log(`👤 Mapeado Terra user ${payload.user_id} -> Supabase user ${supabaseUserId}`);
 
         // 2. Buscar dados detalhados da atividade na Terra API
-        let terraUrl = `https://api.tryterra.co/v2/activity?user_id=${payload.user_id}&payload_id=${payload.payload_id}`;
+        let terraUrl = `https://api.tryterra.co/v2/activity?user_id=${payload.user_id}&payload_id=${payload.payload_id}&to_webhook=false`;
         console.log(`🌍 Buscando dados da Terra API: ${terraUrl}`);
 
         let terraResponse = await fetch(terraUrl, {
@@ -92,7 +99,7 @@ serve(async (req) => {
 
         // Se não encontrado por payload_id, tentar fallback por janela de tempo
         if (!terraResponse.ok && payload.start_time && payload.end_time) {
-          const fallbackUrl = `https://api.tryterra.co/v2/activity?user_id=${payload.user_id}&start_date=${encodeURIComponent(payload.start_time)}&end_date=${encodeURIComponent(payload.end_time)}`;
+          const fallbackUrl = `https://api.tryterra.co/v2/activity?user_id=${payload.user_id}&start_date=${encodeURIComponent(payload.start_time)}&end_date=${encodeURIComponent(payload.end_time)}&to_webhook=false`;
           console.warn(`⚠️ Payload não encontrado. Tentando fallback por janela de tempo: ${fallbackUrl}`);
           terraResponse = await fetch(fallbackUrl, {
             headers: {
@@ -190,6 +197,82 @@ serve(async (req) => {
       } catch (error) {
         console.error('❌ Erro ao processar payload:', error);
         processedCount.errors++;
+      }
+    }
+
+    // Backfill: se não houver payloads, tentar buscar últimas 30 dias para o usuário atual
+    if ((terraPayloads?.length || 0) === 0 && currentUserId) {
+      try {
+        const { data: terraUserForCurrent } = await supabase
+          .from('terra_users')
+          .select('user_id')
+          .eq('reference_id', currentUserId)
+          .single();
+
+        if (terraUserForCurrent?.user_id) {
+          const end = new Date();
+          const start = new Date();
+          start.setDate(end.getDate() - 30);
+          const backfillUrl = `https://api.tryterra.co/v2/activity?user_id=${terraUserForCurrent.user_id}&start_date=${encodeURIComponent(start.toISOString())}&end_date=${encodeURIComponent(end.toISOString())}&to_webhook=false`;
+          console.log(`🕰️ Backfill (30d): ${backfillUrl}`);
+          const resp = await fetch(backfillUrl, {
+            headers: { 'dev-id': terraDevId!, 'x-api-key': terraApiKey!, 'Accept': 'application/json' }
+          });
+          if (resp.ok) {
+            const json = await resp.json();
+            const activities = json.data || [];
+            console.log(`📦 Backfill retornou ${activities.length} atividades`);
+            for (const activity of activities) {
+              const activityData = {
+                activity_type: activity.sport || activity.movement || 'unknown',
+                start_time: activity.start_time,
+                end_time: activity.end_time,
+                duration_seconds: activity.duration_seconds || null,
+                distance_metres: activity.distance_metres || null,
+                calories_burned: activity.calories_total || activity.calories_active || null,
+              };
+
+              const terraPayloadId = activity.payload_id || activity.payloadId || activity.activity_uuid || `bf_${terraUserForCurrent.user_id}_${activity.start_time}`;
+
+              const garminActivity = {
+                user_id: currentUserId,
+                terra_user_id: terraUserForCurrent.user_id,
+                terra_payload_id: String(terraPayloadId),
+                provider: 'garmin',
+                external_id: activity.activity_uuid || activity.external_id || null,
+                activity_type: mapActivityType(activityData.activity_type),
+                start_time: activityData.start_time || new Date().toISOString(),
+                end_time: activityData.end_time || null,
+                duration_sec: activityData.duration_seconds || (activityData.start_time && activityData.end_time ? Math.round((new Date(activityData.end_time).getTime() - new Date(activityData.start_time).getTime()) / 1000) : null),
+                distance_km: activityData.distance_metres ? Number((activityData.distance_metres / 1000).toFixed(2)) : null,
+                calories: activityData.calories_burned || null,
+                steps: activity.steps || null,
+                avg_hr: activity.heart_rate?.summary?.avg_hr || null,
+                max_hr: activity.heart_rate?.summary?.max_hr || null,
+                elevation_gain_m: activity.elevation?.summary?.elevation_gain || null,
+                elevation_loss_m: activity.elevation?.summary?.elevation_loss || null,
+                pace_min_per_km: activityData.distance_metres && activityData.duration_seconds ? Number(((activityData.duration_seconds / 60) / (activityData.distance_metres / 1000)).toFixed(2)) : null,
+                raw: activity,
+              };
+
+              const { error: upsertErr } = await supabase
+                .from('garmin_activities')
+                .upsert(garminActivity, { onConflict: 'terra_payload_id', ignoreDuplicates: true });
+              if (upsertErr) {
+                console.error('❌ Erro ao upsert backfill:', upsertErr);
+                processedCount.errors++;
+              } else {
+                processedCount.success++;
+              }
+            }
+          } else {
+            console.warn('⚠️ Backfill Terra API falhou', await resp.text());
+          }
+        } else {
+          console.log('ℹ️ Backfill ignorado: nenhum Terra user para o usuário atual');
+        }
+      } catch (bfErr) {
+        console.error('❌ Erro no backfill:', bfErr);
       }
     }
 
