@@ -33,7 +33,7 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Investimentos Recentes</CardTitle>
+          <CardTitle>Todos Investimentos</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-center py-4">
@@ -47,7 +47,7 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Investimentos Recentes</CardTitle>
+        <CardTitle>Todos Investimentos</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">

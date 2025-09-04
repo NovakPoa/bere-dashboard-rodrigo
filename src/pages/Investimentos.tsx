@@ -137,7 +137,7 @@ export default function Investimentos() {
         </div>
 
         {/* Cards de Estatísticas */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <StatCard
             title="Total Investido"
             value={currency(portfolioTotals.totalInvestido)}
@@ -156,11 +156,6 @@ export default function Investimentos() {
               value: percentage(portfolioTotals.rentabilidadePercentual),
               isPositive: portfolioTotals.rentabilidadeAbsoluta >= 0,
             }}
-          />
-          <StatCard
-            title="Quantidade"
-            value={portfolioTotals.quantidadeInvestimentos.toString()}
-            icon={PieChart}
           />
         </div>
 
