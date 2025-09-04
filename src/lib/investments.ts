@@ -126,3 +126,90 @@ export const CURRENCY_LABELS: Record<Currency, string> = {
   BRL: "Real (R$)",
   USD: "Dólar (US$)",
 };
+
+// Geração de dados para gráfico de rentabilidade temporal
+export const generateRentabilityData = (
+  investments: Investment[],
+  period: "7days" | "month" | "year"
+) => {
+  const now = new Date();
+  const startDate = new Date();
+
+  // Definir período
+  switch (period) {
+    case "7days":
+      startDate.setDate(now.getDate() - 7);
+      break;
+    case "month":
+      startDate.setMonth(now.getMonth() - 1);
+      break;
+    case "year":
+      startDate.setFullYear(now.getFullYear() - 1);
+      break;
+  }
+
+  // Gerar pontos de data
+  const dataPoints: Date[] = [];
+  const current = new Date(startDate);
+  
+  while (current <= now) {
+    dataPoints.push(new Date(current));
+    
+    if (period === "7days") {
+      current.setDate(current.getDate() + 1);
+    } else if (period === "month") {
+      current.setDate(current.getDate() + 2);
+    } else {
+      current.setDate(current.getDate() + 7);
+    }
+  }
+
+  // Se não incluir hoje, adicionar
+  if (dataPoints[dataPoints.length - 1].getTime() !== now.getTime()) {
+    dataPoints.push(new Date(now));
+  }
+
+  return dataPoints.map((date) => {
+    const formattedDate = date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      ...(period === "year" && { year: "2-digit" }),
+    });
+
+    const dataPoint: any = { date: formattedDate };
+
+    investments.forEach((investment) => {
+      const investmentDate = new Date(investment.data_investimento);
+      const updateDate = new Date(investment.data_atualizacao_preco);
+
+      // Se a data é anterior ao investimento, rentabilidade é null
+      if (date < investmentDate) {
+        dataPoint[investment.id] = null;
+        return;
+      }
+
+      // Se a data é igual ou posterior à data de investimento
+      let profitability: number;
+
+      if (date >= updateDate) {
+        // Usar rentabilidade atual
+        profitability = investment.rentabilidade_absoluta;
+      } else {
+        // Interpolar linearmente entre data de investimento (0) e data de atualização (atual)
+        const totalDays = (updateDate.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24);
+        const daysSinceInvestment = (date.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24);
+        
+        if (totalDays === 0) {
+          profitability = 0;
+        } else {
+          const ratio = daysSinceInvestment / totalDays;
+          profitability = investment.rentabilidade_absoluta * ratio;
+        }
+      }
+
+      dataPoint[investment.id] = profitability;
+    });
+
+    return dataPoint;
+  });
+};
