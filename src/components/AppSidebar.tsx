@@ -32,7 +32,6 @@ const healthItems = [
 
 const itemsAfterFinance = [
   { title: "Cultura", url: "/cultura", icon: Film },
-  { title: "Perfil", url: "/profile", icon: User },
 ];
 
 const financeItems = [
@@ -190,6 +189,19 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              
+              {/* Separator for Profile */}
+              <div className="my-2 border-t border-border/50" />
+              
+              {/* Profile - separated module */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/profile")}>
+                  <NavLink to="/profile" end className={getNavCls} onClick={handleNavClick}>
+                    <User className="mr-2 h-4 w-4" />
+                    {!collapsed && <span>Perfil</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
