@@ -1,7 +1,6 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import React from "react";
@@ -55,7 +54,6 @@ import Investimentos from "./pages/Investimentos";
 
 import Auth from "./pages/Auth";
 
-const queryClient = new QueryClient();
 
 const RequireAuth = () => {
   const [ready, setReady] = React.useState(false);
@@ -78,40 +76,38 @@ const RequireAuth = () => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <RecoveryRedirector />
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/" element={<Landing />} />
-          <Route element={<RequireAuth />}>
-            <Route element={<AppLayout />}>
-              <Route path="/app" element={<Home />} />
-              <Route path="/financeira" element={<Index />} />
-              <Route path="/ganhos" element={<Ganhos />} />
-              <Route path="/investimentos" element={<Investimentos />} />
-              <Route path="/atividades" element={<Atividades />} />
-              <Route path="/alimentacao" element={<Alimentacao />} />
-              <Route path="/cultura" element={<Cultura />} />
-              <Route path="/calendario" element={<Calendario />} />
-              <Route path="/organizacao" element={<Organizacao />} />
-              <Route path="/organizacao/:id" element={<Organizacao />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/habitos" element={<Habitos />} />
-              <Route path="/habitos/:habitId" element={<HabitDetailsPage />} />
-              <Route path="/garmin" element={<Garmin />} />
-            </Route>
+  <TooltipProvider>
+    <Toaster />
+    <Sonner />
+    <BrowserRouter>
+      <RecoveryRedirector />
+      <Routes>
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/" element={<Landing />} />
+        <Route element={<RequireAuth />}>
+          <Route element={<AppLayout />}>
+            <Route path="/app" element={<Home />} />
+            <Route path="/financeira" element={<Index />} />
+            <Route path="/ganhos" element={<Ganhos />} />
+            <Route path="/investimentos" element={<Investimentos />} />
+            <Route path="/atividades" element={<Atividades />} />
+            <Route path="/alimentacao" element={<Alimentacao />} />
+            <Route path="/cultura" element={<Cultura />} />
+            <Route path="/calendario" element={<Calendario />} />
+            <Route path="/organizacao" element={<Organizacao />} />
+            <Route path="/organizacao/:id" element={<Organizacao />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/habitos" element={<Habitos />} />
+            <Route path="/habitos/:habitId" element={<HabitDetailsPage />} />
+            <Route path="/garmin" element={<Garmin />} />
           </Route>
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-      <ReactQueryDevtools initialIsOpen={true} />
-    </TooltipProvider>
-  </QueryClientProvider>
+        </Route>
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
+    <ReactQueryDevtools initialIsOpen={true} />
+  </TooltipProvider>
 );
 
 export default App;
