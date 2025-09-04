@@ -50,8 +50,8 @@ const formSchema = z.object({
   nome_investimento: z.string().min(1, "Nome é obrigatório"),
   tipo_investimento: z.enum(investmentTypes as [InvestmentType, ...InvestmentType[]]),
   corretora: z.enum(brokers as [Broker, ...Broker[]]),
-  valor_investido: z.number().min(0.01, "Valor deve ser maior que zero"),
-  preco_atual: z.number().min(0.01, "Preço deve ser maior que zero"),
+  valor_investido: z.number().min(0, "Valor não pode ser negativo"),
+  preco_atual: z.number().min(0, "Preço não pode ser negativo"),
   quantidade: z.number().min(0.000001, "Quantidade deve ser maior que zero"),
   data_investimento: z.date({ required_error: "Data é obrigatória" }),
 });
@@ -188,7 +188,7 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
                     <FormControl>
                       <Input
                         placeholder="R$ 0,00"
-                        value={field.value > 0 ? formatCurrency(field.value.toString()) : ""}
+                        value={field.value >= 0 ? formatCurrency(field.value.toString()) : ""}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, "");
                           const floatValue = parseFloat(value) / 100;
@@ -210,7 +210,7 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
                     <FormControl>
                       <Input
                         placeholder="R$ 0,00"
-                        value={field.value > 0 ? formatCurrency(field.value.toString()) : ""}
+                        value={field.value >= 0 ? formatCurrency(field.value.toString()) : ""}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, "");
                           const floatValue = parseFloat(value) / 100;
