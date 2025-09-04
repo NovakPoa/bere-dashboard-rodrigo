@@ -25,7 +25,6 @@ const itemsBeforeFinance = [
 ];
 
 const healthItems = [
-  { title: "Visão Geral", url: "/saude", icon: Heart },
   { title: "Atividade Física", url: "/atividades", icon: HeartPulse },
   { title: "Alimentação", url: "/alimentacao", icon: Utensils },
   { title: "Garmin", url: "/garmin", icon: Watch },
