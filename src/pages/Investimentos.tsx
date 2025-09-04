@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Investment, InvestmentType, Broker } from "@/types/investment";
-import { useInvestments } from "@/hooks/useInvestments";
+import { useInvestments, useExchangeRate } from "@/hooks/useInvestments";
 import { AddInvestmentForm } from "@/components/investments/AddInvestmentForm";
 import { InvestmentsTable } from "@/components/investments/InvestmentsTable";
 import { TypeChart } from "@/components/investments/TypeChart";
@@ -20,10 +20,12 @@ import {
   INVESTMENT_TYPE_LABELS,
   BROKER_LABELS 
 } from "@/lib/investments";
+import { formatExchangeRate } from "@/lib/currency";
 import { toast } from "sonner";
 
 export default function Investimentos() {
   const { data: investments = [], isLoading, error, refetch } = useInvestments();
+  const { data: exchangeRate = 5.0 } = useExchangeRate();
   
   const [selectedTypes, setSelectedTypes] = useState<InvestmentType[]>([]);
   const [selectedBrokers, setSelectedBrokers] = useState<Broker[]>([]);
@@ -51,8 +53,8 @@ export default function Investimentos() {
 
   // Cálculos do portfólio
   const portfolioTotals = useMemo(() => {
-    return getPortfolioTotals(filtered);
-  }, [filtered]);
+    return getPortfolioTotals(filtered, exchangeRate);
+  }, [filtered, exchangeRate]);
 
   // Opções para filtros
   const typesList = Object.keys(INVESTMENT_TYPE_LABELS) as InvestmentType[];
@@ -151,10 +153,15 @@ export default function Investimentos() {
           />
         </div>
 
+        {/* Indicador de Cotação */}
+        <div className="text-sm text-muted-foreground text-center">
+          Cotação USD/BRL: {formatExchangeRate(exchangeRate)}
+        </div>
+
         {/* Gráficos */}
         <div className="grid gap-6 md:grid-cols-2">
-          <TypeChart investments={filtered} />
-          <BrokerChart investments={filtered} />
+          <TypeChart investments={filtered} exchangeRate={exchangeRate} />
+          <BrokerChart investments={filtered} exchangeRate={exchangeRate} />
         </div>
 
         {/* Tabela de Investimentos */}

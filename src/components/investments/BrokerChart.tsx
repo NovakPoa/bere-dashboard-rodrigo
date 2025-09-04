@@ -6,6 +6,7 @@ import { groupByBroker, currency, BROKER_LABELS } from "@/lib/investments";
 
 interface BrokerChartProps {
   investments: Investment[];
+  exchangeRate?: number;
 }
 
 const COLORS = [
@@ -21,9 +22,9 @@ const COLORS = [
   "#6b7280", // gray
 ];
 
-export function BrokerChart({ investments }: BrokerChartProps) {
+export function BrokerChart({ investments, exchangeRate = 5.0 }: BrokerChartProps) {
   const chartData = useMemo(() => {
-    const groupedData = groupByBroker(investments);
+    const groupedData = groupByBroker(investments, exchangeRate);
     
     return Object.entries(groupedData)
       .filter(([_, value]) => value > 0)

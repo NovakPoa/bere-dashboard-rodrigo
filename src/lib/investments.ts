@@ -1,4 +1,5 @@
 import { Investment, InvestmentType, Broker, Currency } from "@/types/investment";
+import { convertToReais } from "@/lib/currency";
 
 export const currency = (amount: number, currencyType: Currency = "BRL"): string => {
   const locale = currencyType === "USD" ? "en-US" : "pt-BR";
@@ -67,9 +68,13 @@ export const filterInvestmentsByDateRange = (
 };
 
 // Cálculos de portfolio
-export const getPortfolioTotals = (investments: Investment[]) => {
-  const totalInvestido = investments.reduce((sum, inv) => sum + inv.valor_investido, 0);
-  const valorAtual = investments.reduce((sum, inv) => sum + inv.valor_atual, 0);
+export const getPortfolioTotals = (investments: Investment[], cotacaoDolar: number = 5.0) => {
+  const totalInvestido = investments.reduce((sum, inv) => 
+    sum + convertToReais(inv.valor_investido, inv.moeda, cotacaoDolar), 0
+  );
+  const valorAtual = investments.reduce((sum, inv) => 
+    sum + convertToReais(inv.valor_atual, inv.moeda, cotacaoDolar), 0
+  );
   const rentabilidadeAbsoluta = valorAtual - totalInvestido;
   const rentabilidadePercentual = totalInvestido > 0 ? ((valorAtual - totalInvestido) / totalInvestido) * 100 : 0;
 
@@ -83,7 +88,7 @@ export const getPortfolioTotals = (investments: Investment[]) => {
 };
 
 // Agrupamento por tipo
-export const groupByType = (investments: Investment[]): Record<InvestmentType, number> => {
+export const groupByType = (investments: Investment[], cotacaoDolar: number = 5.0): Record<InvestmentType, number> => {
   const groups: Record<InvestmentType, number> = {
     acoes: 0,
     fundos_imobiliarios: 0,
@@ -98,14 +103,14 @@ export const groupByType = (investments: Investment[]): Record<InvestmentType, n
   };
 
   investments.forEach((investment) => {
-    groups[investment.tipo_investimento] += investment.valor_atual;
+    groups[investment.tipo_investimento] += convertToReais(investment.valor_atual, investment.moeda, cotacaoDolar);
   });
 
   return groups;
 };
 
 // Agrupamento por corretora
-export const groupByBroker = (investments: Investment[]): Record<Broker, number> => {
+export const groupByBroker = (investments: Investment[], cotacaoDolar: number = 5.0): Record<Broker, number> => {
   const groups: Record<Broker, number> = {
     xp: 0,
     rico: 0,
@@ -124,7 +129,7 @@ export const groupByBroker = (investments: Investment[]): Record<Broker, number>
   };
 
   investments.forEach((investment) => {
-    groups[investment.corretora] += investment.valor_atual;
+    groups[investment.corretora] += convertToReais(investment.valor_atual, investment.moeda, cotacaoDolar);
   });
 
   return groups;

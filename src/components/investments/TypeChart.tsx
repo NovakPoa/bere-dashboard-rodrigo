@@ -6,6 +6,7 @@ import { groupByType, currency, INVESTMENT_TYPE_LABELS } from "@/lib/investments
 
 interface TypeChartProps {
   investments: Investment[];
+  exchangeRate?: number;
 }
 
 const COLORS = [
@@ -21,9 +22,9 @@ const COLORS = [
   "#6b7280", // gray
 ];
 
-export function TypeChart({ investments }: TypeChartProps) {
+export function TypeChart({ investments, exchangeRate = 5.0 }: TypeChartProps) {
   const chartData = useMemo(() => {
-    const groupedData = groupByType(investments);
+    const groupedData = groupByType(investments, exchangeRate);
     
     return Object.entries(groupedData)
       .filter(([_, value]) => value > 0)

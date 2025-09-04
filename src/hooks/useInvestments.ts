@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Investment, InvestmentType, Broker, Currency } from "@/types/investment";
+import { fetchUSDToBRLRate } from "@/lib/currency";
 import { toast } from "sonner";
 
 interface InvestmentRecord {
@@ -104,6 +105,16 @@ const convertFromInvestment = (investment: Omit<Investment, "id" | "valor_atual"
     data_investimento: investment.data_investimento,
     user_id: null, // Será definido pelo trigger
   };
+};
+
+// Hook para buscar cotação
+export const useExchangeRate = () => {
+  return useQuery({
+    queryKey: ["exchange-rate"],
+    queryFn: fetchUSDToBRLRate,
+    staleTime: 60 * 60 * 1000, // 1 hora
+    gcTime: 60 * 60 * 1000, // 1 hora
+  });
 };
 
 // Hooks
