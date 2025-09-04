@@ -11,7 +11,7 @@ import ActivitiesTable from "@/components/fitness/ActivitiesTable";
 import AddActivityForm from "@/components/fitness/AddActivityForm";
 import DateRangePicker from "@/components/finance/DateRangePicker";
 import { MultiSelect } from "@/components/ui/multi-select";
-import TerraApiIntegration from "@/components/fitness/TerraApiIntegration";
+import WearableButton from "@/components/fitness/WearableButton";
 import { FitnessEntry, groupTotalsByModality, totalCalories, fetchActivitiesFromSupabase } from "@/lib/fitness";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -175,8 +175,8 @@ export default function Atividades() {
               />
             </div>
           </div>
-          <div className="w-full lg:w-80">
-            <TerraApiIntegration />
+          <div className="w-full lg:w-auto">
+            <WearableButton />
           </div>
         </section>
         <section aria-labelledby="stats" className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
