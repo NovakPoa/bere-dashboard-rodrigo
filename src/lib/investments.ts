@@ -135,6 +135,21 @@ export const groupByBroker = (investments: Investment[], cotacaoDolar: number = 
   return groups;
 };
 
+// Agrupamento por moeda
+export const groupByCurrency = (investments: Investment[], cotacaoDolar: number = 5.0): Record<Currency, number> => {
+  const groups: Record<Currency, number> = {
+    BRL: 0,
+    USD: 0,
+  };
+
+  investments.forEach((investment) => {
+    const valorEmReais = convertToReais(investment.valor_atual, investment.moeda, cotacaoDolar);
+    groups[investment.moeda] += valorEmReais;
+  });
+
+  return groups;
+};
+
 // Labels para exibição
 export const INVESTMENT_TYPE_LABELS: Record<InvestmentType, string> = {
   acoes: "Ações",

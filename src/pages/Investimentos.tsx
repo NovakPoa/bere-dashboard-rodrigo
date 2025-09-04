@@ -5,6 +5,7 @@ import { AddInvestmentForm } from "@/components/investments/AddInvestmentForm";
 import { InvestmentsTable } from "@/components/investments/InvestmentsTable";
 import { TypeChart } from "@/components/investments/TypeChart";
 import { BrokerChart } from "@/components/investments/BrokerChart";
+import { CurrencyChart } from "@/components/investments/CurrencyChart";
 import { StatCard } from "@/components/investments/StatCard";
 import DateRangePicker from "@/components/finance/DateRangePicker";
 import { Button } from "@/components/ui/button";
@@ -159,9 +160,10 @@ export default function Investimentos() {
         </div>
 
         {/* Gráficos */}
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <TypeChart investments={filtered} exchangeRate={exchangeRate} />
           <BrokerChart investments={filtered} exchangeRate={exchangeRate} />
+          <CurrencyChart investments={filtered} exchangeRate={exchangeRate} />
         </div>
 
         {/* Tabela de Investimentos */}
