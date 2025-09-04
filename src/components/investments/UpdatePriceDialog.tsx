@@ -23,7 +23,18 @@ interface UpdatePriceDialogProps {
 export function UpdatePriceDialog({ investment, onUpdated, children }: UpdatePriceDialogProps) {
   const [open, setOpen] = useState(false);
   const [preco, setPreco] = useState(investment.preco_atual);
+  const [precoString, setPrecoString] = useState("");
   const updateInvestment = useUpdateInvestment();
+
+  // Reset form when dialog opens
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (newOpen) {
+      setPreco(investment.preco_atual);
+      const formattedValue = (investment.preco_atual * 100).toString();
+      setPrecoString(formatCurrency(formattedValue, investment.moeda));
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,18 +53,18 @@ export function UpdatePriceDialog({ investment, onUpdated, children }: UpdatePri
     );
   };
 
-  const formatCurrency = (value: string) => {
+  const formatCurrency = (value: string, currencyType: string) => {
     const numericValue = value.replace(/\D/g, "");
     const floatValue = parseFloat(numericValue) / 100;
-    const locale = investment.moeda === "USD" ? "en-US" : "pt-BR";
+    const locale = currencyType === "USD" ? "en-US" : "pt-BR";
     return floatValue.toLocaleString(locale, {
       style: "currency",
-      currency: investment.moeda,
+      currency: currencyType,
     });
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
@@ -71,11 +82,12 @@ export function UpdatePriceDialog({ investment, onUpdated, children }: UpdatePri
             <Input
               id="preco"
               placeholder={investment.moeda === "USD" ? "US$ 0.00" : "R$ 0,00"}
-              value={preco > 0 ? formatCurrency(preco.toString()) : ""}
+              value={precoString}
               onChange={(e) => {
                 const value = e.target.value.replace(/\D/g, "");
                 const floatValue = parseFloat(value) / 100;
                 setPreco(floatValue || 0);
+                setPrecoString(formatCurrency(value, investment.moeda));
               }}
             />
           </div>
@@ -84,7 +96,7 @@ export function UpdatePriceDialog({ investment, onUpdated, children }: UpdatePri
             <Button 
               type="button" 
               variant="outline" 
-              onClick={() => setOpen(false)}
+              onClick={() => handleOpenChange(false)}
             >
               Cancelar
             </Button>
