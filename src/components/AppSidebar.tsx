@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Home, HeartPulse, Utensils, Film, Calendar, CheckCheck, Wallet, Notebook, User, Watch, TrendingUp, PieChart, ChevronDown, Heart } from "lucide-react";
 import {
@@ -45,6 +45,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const currentPath = location.pathname;
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [isFinanceOpen, setIsFinanceOpen] = useState(false);
   const [isHealthOpen, setIsHealthOpen] = useState(false);
@@ -61,12 +62,48 @@ export function AppSidebar() {
     }
   };
 
-  const handleFinanceToggle = () => {
-    setIsFinanceOpen(!isFinanceOpen);
+  const handleFinanceClick = () => {
+    const isOnMainFinancePage = currentPath === "/financeiro";
+    const isOnFinanceSubpage = currentPath.startsWith("/financeiro/");
+    
+    if (isOnMainFinancePage) {
+      // Se já estiver na página principal, apenas toggle o dropdown
+      setIsFinanceOpen(!isFinanceOpen);
+    } else if (isOnFinanceSubpage) {
+      // Se estiver em subpágina, vai para principal e mantém dropdown aberto
+      navigate("/financeiro");
+      setIsFinanceOpen(true);
+    } else {
+      // Primeira vez clicando, vai para principal e abre dropdown
+      navigate("/financeiro");
+      setIsFinanceOpen(true);
+    }
+    
+    if (isMobile) {
+      setOpenMobile(false);
+    }
   };
 
-  const handleHealthToggle = () => {
-    setIsHealthOpen(!isHealthOpen);
+  const handleHealthClick = () => {
+    const isOnMainHealthPage = currentPath === "/saude";
+    const isOnHealthSubpage = currentPath.startsWith("/atividades") || currentPath.startsWith("/alimentacao") || currentPath.startsWith("/garmin");
+    
+    if (isOnMainHealthPage) {
+      // Se já estiver na página principal, apenas toggle o dropdown
+      setIsHealthOpen(!isHealthOpen);
+    } else if (isOnHealthSubpage) {
+      // Se estiver em subpágina, vai para principal e mantém dropdown aberto
+      navigate("/saude");
+      setIsHealthOpen(true);
+    } else {
+      // Primeira vez clicando, vai para principal e abre dropdown
+      navigate("/saude");
+      setIsHealthOpen(true);
+    }
+    
+    if (isMobile) {
+      setOpenMobile(false);
+    }
   };
 
   // Auto-open finance group when navigating to finance subroutes
@@ -109,23 +146,21 @@ export function AppSidebar() {
               ))}
               
               {/* Financeiro Collapsible Group */}
-              <Collapsible open={shouldFinanceBeOpen} onOpenChange={handleFinanceToggle} className="group/collapsible">
+              <Collapsible open={shouldFinanceBeOpen} className="group/collapsible">
                 <SidebarMenuItem>
-                  <div className="flex">
-                    <SidebarMenuButton asChild isActive={isFinanceActive} className="flex-1">
-                      <NavLink to="/financeiro" className={getNavCls({ isActive: currentPath === "/financeiro" })} onClick={handleNavClick}>
-                        <Wallet className="mr-2 h-4 w-4" />
-                        {!collapsed && <span>Financeiro</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
+                  <SidebarMenuButton 
+                    onClick={handleFinanceClick}
+                    isActive={isFinanceActive}
+                    className="w-full justify-between"
+                  >
+                    <div className="flex items-center">
+                      <Wallet className="mr-2 h-4 w-4" />
+                      {!collapsed && <span>Financeiro</span>}
+                    </div>
                     {!collapsed && (
-                      <CollapsibleTrigger asChild>
-                        <button className="p-2 hover:bg-muted/50 rounded-md">
-                          <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
-                        </button>
-                      </CollapsibleTrigger>
+                      <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
                     )}
-                  </div>
+                  </SidebarMenuButton>
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {financeItems.map((item) => (
@@ -144,23 +179,21 @@ export function AppSidebar() {
               </Collapsible>
 
               {/* Saúde Collapsible Group */}
-              <Collapsible open={shouldHealthBeOpen} onOpenChange={handleHealthToggle} className="group/collapsible">
+              <Collapsible open={shouldHealthBeOpen} className="group/collapsible">
                 <SidebarMenuItem>
-                  <div className="flex">
-                    <SidebarMenuButton asChild isActive={isHealthActive} className="flex-1">
-                      <NavLink to="/saude" className={getNavCls({ isActive: currentPath === "/saude" })} onClick={handleNavClick}>
-                        <Heart className="mr-2 h-4 w-4" />
-                        {!collapsed && <span>Saúde</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
+                  <SidebarMenuButton 
+                    onClick={handleHealthClick}
+                    isActive={isHealthActive}
+                    className="w-full justify-between"
+                  >
+                    <div className="flex items-center">
+                      <Heart className="mr-2 h-4 w-4" />
+                      {!collapsed && <span>Saúde</span>}
+                    </div>
                     {!collapsed && (
-                      <CollapsibleTrigger asChild>
-                        <button className="p-2 hover:bg-muted/50 rounded-md">
-                          <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
-                        </button>
-                      </CollapsibleTrigger>
+                      <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
                     )}
-                  </div>
+                  </SidebarMenuButton>
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {healthItems.map((item) => (
