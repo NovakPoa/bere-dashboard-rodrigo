@@ -90,7 +90,7 @@ export default function Ganhos() {
         </Drawer>
       </header>
 
-      <div className="space-y-6">
+      <main className="py-4 md:py-8 space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
           <div className="flex flex-col sm:flex-row gap-4 flex-1 min-w-0">
@@ -146,7 +146,7 @@ export default function Ganhos() {
           incomes={filtered} 
           onChange={() => refetch()}
         />
-      </div>
+      </main>
     </div>
   );
 }
