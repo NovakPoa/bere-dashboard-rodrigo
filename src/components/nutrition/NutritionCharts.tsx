@@ -91,7 +91,7 @@ export default function NutritionCharts({ entries, dateRange }: NutritionChartsP
             Calorias médias/dia: <span className="font-medium text-foreground">{avgCalories} kcal</span>
           </p>
         </CardHeader>
-        <CardContent className="h-64">
+        <CardContent className="min-h-64 h-64">
           <ChartContainer config={chartConfig}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={averageData}>
@@ -123,7 +123,7 @@ export default function NutritionCharts({ entries, dateRange }: NutritionChartsP
         <CardHeader>
           <CardTitle className="text-sm text-muted-foreground">Variação de calorias por dia</CardTitle>
         </CardHeader>
-        <CardContent className="h-64">
+        <CardContent className="min-h-64 h-64">
           <ChartContainer config={chartConfig}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={dailyData}>
