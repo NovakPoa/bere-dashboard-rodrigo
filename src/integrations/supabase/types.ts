@@ -233,6 +233,78 @@ export type Database = {
         }
         Relationships: []
       }
+      garmin_activities: {
+        Row: {
+          activity_type: string
+          avg_hr: number | null
+          calories: number | null
+          created_at: string
+          distance_km: number | null
+          duration_sec: number | null
+          elevation_gain_m: number | null
+          elevation_loss_m: number | null
+          end_time: string | null
+          external_id: string | null
+          id: string
+          max_hr: number | null
+          pace_min_per_km: number | null
+          provider: string
+          raw: Json | null
+          start_time: string
+          steps: number | null
+          terra_payload_id: string
+          terra_user_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          avg_hr?: number | null
+          calories?: number | null
+          created_at?: string
+          distance_km?: number | null
+          duration_sec?: number | null
+          elevation_gain_m?: number | null
+          elevation_loss_m?: number | null
+          end_time?: string | null
+          external_id?: string | null
+          id?: string
+          max_hr?: number | null
+          pace_min_per_km?: number | null
+          provider?: string
+          raw?: Json | null
+          start_time: string
+          steps?: number | null
+          terra_payload_id: string
+          terra_user_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          avg_hr?: number | null
+          calories?: number | null
+          created_at?: string
+          distance_km?: number | null
+          duration_sec?: number | null
+          elevation_gain_m?: number | null
+          elevation_loss_m?: number | null
+          end_time?: string | null
+          external_id?: string | null
+          id?: string
+          max_hr?: number | null
+          pace_min_per_km?: number | null
+          provider?: string
+          raw?: Json | null
+          start_time?: string
+          steps?: number | null
+          terra_payload_id?: string
+          terra_user_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       habit_definitions: {
         Row: {
           created_at: string

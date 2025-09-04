@@ -1,62 +1,53 @@
-import { useEffect, useMemo, useState } from "react";
-import { format, eachDayOfInterval, startOfDay, addDays, differenceInCalendarDays, subDays, startOfMonth } from "date-fns";
-import { setPageSEO } from "@/lib/seo";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
-import StatCard from "@/components/finance/StatCard";
-import DateRangePicker from "@/components/finance/DateRangePicker";
-import { MultiSelect } from "@/components/ui/multi-select";
-import GarminActivitiesTable from "@/components/fitness/GarminActivitiesTable";
-import GarminChart from "@/components/fitness/GarminChart";
-import GarminSyncStatus from "@/components/fitness/GarminSyncStatus";
-import { FitnessEntry, groupTotalsByModality, totalCalories, fetchActivitiesFromSupabase } from "@/lib/fitness";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { fetchGarminActivities, GarminActivity } from "@/lib/garmin";
+import { useEffect, useMemo, useState } from "react";
+import { differenceInCalendarDays, startOfDay, subDays, format } from "date-fns";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Loader2, RefreshCw } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import GarminChart from "@/components/fitness/GarminChart";
+import GarminActivitiesTable from "@/components/fitness/GarminActivitiesTable";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { DateRangePicker } from "@/components/habits/DateRangePicker";
+import StatCard from "@/components/finance/StatCard";
+import GarminSyncStatus from "@/components/fitness/GarminSyncStatus";
 
 export default function Garmin() {
-  const [startDate, setStartDate] = useState<Date | undefined>(() => startOfMonth(new Date()));
-  const [endDate, setEndDate] = useState<Date | undefined>(() => new Date());
+  const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 30));
+  const [endDate, setEndDate] = useState<Date>(new Date());
   const [selectedModalities, setSelectedModalities] = useState<string[]>([]);
   const [syncLoading, setSyncLoading] = useState(false);
 
-  useEffect(() => setPageSEO("Garmin - Atividades Sincronizadas", "Visualize suas atividades sincronizadas do Garmin"), []);
+  // SEO
+  useEffect(() => {
+    document.title = "Garmin - Atividades Sincronizadas";
+  }, []);
 
-  const efFrom = startOfDay(startDate ?? startOfMonth(new Date()));
-  const efTo = startOfDay(endDate ?? new Date());
-  
-  // Buscar apenas atividades com origem = 'garmin'
-  const { data: dbEntries, isLoading, error } = useQuery({
-    queryKey: ["garmin-activities", efFrom.toISOString(), efTo.toISOString()],
+  const efFrom = startOfDay(startDate);
+  const efTo = startOfDay(endDate);
+
+  const { data: allEntries = [], isLoading, refetch } = useQuery<GarminActivity[]>({
+    queryKey: ['garmin-activities', efFrom, efTo],
     queryFn: async () => {
-      const activities = await fetchActivitiesFromSupabase(efFrom, efTo);
-      return activities.filter(activity => 
-        // Verifica atividades com origem 'garmin' 
-        activity.tipo?.includes('garmin') ||
-        ['corrida', 'ciclismo', 'natacao', 'musculacao', 'caminhada', 'yoga'].includes(activity.tipo?.toLowerCase())
-      );
+      return await fetchGarminActivities(efFrom, efTo);
     },
   });
-  
-  const entries = (dbEntries as FitnessEntry[] | undefined) ?? [];
 
-  const queryClient = useQueryClient();
+  // Real-time listener for garmin_activities table
   useEffect(() => {
     const channel = supabase
-      .channel("garmin-activities-changes")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "atividade_fisica" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["garmin-activities"] });
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "atividade_fisica" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["garmin-activities"] });
+      .channel('garmin-activities-updates')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'garmin_activities'
+        },
+        (payload) => {
+          console.log('Change received!', payload);
+          refetch();
         }
       )
       .subscribe();
@@ -64,88 +55,86 @@ export default function Garmin() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [refetch]);
 
-  // Trigger manual sync
+  // Manual sync function
   const handleManualSync = async () => {
     setSyncLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("terra-garmin-sync");
+      const { data, error } = await supabase.functions.invoke('terra-garmin-sync');
       
       if (error) {
-        toast({
-          title: "Erro na sincronização",
-          description: error.message,
-          variant: "destructive",
-        });
+        toast.error('Erro na sincronização: ' + error.message);
       } else {
-        toast({
-          title: "Sincronização concluída",
-          description: `${data?.processed || 0} atividades processadas`,
-        });
-        queryClient.invalidateQueries({ queryKey: ["garmin-activities"] });
+        toast.success(`Sincronização concluída - ${data?.processed || 0} atividades processadas`);
+        refetch();
       }
     } catch (err) {
-      console.error("Sync error:", err);
-      toast({
-        title: "Erro na sincronização",
-        description: "Falha ao sincronizar dados do Garmin",
-        variant: "destructive",
-      });
+      console.error('Sync error:', err);
+      toast.error('Falha ao sincronizar dados do Garmin');
     } finally {
       setSyncLoading(false);
     }
   };
 
-  // Get available modalities for filter options
   const availableModalities = useMemo(() => {
-    const modalities = Array.from(new Set(entries.map((e) => e.tipo?.toLowerCase() || "atividade")));
-    return modalities.map(m => ({ label: m.charAt(0).toUpperCase() + m.slice(1), value: m }));
-  }, [entries]);
+    const modalities = [...new Set(allEntries.map(e => e.activity_type).filter(Boolean))];
+    return modalities.map(modality => ({
+      value: modality,
+      label: modality.charAt(0).toUpperCase() + modality.slice(1)
+    }));
+  }, [allEntries]);
 
   const periodEntries = useMemo(() => {
-    const efFrom = startOfDay(startDate ?? startOfMonth(new Date()));
-    const efToEnd = addDays(startOfDay(endDate ?? new Date()), 1);
-    return entries.filter((e) => {
-      const d = new Date(e.data);
-      const inDateRange = d >= efFrom && d < efToEnd;
-      const inModalityFilter = selectedModalities.length === 0 || 
-        selectedModalities.includes(e.tipo?.toLowerCase() || "atividade");
-      return inDateRange && inModalityFilter;
+    return allEntries.filter(entry => {
+      if (selectedModalities.length > 0 && !selectedModalities.includes(entry.activity_type)) {
+        return false;
+      }
+      return true;
     });
-  }, [entries, startDate, endDate, selectedModalities]);
+  }, [allEntries, selectedModalities]);
 
-  const modalities = useMemo(() => Array.from(new Set(periodEntries.map((e) => e.tipo?.toLowerCase() || "atividade"))), [periodEntries]);
   const series = useMemo(() => {
-    const efFrom = startOfDay(startDate ?? startOfMonth(new Date()));
-    const efTo = startOfDay(endDate ?? new Date());
-    const days = eachDayOfInterval({ start: efFrom, end: efTo });
-    return {
-      data: days.map((day) => {
-        const next = addDays(day, 1);
-        const slice = periodEntries.filter((e) => {
-          const d = new Date(e.data);
-          return d >= day && d < next;
-        });
-        const row: any = { dia: format(day, "dd/MM") };
-        for (const m of modalities) row[m] = 0;
-        for (const e of slice) {
-          const k = e.tipo?.toLowerCase() || "atividade";
-          row[k] += e.minutos || 0;
-        }
-        return row;
-      }),
-      modalities,
-    };
-  }, [periodEntries, startDate, endDate, modalities]);
+    // Group activities by date and modality for charting
+    const dataByDate: Record<string, Record<string, number>> = {};
+    
+    periodEntries.forEach(entry => {
+      const date = format(new Date(entry.start_time), 'dd/MM');
+      const modality = entry.activity_type;
+      const minutes = entry.duration_sec ? Math.round(entry.duration_sec / 60) : 0;
+      
+      if (!dataByDate[date]) {
+        dataByDate[date] = {};
+      }
+      
+      dataByDate[date][modality] = (dataByDate[date][modality] || 0) + minutes;
+    });
+    
+    const data = Object.entries(dataByDate).map(([date, modalities]) => ({
+      data: date,
+      ...modalities
+    }));
+    
+    const modalities = [...new Set(periodEntries.map(e => e.activity_type))];
+    
+    return { data, modalities };
+  }, [periodEntries]);
 
+  // Summary stats
   const sessionsCount = periodEntries.length;
-  const totalMinutes = periodEntries.reduce((s, e) => s + (e.minutos || 0), 0);
-  const totalKm = periodEntries.reduce((s, e) => s + (e.distanciaKm || 0), 0);
-  const totalCal = useMemo(() => totalCalories(periodEntries), [periodEntries]);
+  const totalMinutes = periodEntries.reduce((acc, entry) => acc + (entry.duration_sec ? Math.round(entry.duration_sec / 60) : 0), 0);
+  const totalKm = periodEntries.reduce((acc, entry) => acc + (entry.distance_km || 0), 0);
+  const totalCal = periodEntries.reduce((acc, entry) => acc + (entry.calories || 0), 0);
+
+  const formatHm = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return h ? `${h}h ${m}m` : `${m}m`;
+  };
+
   const daysCount = (() => {
-    const efFrom = startOfDay(startDate ?? startOfMonth(new Date()));
-    const efTo = startOfDay(endDate ?? new Date());
+    const efFrom = startOfDay(startDate);
+    const efTo = startOfDay(endDate);
     return differenceInCalendarDays(efTo, efFrom) + 1;
   })();
   
@@ -156,20 +145,14 @@ export default function Garmin() {
   }, [totalCal, daysCount]);
   
   const periodEntriesSorted = useMemo(() =>
-    [...periodEntries].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()),
+    [...periodEntries].sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()),
     [periodEntries]
   );
-
-  const formatHm = (mins: number) => {
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    return h ? `${h} h ${m} min` : `${m} min`;
-  };
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Carregando dados do Garmin...</div>
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -219,7 +202,7 @@ export default function Garmin() {
           </div>
         </section>
 
-        {entries.length === 0 ? (
+        {allEntries.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <div className="text-muted-foreground">

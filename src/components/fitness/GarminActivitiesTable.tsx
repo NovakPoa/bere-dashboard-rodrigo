@@ -1,53 +1,49 @@
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Timer, MapPin, Zap } from "lucide-react";
-import { FitnessEntry } from "@/lib/fitness";
+import { Activity, Clock, MapPin, Zap, Heart, TrendingUp } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { GarminActivity, formatDuration, formatPace } from "@/lib/garmin";
 
 interface GarminActivitiesTableProps {
-  entries: FitnessEntry[];
+  entries: GarminActivity[];
+}
+
+function getActivityIcon(tipo: string) {
+  switch (tipo) {
+    case 'corrida': return Activity;
+    case 'ciclismo': return Activity;
+    case 'natacao': return Activity;
+    case 'caminhada': return MapPin;
+    case 'musculacao': return TrendingUp;
+    case 'yoga': return Heart;
+    default: return Activity;
+  }
+}
+
+function getActivityVariant(tipo: string): "default" | "secondary" | "destructive" | "outline" {
+  switch (tipo) {
+    case 'corrida': return 'default';
+    case 'ciclismo': return 'secondary';
+    case 'natacao': return 'outline';
+    default: return 'outline';
+  }
 }
 
 export default function GarminActivitiesTable({ entries }: GarminActivitiesTableProps) {
-  const getActivityIcon = (tipo: string) => {
-    const lowerTipo = tipo.toLowerCase();
-    if (lowerTipo.includes('run')) return <Activity className="h-4 w-4" />;
-    if (lowerTipo.includes('cycl') || lowerTipo.includes('bike')) return <MapPin className="h-4 w-4" />;
-    if (lowerTipo.includes('swim')) return <Zap className="h-4 w-4" />;
-    return <Timer className="h-4 w-4" />;
-  };
-
-  const getActivityVariant = (tipo: string) => {
-    const lowerTipo = tipo.toLowerCase();
-    if (lowerTipo.includes('run')) return "default";
-    if (lowerTipo.includes('cycl') || lowerTipo.includes('bike')) return "secondary";
-    if (lowerTipo.includes('swim')) return "outline";
-    return "default";
-  };
-
-  const formatDuration = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hours > 0) {
-      return `${hours}h ${mins}min`;
-    }
-    return `${mins}min`;
-  };
-
-  const formatPace = (distanceKm: number, minutes: number) => {
-    if (!distanceKm || distanceKm === 0) return null;
-    const paceMinPerKm = minutes / distanceKm;
-    const paceMin = Math.floor(paceMinPerKm);
-    const paceSec = Math.round((paceMinPerKm - paceMin) * 60);
-    return `${paceMin}:${paceSec.toString().padStart(2, '0')}/km`;
-  };
-
-  if (entries.length === 0) {
+  if (!entries.length) {
     return (
       <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">
-          Nenhuma atividade encontrada no período selecionado
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            Histórico de Atividades
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground text-center py-8">
+            Nenhuma atividade do Garmin encontrada para o período selecionado.
+          </p>
         </CardContent>
       </Card>
     );
@@ -58,71 +54,64 @@ export default function GarminActivitiesTable({ entries }: GarminActivitiesTable
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Activity className="h-5 w-5" />
-          Histórico de Atividades - Garmin
+          Histórico de Atividades ({entries.length})
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {entries.map((entry, index) => (
+      <CardContent className="space-y-4">
+        {entries.map((entry) => {
+          const Icon = getActivityIcon(entry.activity_type);
+          const startTime = new Date(entry.start_time);
+          
+          return (
             <div
-              key={index}
+              key={entry.id}
               className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
             >
-              <div className="flex items-start gap-3 flex-1">
-                <div className="mt-1">
-                  {getActivityIcon(entry.tipo)}
-                </div>
-                <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-2 sm:mb-0">
+                <Icon className="h-5 w-5 text-primary" />
+                <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <Badge variant={getActivityVariant(entry.tipo)} className="text-xs">
-                      {entry.tipo.replace('terra-', '').replace('garmin-', '')}
+                    <Badge variant={getActivityVariant(entry.activity_type)}>
+                      {entry.activity_type}
                     </Badge>
                     <span className="text-sm text-muted-foreground">
-                      {format(new Date(entry.data), "dd 'de' MMMM", { locale: ptBR })}
+                      {format(startTime, "dd/MM/yyyy", { locale: ptBR })}
                     </span>
                   </div>
-                  
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
-                    <div className="flex items-center gap-1">
-                      <Timer className="h-3 w-3 text-muted-foreground" />
-                      <span>{formatDuration(entry.minutos)}</span>
-                    </div>
-                    
-                    {entry.distanciaKm && entry.distanciaKm > 0 && (
-                      <>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3 text-muted-foreground" />
-                          <span>{entry.distanciaKm.toFixed(2)} km</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-1">
-                          <Activity className="h-3 w-3 text-muted-foreground" />
-                          <span>{formatPace(entry.distanciaKm, entry.minutos)}</span>
-                        </div>
-                      </>
-                    )}
-                    
-                    {entry.calorias && (
-                      <div className="flex items-center gap-1">
-                        <Zap className="h-3 w-3 text-muted-foreground" />
-                        <span>{entry.calorias} cal</span>
-                      </div>
-                    )}
+                  <div className="text-sm text-muted-foreground">
+                    {format(startTime, "HH:mm", { locale: ptBR })}
                   </div>
                 </div>
               </div>
               
-              <div className="mt-3 sm:mt-0 sm:ml-4 text-right">
-                <div className="text-sm font-medium">
-                  {format(new Date(entry.data), "HH:mm")}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span>{formatDuration(entry.duration_sec)}</span>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {format(new Date(entry.data), "EEE", { locale: ptBR })}
+                
+                {entry.distance_km && (
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>{entry.distance_km.toFixed(1)} km</span>
+                  </div>
+                )}
+                
+                <div className="flex items-center gap-1">
+                  <Activity className="h-4 w-4 text-muted-foreground" />
+                  <span>{formatPace(entry.distance_km, entry.duration_sec)}</span>
                 </div>
+                
+                {entry.calories && (
+                  <div className="flex items-center gap-1">
+                    <Zap className="h-4 w-4 text-muted-foreground" />
+                    <span>{Math.round(entry.calories)} cal</span>
+                  </div>
+                )}
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </CardContent>
     </Card>
   );

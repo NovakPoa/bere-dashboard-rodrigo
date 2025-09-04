@@ -116,32 +116,41 @@ serve(async (req) => {
 
         console.log('🏃 Dados da atividade extraídos:', activityData);
 
-        // 5. Converter para nossa estrutura atividade_fisica
-        const fitnessEntry = {
-          modalidade: mapActivityType(activityData.activity_type),
-          data: activityData.start_time ? new Date(activityData.start_time).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-          duracao_min: activityData.duration_seconds ? Math.round(activityData.duration_seconds / 60) : null,
-          distancia_km: activityData.distance_metres ? Number((activityData.distance_metres / 1000).toFixed(2)) : null,
-          calorias: activityData.calories_burned || null,
-          origem: 'garmin',
-          texto: `Atividade ${activityData.activity_type} sincronizada do Garmin`,
-          tipo: 'atividade_fisica',
+        // 5. Converter para estrutura garmin_activities
+        const garminActivity = {
           user_id: supabaseUserId,
-          created_at: new Date().toISOString()
+          terra_user_id: payload.user_id,
+          terra_payload_id: payload.payload_id,
+          provider: 'garmin',
+          external_id: activity.activity_uuid || activity.external_id || null,
+          activity_type: mapActivityType(activityData.activity_type),
+          start_time: activityData.start_time || new Date().toISOString(),
+          end_time: activityData.end_time || null,
+          duration_sec: activityData.duration_seconds || null,
+          distance_km: activityData.distance_metres ? Number((activityData.distance_metres / 1000).toFixed(2)) : null,
+          calories: activityData.calories_burned || null,
+          steps: activity.steps || null,
+          avg_hr: activity.heart_rate?.summary?.avg_hr || null,
+          max_hr: activity.heart_rate?.summary?.max_hr || null,
+          elevation_gain_m: activity.elevation?.summary?.elevation_gain || null,
+          elevation_loss_m: activity.elevation?.summary?.elevation_loss || null,
+          pace_min_per_km: activityData.distance_metres && activityData.duration_seconds ? 
+            Number(((activityData.duration_seconds / 60) / (activityData.distance_metres / 1000)).toFixed(2)) : null,
+          raw: terraData, // Guardar payload bruto para auditoria
         };
 
-        console.log('💾 Inserindo atividade:', fitnessEntry);
+        console.log('💾 Inserindo atividade Garmin:', garminActivity);
 
-        // 6. Inserir na tabela atividade_fisica
+        // 6. Inserir na tabela garmin_activities
         const { error: insertError } = await supabase
-          .from('atividade_fisica')
-          .insert(fitnessEntry);
+          .from('garmin_activities')
+          .insert(garminActivity);
 
         if (insertError) {
           console.error('❌ Erro ao inserir atividade:', insertError);
           processedCount.errors++;
         } else {
-          console.log(`✅ Atividade processada: ${fitnessEntry.modalidade} - ${fitnessEntry.duracao_min}min`);
+          console.log(`✅ Atividade Garmin processada: ${garminActivity.activity_type} - ${garminActivity.duration_sec ? Math.round(garminActivity.duration_sec / 60) : 0}min`);
           processedCount.success++;
         }
 
