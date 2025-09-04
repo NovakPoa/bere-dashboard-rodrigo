@@ -418,6 +418,51 @@ export type Database = {
         }
         Relationships: []
       }
+      investments: {
+        Row: {
+          corretora: string
+          created_at: string
+          data_atualizacao_preco: string
+          data_investimento: string
+          id: string
+          nome_investimento: string
+          preco_atual: number
+          quantidade: number
+          tipo_investimento: string
+          updated_at: string
+          user_id: string
+          valor_investido: number
+        }
+        Insert: {
+          corretora: string
+          created_at?: string
+          data_atualizacao_preco?: string
+          data_investimento: string
+          id?: string
+          nome_investimento: string
+          preco_atual: number
+          quantidade: number
+          tipo_investimento: string
+          updated_at?: string
+          user_id: string
+          valor_investido: number
+        }
+        Update: {
+          corretora?: string
+          created_at?: string
+          data_atualizacao_preco?: string
+          data_investimento?: string
+          id?: string
+          nome_investimento?: string
+          preco_atual?: number
+          quantidade?: number
+          tipo_investimento?: string
+          updated_at?: string
+          user_id?: string
+          valor_investido?: number
+        }
+        Relationships: []
+      }
       org_blocks: {
         Row: {
           bold: boolean
