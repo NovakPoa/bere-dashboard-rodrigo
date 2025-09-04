@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { useState } from "react";
 import { Home, HeartPulse, Utensils, Film, Calendar, CheckCheck, Wallet, Notebook, User, Watch, TrendingUp, PieChart, ChevronDown } from "lucide-react";
 import {
   Sidebar,
@@ -17,10 +18,13 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-const items = [
+const itemsBeforeFinance = [
   { title: "Organização", url: "/organizacao", icon: Notebook },
   { title: "Calendário", url: "/calendario", icon: Calendar },
   { title: "Hábitos", url: "/habitos", icon: CheckCheck },
+];
+
+const itemsAfterFinance = [
   { title: "Atividade Física", url: "/atividades", icon: HeartPulse },
   { title: "Garmin", url: "/garmin", icon: Watch },
   { title: "Alimentação", url: "/alimentacao", icon: Utensils },
@@ -41,10 +45,10 @@ export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
   const isMobile = useIsMobile();
+  const [isFinanceOpen, setIsFinanceOpen] = useState(false);
 
   const isActive = (path: string) => currentPath === path;
   const isFinanceActive = currentPath.startsWith("/financeiro");
-  const isFinanceGroupOpen = isFinanceActive;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-muted text-primary font-medium" : "hover:bg-muted/50";
 
@@ -54,6 +58,13 @@ export function AppSidebar() {
     }
   };
 
+  const handleFinanceToggle = () => {
+    setIsFinanceOpen(!isFinanceOpen);
+  };
+
+  // Auto-open finance group when on finance routes, but still allow manual toggle
+  const shouldFinanceBeOpen = isFinanceActive || isFinanceOpen;
+
   return (
     <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible="icon">
       <SidebarContent>
@@ -61,7 +72,8 @@ export function AppSidebar() {
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {/* Items before Finance */}
+              {itemsBeforeFinance.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
                     <NavLink to={item.url} end className={getNavCls} onClick={handleNavClick}>
@@ -73,11 +85,11 @@ export function AppSidebar() {
               ))}
               
               {/* Financeiro Collapsible Group */}
-              <Collapsible open={isFinanceGroupOpen} className="group/collapsible">
+              <Collapsible open={shouldFinanceBeOpen} onOpenChange={handleFinanceToggle} className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton asChild isActive={isFinanceActive}>
-                      <NavLink to="/financeiro" className={getNavCls({ isActive: isFinanceActive })} onClick={handleNavClick}>
+                    <SidebarMenuButton isActive={isFinanceActive}>
+                      <div className="flex items-center w-full">
                         <Wallet className="mr-2 h-4 w-4" />
                         {!collapsed && (
                           <>
@@ -85,7 +97,7 @@ export function AppSidebar() {
                             <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
                           </>
                         )}
-                      </NavLink>
+                      </div>
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
@@ -104,6 +116,18 @@ export function AppSidebar() {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
+
+              {/* Items after Finance */}
+              {itemsAfterFinance.map((item) => (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                    <NavLink to={item.url} end className={getNavCls} onClick={handleNavClick}>
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
