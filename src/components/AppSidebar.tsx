@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Home, HeartPulse, Utensils, Film, Calendar, CheckCheck, Wallet, Notebook, User, Watch, TrendingUp, PieChart, ChevronDown } from "lucide-react";
+import { Home, HeartPulse, Utensils, Film, Calendar, CheckCheck, Wallet, Notebook, User, Watch, TrendingUp, PieChart, ChevronDown, Heart } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -26,8 +26,9 @@ const itemsBeforeFinance = [
 
 const itemsAfterFinance = [
   { title: "Atividade Física", url: "/atividades", icon: HeartPulse },
-  { title: "Garmin", url: "/garmin", icon: Watch },
   { title: "Alimentação", url: "/alimentacao", icon: Utensils },
+  { title: "Saúde", url: "/saude", icon: Heart },
+  { title: "Garmin", url: "/garmin", icon: Watch },
   { title: "Cultura", url: "/cultura", icon: Film },
   { title: "Visão Geral", url: "/app", icon: Home },
   { title: "Perfil", url: "/profile", icon: User },

@@ -52,6 +52,7 @@ import Garmin from "./pages/Garmin";
 import Ganhos from "./pages/Ganhos";
 import Investimentos from "./pages/Investimentos";
 import Financeiro from "./pages/Financeiro";
+import Saude from "./pages/Saude";
 
 import Auth from "./pages/Auth";
 
@@ -94,6 +95,7 @@ const App = () => (
             <Route path="/financeiro/investimentos" element={<Investimentos />} />
             <Route path="/atividades" element={<Atividades />} />
             <Route path="/alimentacao" element={<Alimentacao />} />
+            <Route path="/saude" element={<Saude />} />
             <Route path="/cultura" element={<Cultura />} />
             <Route path="/calendario" element={<Calendario />} />
             <Route path="/organizacao" element={<Organizacao />} />
