@@ -52,7 +52,7 @@ export default function RecentMeals({ entries, dateRange }: RecentMealsProps) {
                   <TableCell className="capitalize">{entry.mealType}</TableCell>
                   <TableCell className="max-w-48 truncate">{entry.description}</TableCell>
                   <TableCell className="text-right font-mono">
-                    {entry.calories.toLocaleString()}
+                    {entry.calories?.toLocaleString() || '-'}
                   </TableCell>
                   <TableCell className="text-right font-mono">
                     {entry.protein}
