@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Home, HeartPulse, Utensils, Film, Calendar, CheckCheck, Wallet, Notebook, User, Watch, TrendingUp, PieChart, ChevronDown } from "lucide-react";
 import {
   Sidebar,
@@ -62,8 +62,16 @@ export function AppSidebar() {
     setIsFinanceOpen(!isFinanceOpen);
   };
 
-  // Auto-open finance group when on finance routes, but still allow manual toggle
-  const shouldFinanceBeOpen = isFinanceActive || isFinanceOpen;
+  // Auto-open finance group when navigating to finance subroutes
+  useEffect(() => {
+    const isFinanceSubroute = currentPath.startsWith("/financeiro/");
+    if (isFinanceSubroute && !isFinanceOpen) {
+      setIsFinanceOpen(true);
+    }
+  }, [currentPath, isFinanceOpen]);
+
+  // Only use manual state for controlling the group
+  const shouldFinanceBeOpen = isFinanceOpen;
 
   return (
     <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible="icon">
