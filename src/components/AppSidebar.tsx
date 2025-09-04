@@ -32,7 +32,6 @@ const healthItems = [
 
 const itemsAfterFinance = [
   { title: "Cultura", url: "/cultura", icon: Film },
-  { title: "Visão Geral", url: "/app", icon: Home },
   { title: "Perfil", url: "/profile", icon: User },
 ];
 
