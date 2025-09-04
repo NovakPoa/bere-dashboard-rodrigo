@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,16 +32,49 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useProfile, useUpdateProfile, calculateBMR, type Profile } from "@/hooks/useProfile";
 
 const healthProfileSchema = z.object({
-  height: z.number().min(100, "Altura deve ser pelo menos 100cm").max(250, "Altura deve ser no máximo 250cm"),
-  weight: z.number().min(30, "Peso deve ser pelo menos 30kg").max(300, "Peso deve ser no máximo 300kg"),
-  age: z.number().min(10, "Idade deve ser pelo menos 10 anos").max(120, "Idade deve ser no máximo 120 anos"),
+  height: z.union([
+    z.string().min(1, "Altura é obrigatória"),
+    z.number().min(100, "Altura deve ser pelo menos 100cm").max(250, "Altura deve ser no máximo 250cm")
+  ]).transform((val) => {
+    const num = typeof val === "string" ? Number(val) : val;
+    if (isNaN(num)) throw new Error("Altura deve ser um número válido");
+    if (num < 100) throw new Error("Altura deve ser pelo menos 100cm");
+    if (num > 250) throw new Error("Altura deve ser no máximo 250cm");
+    return num;
+  }),
+  weight: z.union([
+    z.string().min(1, "Peso é obrigatório"),
+    z.number().min(30, "Peso deve ser pelo menos 30kg").max(300, "Peso deve ser no máximo 300kg")
+  ]).transform((val) => {
+    const num = typeof val === "string" ? Number(val) : val;
+    if (isNaN(num)) throw new Error("Peso deve ser um número válido");
+    if (num < 30) throw new Error("Peso deve ser pelo menos 30kg");
+    if (num > 300) throw new Error("Peso deve ser no máximo 300kg");
+    return num;
+  }),
+  age: z.union([
+    z.string().min(1, "Idade é obrigatória"),
+    z.number().min(10, "Idade deve ser pelo menos 10 anos").max(120, "Idade deve ser no máximo 120 anos")
+  ]).transform((val) => {
+    const num = typeof val === "string" ? Number(val) : val;
+    if (isNaN(num)) throw new Error("Idade deve ser um número válido");
+    if (num < 10) throw new Error("Idade deve ser pelo menos 10 anos");
+    if (num > 120) throw new Error("Idade deve ser no máximo 120 anos");
+    return num;
+  }),
   gender: z.enum(["masculino", "feminino"], { required_error: "Selecione o gênero" }),
   activity_level: z.enum(["sedentario", "levemente_ativo", "moderadamente_ativo", "muito_ativo", "super_ativo"], {
     required_error: "Selecione o nível de atividade"
   }),
 });
 
-type HealthProfileFormData = z.infer<typeof healthProfileSchema>;
+type HealthProfileFormData = {
+  height: string | number;
+  weight: string | number;
+  age: string | number;
+  gender: "masculino" | "feminino";
+  activity_level: "sedentario" | "levemente_ativo" | "moderadamente_ativo" | "muito_ativo" | "super_ativo";
+};
 
 export default function HealthProfileForm() {
   const [open, setOpen] = useState(false);
@@ -51,13 +84,25 @@ export default function HealthProfileForm() {
   const form = useForm<HealthProfileFormData>({
     resolver: zodResolver(healthProfileSchema),
     defaultValues: {
-      height: profile?.height || undefined,
-      weight: profile?.weight || undefined,
-      age: profile?.age || undefined,
-      gender: profile?.gender || undefined,
-      activity_level: profile?.activity_level || undefined,
+      height: "",
+      weight: "",
+      age: "",
+      gender: undefined,
+      activity_level: undefined,
     },
   });
+
+  useEffect(() => {
+    if (profile) {
+      form.reset({
+        height: profile.height?.toString() || "",
+        weight: profile.weight?.toString() || "",
+        age: profile.age?.toString() || "",
+        gender: profile.gender,
+        activity_level: profile.activity_level,
+      });
+    }
+  }, [profile, form]);
 
   const watchedValues = form.watch();
   const metabolicRates = calculateBMR({
@@ -67,7 +112,9 @@ export default function HealthProfileForm() {
 
   const onSubmit = async (data: HealthProfileFormData) => {
     try {
-      await updateProfile.mutateAsync(data);
+      // O schema do Zod já faz a transformação para números
+      const transformedData = healthProfileSchema.parse(data);
+      await updateProfile.mutateAsync(transformedData);
       setOpen(false);
     } catch (error) {
       console.error("Erro ao salvar perfil:", error);
@@ -121,7 +168,10 @@ export default function HealthProfileForm() {
                         type="number"
                         placeholder="170"
                         {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          field.onChange(value);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -140,7 +190,10 @@ export default function HealthProfileForm() {
                         type="number"
                         placeholder="70"
                         {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          field.onChange(value);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -159,7 +212,10 @@ export default function HealthProfileForm() {
                         type="number"
                         placeholder="30"
                         {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          field.onChange(value);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
