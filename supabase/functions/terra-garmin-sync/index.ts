@@ -36,8 +36,10 @@ serve(async (req) => {
     );
 
     const terraApiKey = Deno.env.get('TERRA_API_KEY');
-    if (!terraApiKey) {
-      throw new Error('Terra API key não configurada');
+    const terraDevId = Deno.env.get('TERRA_DEV_ID');
+    
+    if (!terraApiKey || !terraDevId) {
+      throw new Error('Terra API key ou Dev ID não configurados');
     }
 
     // Buscar dados não processados da Terra API
@@ -82,13 +84,16 @@ serve(async (req) => {
 
         const terraResponse = await fetch(terraUrl, {
           headers: {
-            'X-API-Key': terraApiKey,
+            'dev-id': terraDevId,
+            'x-api-key': terraApiKey,
             'Accept': 'application/json'
           }
         });
 
         if (!terraResponse.ok) {
+          const errorBody = await terraResponse.text();
           console.error(`❌ Erro na Terra API: ${terraResponse.status} - ${terraResponse.statusText}`);
+          console.error(`❌ Terra API Error Body:`, errorBody);
           processedCount.errors++;
           continue;
         }
@@ -126,7 +131,9 @@ serve(async (req) => {
           activity_type: mapActivityType(activityData.activity_type),
           start_time: activityData.start_time || new Date().toISOString(),
           end_time: activityData.end_time || null,
-          duration_sec: activityData.duration_seconds || null,
+          duration_sec: activityData.duration_seconds || 
+            (activityData.start_time && activityData.end_time ? 
+              Math.round((new Date(activityData.end_time).getTime() - new Date(activityData.start_time).getTime()) / 1000) : null),
           distance_km: activityData.distance_metres ? Number((activityData.distance_metres / 1000).toFixed(2)) : null,
           calories: activityData.calories_burned || null,
           steps: activity.steps || null,
@@ -152,21 +159,21 @@ serve(async (req) => {
         } else {
           console.log(`✅ Atividade Garmin processada: ${garminActivity.activity_type} - ${garminActivity.duration_sec ? Math.round(garminActivity.duration_sec / 60) : 0}min`);
           processedCount.success++;
-        }
+          
+          // 7. Remover payload processado APENAS após inserção bem-sucedida
+          const { error: deleteError } = await supabase
+            .from('terra_data_payloads')
+            .delete()
+            .match({ 
+              user_id: payload.user_id, 
+              payload_id: payload.payload_id 
+            });
 
-        // 7. Remover payload processado
-        const { error: deleteError } = await supabase
-          .from('terra_data_payloads')
-          .delete()
-          .match({ 
-            user_id: payload.user_id, 
-            payload_id: payload.payload_id 
-          });
-
-        if (deleteError) {
-          console.error('⚠️ Erro ao remover payload processado:', deleteError);
-        } else {
-          console.log(`🗑️ Payload ${payload.payload_id} removido`);
+          if (deleteError) {
+            console.error('⚠️ Erro ao remover payload processado:', deleteError);
+          } else {
+            console.log(`🗑️ Payload ${payload.payload_id} removido`);
+          }
         }
 
       } catch (error) {
