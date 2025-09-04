@@ -8,6 +8,7 @@ import { useInvestments } from "@/hooks/useInvestments";
 import { getMonthlyTotal } from "@/lib/finance";
 import { currency, getPortfolioTotals } from "@/lib/investments";
 import { getMonthlyIncomeTotal } from "@/lib/income";
+import FinancialPeriodChart from "@/components/finance/FinancialPeriodChart";
 
 export default function Financeiro() {
   const { data: expenses = [], isLoading: expensesLoading } = useExpenses();
@@ -87,86 +88,8 @@ export default function Financeiro() {
         </Card>
       </div>
 
-      {/* Navigation Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="transition-smooth hover:shadow-elegant">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-red-600" />
-              Despesas
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Gerencie e acompanhe seus gastos mensais
-            </p>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-semibold">{expenses.length}</p>
-                <p className="text-xs text-muted-foreground">registros</p>
-              </div>
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/financeiro/despesas" className="flex items-center gap-2">
-                  Acessar
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="transition-smooth hover:shadow-elegant">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-green-600" />
-              Ganhos
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Registre e monitore suas fontes de renda
-            </p>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-semibold">{incomes.length}</p>
-                <p className="text-xs text-muted-foreground">registros</p>
-              </div>
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/financeiro/ganhos" className="flex items-center gap-2">
-                  Acessar
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="transition-smooth hover:shadow-elegant">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChart className="h-5 w-5 text-blue-600" />
-              Investimentos
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Acompanhe seu portfólio de investimentos
-            </p>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-semibold">{investments.length}</p>
-                <p className="text-xs text-muted-foreground">investimentos</p>
-              </div>
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/financeiro/investimentos" className="flex items-center gap-2">
-                  Acessar
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Period Chart */}
+      <FinancialPeriodChart expenses={expenses} incomes={incomes} />
     </div>
   );
 }
