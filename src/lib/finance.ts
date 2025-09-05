@@ -324,10 +324,24 @@ export function filterExpensesByDateRange(
   startDate?: Date,
   endDate?: Date
 ) {
+  // Normalize boundaries to include the full selected days
+  const start = startDate
+    ? new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0, 0)
+    : undefined;
+  const end = endDate
+    ? new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999)
+    : undefined;
+
+  // Parse an expense date string (ISO or YYYY-MM-DD) as local date without TZ shifts
+  const parseLocalDateOnly = (dateStr: string): Date => {
+    const [y, m, d] = dateStr.split("T")[0].split("-").map((n) => Number(n));
+    return new Date(y, (m || 1) - 1, d || 1, 12, 0, 0, 0); // noon to avoid DST issues
+  };
+
   return expenses.filter((e) => {
-    const expenseDate = parseDateOnly(e.date);
-    if (startDate && expenseDate < startDate) return false;
-    if (endDate && expenseDate > endDate) return false;
+    const expenseDate = parseLocalDateOnly(e.date);
+    if (start && expenseDate < start) return false;
+    if (end && expenseDate > end) return false;
     return true;
   });
 }
