@@ -17,17 +17,16 @@ import DateRangePicker from "@/components/finance/DateRangePicker";
 import { useExpenses } from "@/hooks/useFinance";
 
 const Index = () => {
-  const { data: expenses = [], refetch } = useExpenses();
+  const { data: expenses = [] } = useExpenses();
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
   const [selectedMethods, setSelectedMethods] = useState<PaymentMethod[]>([]);
   const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [showExpenseForm, setShowExpenseForm] = useState(false);
 
-  const refresh = () => refetch();
+  
   
   const handleExpenseAdded = () => {
-    refresh(); // Force refresh after adding expense
     setShowExpenseForm(false);
   };
 
@@ -163,7 +162,7 @@ const Index = () => {
           <div className="min-w-0">
             <ExpensesTable 
               expenses={filtered.sort((a, b) => parseDateOnly(b.date).getTime() - parseDateOnly(a.date).getTime())} 
-              onChange={refresh} 
+              onChange={() => {}} 
             />
           </div>
         </section>

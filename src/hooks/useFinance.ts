@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { PaymentMethod, Category, Expense } from "@/types/expense";
@@ -77,19 +78,25 @@ const normalizePaymentMethod = (method: string): PaymentMethod => {
 // Convert Supabase record to Expense type
 const convertToExpense = (record: FinanceRecord): Expense => {
   console.log("Converting record:", record); // Debug log
-  
-  const expense = {
-    id: record.id.toString(),
-    amount: record.valor,
-    category: normalizeCategory(record.categoria),
-    method: normalizePaymentMethod(record.forma_pagamento),
-    date: record.data,
-    source: record.origem as "whatsapp" | "manual",
+
+  const amount = Number(record.valor ?? 0);
+  const dateStr = typeof record.data === "string"
+    ? record.data
+    : new Date(record.data as unknown as string).toISOString().slice(0, 10);
+  const source = record.origem === "whatsapp" ? "whatsapp" : "manual";
+
+  const expense: Expense = {
+    id: String(record.id),
+    amount,
+    category: normalizeCategory(record.categoria || ""),
+    method: normalizePaymentMethod(record.forma_pagamento || ""),
+    date: dateStr,
+    source,
     note: record.descricao || undefined,
-    installmentsTotal: record.installments_total || undefined,
-    installmentNumber: record.installment_number || undefined,
-    originalExpenseId: record.original_expense_id?.toString() || undefined,
-    isInstallment: record.is_installment || undefined,
+    installmentsTotal: record.installments_total ?? undefined,
+    installmentNumber: record.installment_number ?? undefined,
+    originalExpenseId: record.original_expense_id != null ? String(record.original_expense_id) : undefined,
+    isInstallment: record.is_installment ?? undefined,
   };
   
   console.log("Converted expense:", expense); // Debug log
@@ -98,8 +105,8 @@ const convertToExpense = (record: FinanceRecord): Expense => {
 
 // Convert Expense to Supabase record format
 const convertFromExpense = (expense: Omit<Expense, "id">) => ({
-  valor: expense.amount,
-  data: expense.date,
+  valor: Number(expense.amount),
+  data: typeof expense.date === "string" ? expense.date : new Date(expense.date as unknown as string).toISOString().slice(0, 10),
   categoria: expense.category,
   forma_pagamento: expense.method,
   origem: expense.source,
@@ -113,7 +120,8 @@ const convertFromExpense = (expense: Omit<Expense, "id">) => ({
 });
 
 export function useExpenses() {
-  return useQuery({
+  const queryClient = useQueryClient();
+  const query = useQuery({
     queryKey: ["expenses"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -127,6 +135,26 @@ export function useExpenses() {
       return data.map(convertToExpense);
     },
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("public:financeiro")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "financeiro" },
+        (payload) => {
+          console.log("[Realtime] financeiro change:", payload);
+          queryClient.invalidateQueries({ queryKey: ["expenses"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  return query;
 }
 
 export function useAddExpense() {
@@ -228,16 +256,17 @@ export function useAddExpense() {
         return convertToExpense(data);
       }
     },
-    onSuccess: (newExpense) => {
-      // Optimistic update: immediately add the new expense to the cache
-      queryClient.setQueryData<Expense[]>(["expenses"], (oldData) => {
-        if (!oldData) return [newExpense];
-        return [newExpense, ...oldData];
-      });
-      
-      // Then refetch to ensure consistency
-      queryClient.invalidateQueries({ queryKey: ["expenses"] });
-    },
+onSuccess: (newExpense) => {
+  // Optimistic update: immediately add the new expense to the cache
+  queryClient.setQueryData<Expense[]>(["expenses"], (oldData) => {
+    if (!oldData) return [newExpense];
+    return [newExpense, ...oldData];
+  });
+  
+  // Ensure consistency and immediate UI update
+  queryClient.invalidateQueries({ queryKey: ["expenses"] });
+  queryClient.refetchQueries({ queryKey: ["expenses"], type: "active" });
+},
     onError: (error: Error) => {
       toast({
         title: "Erro",
