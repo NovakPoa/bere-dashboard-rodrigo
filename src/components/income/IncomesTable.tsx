@@ -45,6 +45,7 @@ export default function IncomesTable({ incomes, onChange }: { incomes: Income[];
                   <TableHead className="min-w-32">Descrição</TableHead>
                   <TableHead className="min-w-24">Categoria</TableHead>
                   <TableHead className="min-w-24">Método</TableHead>
+                  <TableHead className="min-w-20">Parcela</TableHead>
                   <TableHead className="min-w-24 text-right">Valor</TableHead>
                   <TableHead className="w-12"></TableHead>
                 </TableRow>
@@ -63,6 +64,12 @@ export default function IncomesTable({ incomes, onChange }: { incomes: Income[];
                     </TableCell>
                     <TableCell className="text-xs md:text-sm">
                       {METHOD_LABELS[income.method]}
+                    </TableCell>
+                    <TableCell className="text-xs md:text-sm">
+                      {income.isInstallment && income.installmentNumber && income.installmentsTotal
+                        ? `${income.installmentNumber}/${income.installmentsTotal}`
+                        : "-"
+                      }
                     </TableCell>
                     <TableCell className="text-xs md:text-sm font-medium text-right text-green-600">
                       {currency(income.amount)}

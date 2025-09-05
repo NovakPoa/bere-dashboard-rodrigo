@@ -18,4 +18,8 @@ export interface Income {
   date: string; // ISO string
   source: "whatsapp" | "manual";
   note?: string;
+  installmentsTotal?: number;
+  installmentNumber?: number;
+  originalIncomeId?: string;
+  isInstallment?: boolean;
 }
