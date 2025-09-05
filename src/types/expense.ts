@@ -25,4 +25,8 @@ export interface Expense {
   date: string; // ISO string
   source: "whatsapp" | "manual";
   note?: string;
+  installmentsTotal?: number;
+  installmentNumber?: number;
+  originalExpenseId?: string;
+  isInstallment?: boolean;
 }

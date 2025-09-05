@@ -195,7 +195,11 @@ export type Database = {
           descricao: string | null
           forma_pagamento: string | null
           id: number
+          installment_number: number | null
+          installments_total: number | null
+          is_installment: boolean | null
           origem: string | null
+          original_expense_id: number | null
           texto: string | null
           tipo: string | null
           ts: string | null
@@ -209,7 +213,11 @@ export type Database = {
           descricao?: string | null
           forma_pagamento?: string | null
           id?: number
+          installment_number?: number | null
+          installments_total?: number | null
+          is_installment?: boolean | null
           origem?: string | null
+          original_expense_id?: number | null
           texto?: string | null
           tipo?: string | null
           ts?: string | null
@@ -223,7 +231,11 @@ export type Database = {
           descricao?: string | null
           forma_pagamento?: string | null
           id?: number
+          installment_number?: number | null
+          installments_total?: number | null
+          is_installment?: boolean | null
           origem?: string | null
+          original_expense_id?: number | null
           texto?: string | null
           tipo?: string | null
           ts?: string | null

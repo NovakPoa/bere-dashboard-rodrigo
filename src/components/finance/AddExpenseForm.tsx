@@ -55,7 +55,8 @@ const formSchema = z.object({
   }, "Valor deve ser um número positivo"),
   method: z.enum(["pix", "credit", "boleto"], {
     required_error: "Forma de pagamento é obrigatória"
-  })
+  }),
+  installments: z.number().min(1).max(12).optional()
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -70,12 +71,16 @@ export default function AddExpenseForm({ onAdded }: { onAdded: () => void }) {
       category: undefined,
       date: new Date(),
       amount: "",
-      method: undefined
+      method: undefined,
+      installments: 1
     }
   });
 
+  const selectedMethod = form.watch("method");
+
   const onSubmit = (data: FormData) => {
     const amount = parseFloat(data.amount.replace(",", "."));
+    const installments = data.method === "credit" ? (data.installments || 1) : 1;
     
     addExpense.mutate({
       note: data.note,
@@ -83,12 +88,17 @@ export default function AddExpenseForm({ onAdded }: { onAdded: () => void }) {
       date: data.date,
       amount,
       method: data.method,
-      source: "manual"
+      source: "manual",
+      installments
     }, {
       onSuccess: () => {
+        const description = installments > 1 
+          ? `${data.category} • R$ ${amount.toFixed(2).replace(".", ",")} em ${installments}x`
+          : `${data.category} • R$ ${amount.toFixed(2).replace(".", ",")}`;
+        
         toast({ 
           title: "Despesa adicionada", 
-          description: `${data.category} • R$ ${amount.toFixed(2).replace(".", ",")}` 
+          description 
         });
         form.reset();
         onAdded();
@@ -198,6 +208,36 @@ export default function AddExpenseForm({ onAdded }: { onAdded: () => void }) {
                 </FormItem>
               )}
             />
+
+            {selectedMethod === "credit" && (
+              <FormField
+                control={form.control}
+                name="installments"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número de Parcelas</FormLabel>
+                    <Select 
+                      onValueChange={(value) => field.onChange(parseInt(value))} 
+                      defaultValue={field.value?.toString()}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o número de parcelas" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
+                          <SelectItem key={num} value={num.toString()}>
+                            {num}x
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}

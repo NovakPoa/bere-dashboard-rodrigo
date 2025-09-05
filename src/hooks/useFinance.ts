@@ -12,6 +12,10 @@ interface FinanceRecord {
   origem: string;
   user_id?: string;
   descricao?: string;
+  installments_total?: number;
+  installment_number?: number;
+  original_expense_id?: number;
+  is_installment?: boolean;
 }
 
 // Category normalization mapping
@@ -82,6 +86,10 @@ const convertToExpense = (record: FinanceRecord): Expense => {
     date: record.data,
     source: record.origem as "whatsapp" | "manual",
     note: record.descricao || undefined,
+    installmentsTotal: record.installments_total || undefined,
+    installmentNumber: record.installment_number || undefined,
+    originalExpenseId: record.original_expense_id?.toString() || undefined,
+    isInstallment: record.is_installment || undefined,
   };
   
   console.log("Converted expense:", expense); // Debug log
@@ -98,6 +106,10 @@ const convertFromExpense = (expense: Omit<Expense, "id">) => ({
   descricao: expense.note || null,
   tipo: 'financeira',
   user_id: null, // Will be set by RLS automatically when inserting
+  installments_total: expense.installmentsTotal || null,
+  installment_number: expense.installmentNumber || null,
+  original_expense_id: expense.originalExpenseId ? parseInt(expense.originalExpenseId) : null,
+  is_installment: expense.isInstallment || false,
 });
 
 export function useExpenses() {
@@ -122,7 +134,7 @@ export function useAddExpense() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (expense: Omit<Expense, "id" | "date"> & { date?: Date }) => {
+    mutationFn: async (expense: Omit<Expense, "id" | "date"> & { date?: Date; installments?: number }) => {
       // Get current user
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
@@ -133,23 +145,88 @@ export function useAddExpense() {
       const expenseDate = expense.date || new Date();
       const localDateStr = `${expenseDate.getFullYear()}-${String(expenseDate.getMonth() + 1).padStart(2, '0')}-${String(expenseDate.getDate()).padStart(2, '0')}`;
 
-      const record = {
-        ...convertFromExpense({
-          ...expense,
-          date: localDateStr,
-        }),
-        user_id: user.id, // Explicitly set user_id
-      };
-
-      const { data, error } = await supabase
-        .from("financeiro")
-        .insert([record])
-        .select()
-        .single();
-
-      if (error) throw error;
+      const installments = expense.installments || 1;
+      const isInstallmentPurchase = installments > 1 && expense.method === "credit";
       
-      return convertToExpense(data);
+      if (isInstallmentPurchase) {
+        // Create installment expenses
+        const installmentAmount = expense.amount / installments;
+        const records = [];
+        
+        for (let i = 0; i < installments; i++) {
+          const installmentDate = new Date(expenseDate);
+          installmentDate.setMonth(installmentDate.getMonth() + i);
+          const installmentDateStr = `${installmentDate.getFullYear()}-${String(installmentDate.getMonth() + 1).padStart(2, '0')}-${String(installmentDate.getDate()).padStart(2, '0')}`;
+          
+          const installmentExpense = {
+            ...expense,
+            amount: installmentAmount,
+            date: installmentDateStr,
+            installmentsTotal: installments,
+            installmentNumber: i + 1,
+            isInstallment: true,
+          };
+          
+          const record = {
+            ...convertFromExpense(installmentExpense),
+            user_id: user.id,
+          };
+          
+          records.push(record);
+        }
+
+        // Insert first installment to get the original_expense_id
+        const { data: firstInstallment, error: firstError } = await supabase
+          .from("financeiro")
+          .insert([records[0]])
+          .select()
+          .single();
+
+        if (firstError) throw firstError;
+
+        // Update remaining records with original_expense_id and insert them
+        if (records.length > 1) {
+          const remainingRecords = records.slice(1).map(record => ({
+            ...record,
+            original_expense_id: firstInstallment.id,
+          }));
+
+          const { error: remainingError } = await supabase
+            .from("financeiro")
+            .insert(remainingRecords);
+
+          if (remainingError) throw remainingError;
+
+          // Update first installment with its own ID as original_expense_id
+          const { error: updateError } = await supabase
+            .from("financeiro")
+            .update({ original_expense_id: firstInstallment.id })
+            .eq("id", firstInstallment.id);
+
+          if (updateError) throw updateError;
+        }
+
+        return convertToExpense(firstInstallment);
+      } else {
+        // Regular single expense
+        const record = {
+          ...convertFromExpense({
+            ...expense,
+            date: localDateStr,
+          }),
+          user_id: user.id,
+        };
+
+        const { data, error } = await supabase
+          .from("financeiro")
+          .insert([record])
+          .select()
+          .single();
+
+        if (error) throw error;
+        
+        return convertToExpense(data);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });

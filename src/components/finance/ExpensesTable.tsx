@@ -42,6 +42,7 @@ export default function ExpensesTable({ expenses, onChange }: { expenses: Expens
                   <TableHead className="min-w-[80px] text-xs md:text-sm">Descrição</TableHead>
                   <TableHead className="min-w-[60px] text-xs md:text-sm">Categoria</TableHead>
                   <TableHead className="min-w-[70px] text-xs md:text-sm">Forma de pagamento</TableHead>
+                  <TableHead className="min-w-[50px] text-xs md:text-sm">Parcela</TableHead>
                   <TableHead className="text-right min-w-[60px] text-xs md:text-sm">Valor</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
@@ -55,6 +56,12 @@ export default function ExpensesTable({ expenses, onChange }: { expenses: Expens
                   </TableCell>
                   <TableCell className="capitalize text-xs md:text-sm">{e.category}</TableCell>
                   <TableCell className="capitalize text-xs md:text-sm">{METHOD_LABELS[e.method]}</TableCell>
+                  <TableCell className="text-xs md:text-sm">
+                    {e.isInstallment && e.installmentNumber && e.installmentsTotal 
+                      ? `${e.installmentNumber}/${e.installmentsTotal}`
+                      : '-'
+                    }
+                  </TableCell>
                   <TableCell className="text-right font-medium text-xs md:text-sm">{e.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" aria-label="Excluir" onClick={() => handleDelete(e.id)} className="h-8 w-8 p-0">
@@ -65,7 +72,7 @@ export default function ExpensesTable({ expenses, onChange }: { expenses: Expens
               ))}
               {rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-10">
                     Ainda não há despesas. Cole uma mensagem do WhatsApp para adicionar a primeira.
                   </TableCell>
                 </TableRow>
