@@ -97,8 +97,8 @@ export default function AddExpenseForm({ onAdded }: { onAdded: () => void }) {
           : `${data.category} • R$ ${amount.toFixed(2).replace(".", ",")}`;
         
         toast({ 
-          title: "Despesa adicionada", 
-          description 
+          title: "✅ Despesa adicionada", 
+          description: `${description} • Dados atualizados!`
         });
         form.reset();
         onAdded();

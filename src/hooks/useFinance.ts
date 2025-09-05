@@ -228,7 +228,14 @@ export function useAddExpense() {
         return convertToExpense(data);
       }
     },
-    onSuccess: () => {
+    onSuccess: (newExpense) => {
+      // Optimistic update: immediately add the new expense to the cache
+      queryClient.setQueryData<Expense[]>(["expenses"], (oldData) => {
+        if (!oldData) return [newExpense];
+        return [newExpense, ...oldData];
+      });
+      
+      // Then refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
     },
     onError: (error: Error) => {
