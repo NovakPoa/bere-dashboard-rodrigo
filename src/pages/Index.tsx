@@ -24,10 +24,7 @@ const Index = () => {
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [showExpenseForm, setShowExpenseForm] = useState(false);
 
-  const refresh = () => refetch();
-  
   const handleExpenseAdded = () => {
-    refresh();
     setShowExpenseForm(false);
   };
 
@@ -163,7 +160,7 @@ const Index = () => {
           <div className="min-w-0">
             <ExpensesTable 
               expenses={filtered.sort((a, b) => parseDateOnly(b.date).getTime() - parseDateOnly(a.date).getTime())} 
-              onChange={refresh} 
+              onChange={() => {}} 
             />
           </div>
         </section>

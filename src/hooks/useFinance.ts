@@ -230,10 +230,6 @@ export function useAddExpense() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
-      toast({
-        title: "Despesa adicionada",
-        description: "Despesa foi salva com sucesso!",
-      });
     },
     onError: (error: Error) => {
       toast({
