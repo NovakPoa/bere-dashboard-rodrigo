@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
+import { startOfMonth } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -34,8 +35,8 @@ export default function Ganhos() {
   const { data: incomes = [], refetch } = useIncomes();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedMethods, setSelectedMethods] = useState<string[]>([]);
-  const [startDate, setStartDate] = useState<Date>();
-  const [endDate, setEndDate] = useState<Date>();
+  const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
+  const [endDate, setEndDate] = useState<Date>(new Date());
   const [showIncomeForm, setShowIncomeForm] = useState(false);
 
   const handleIncomeAdded = () => {
