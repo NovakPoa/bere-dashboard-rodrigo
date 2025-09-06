@@ -14,6 +14,7 @@ import CategoryChart from "@/components/finance/CategoryChart";
 import MethodChart from "@/components/finance/MethodChart";
 import ExpensesTable from "@/components/finance/ExpensesTable";
 import DateRangePicker from "@/components/finance/DateRangePicker";
+import ExpensesMonthlyChart from "@/components/finance/ExpensesMonthlyChart";
 import { useExpenses } from "@/hooks/useFinance";
 
 const Index = () => {
@@ -153,6 +154,11 @@ const Index = () => {
           <div className="min-w-0">
             <MethodChart expenses={filtered} />
           </div>
+        </section>
+
+        <section aria-labelledby="monthly-chart" className="min-w-0">
+          <h2 id="monthly-chart" className="sr-only">Gráfico mensal de despesas</h2>
+          <ExpensesMonthlyChart expenses={expenses} />
         </section>
 
         <Separator />
