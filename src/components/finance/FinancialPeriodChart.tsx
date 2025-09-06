@@ -23,9 +23,15 @@ interface ChartData {
 
 export default function FinancialPeriodChart({ expenses, incomes }: FinancialPeriodChartProps) {
   const [startDate, setStartDate] = useState<Date | undefined>(() => {
-    return subMonths(new Date(), 12);
+    const start = subMonths(new Date(), 12);
+    console.log('Initial start date:', start);
+    return start;
   });
-  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+  const [endDate, setEndDate] = useState<Date | undefined>(() => {
+    const end = new Date();
+    console.log('Initial end date:', end);
+    return end;
+  });
 
   const chartData = useMemo(() => {
     if (!startDate || !endDate) return [];
