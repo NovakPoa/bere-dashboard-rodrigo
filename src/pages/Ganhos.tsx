@@ -8,6 +8,7 @@ import DateRangePicker from "@/components/finance/DateRangePicker";
 import StatCard from "@/components/finance/StatCard";
 import CategoryChart from "@/components/income/CategoryChart";
 import MethodChart from "@/components/income/MethodChart";
+import IncomesMonthlyChart from "@/components/income/IncomesMonthlyChart";
 import IncomesTable from "@/components/income/IncomesTable";
 import AddIncomeForm from "@/components/income/AddIncomeForm";
 import { useIncomes } from "@/hooks/useIncome";
@@ -141,6 +142,9 @@ export default function Ganhos() {
           <CategoryChart incomes={filtered} />
           <MethodChart incomes={filtered} />
         </div>
+
+        {/* Monthly Chart */}
+        <IncomesMonthlyChart incomes={incomes} />
 
         {/* Table */}
         <IncomesTable 
