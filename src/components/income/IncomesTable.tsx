@@ -29,7 +29,7 @@ export default function IncomesTable({ incomes, onChange }: { incomes: Income[];
   return (
     <Card className="min-w-0">
       <CardHeader>
-        <CardTitle className="text-base md:text-lg font-medium">Ganhos Recentes</CardTitle>
+        <CardTitle className="text-base md:text-lg font-medium">Todos os Ganhos</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         {rows.length === 0 ? (
