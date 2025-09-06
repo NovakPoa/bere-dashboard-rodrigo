@@ -109,24 +109,22 @@ export default function Investimentos() {
 
       <main className="py-4 md:py-8 space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
         {/* Filtros */}
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-          <div className="flex flex-col sm:flex-row gap-4 flex-1 min-w-0">
-            <div className="min-w-0 flex-1">
-              <MultiSelect
-                options={typeOptions}
-                selected={selectedTypes}
-                onSelectionChange={(selected) => setSelectedTypes(selected as string[])}
-                placeholder="Filtrar por tipo"
-              />
-            </div>
-            <div className="min-w-0 flex-1">
-              <MultiSelect
-                options={brokerOptions}
-                selected={selectedBrokers}
-                onSelectionChange={(selected) => setSelectedBrokers(selected as string[])}
-                placeholder="Filtrar por corretora"
-              />
-            </div>
+        <div className="flex flex-col sm:flex-row gap-4 items-end">
+          <div className="flex flex-col sm:flex-row gap-4 flex-1">
+            <MultiSelect
+              options={typeOptions}
+              selected={selectedTypes}
+              onSelectionChange={(selected) => setSelectedTypes(selected as string[])}
+              placeholder="Filtrar por tipo"
+              className="min-w-48"
+            />
+            <MultiSelect
+              options={brokerOptions}
+              selected={selectedBrokers}
+              onSelectionChange={(selected) => setSelectedBrokers(selected as string[])}
+              placeholder="Filtrar por corretora"
+              className="min-w-44"
+            />
           </div>
           <DateRangePicker
             startDate={startDate}
