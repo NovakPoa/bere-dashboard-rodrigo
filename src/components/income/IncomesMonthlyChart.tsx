@@ -103,7 +103,7 @@ export default function IncomesMonthlyChart({ incomes }: IncomesMonthlyChartProp
                 <Tooltip content={<CustomTooltip />} />
                 <Bar 
                   dataKey="ganhos" 
-                  fill="hsl(var(--success))"
+                  fill="hsl(var(--org-green))"
                   className="fill-success"
                   radius={[4, 4, 0, 0]}
                 />
