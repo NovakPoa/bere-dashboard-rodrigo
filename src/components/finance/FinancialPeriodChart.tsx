@@ -132,13 +132,11 @@ export default function FinancialPeriodChart({ expenses, incomes }: FinancialPer
               <Legend />
               <Bar 
                 dataKey="ganhos" 
-                stackId="stack"
                 fill="hsl(var(--org-green))" 
                 name="Ganhos"
               />
               <Bar 
                 dataKey="despesas" 
-                stackId="stack"
                 fill="hsl(var(--org-red))" 
                 name="Despesas"
               />
