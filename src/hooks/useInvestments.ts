@@ -117,6 +117,21 @@ export const useAddInvestment = () => {
         .single();
 
       if (error) throw error;
+
+      // Create initial price history record
+      const { error: priceHistoryError } = await supabase
+        .from("investment_prices")
+        .insert([{
+          investment_id: data.id,
+          price: investment.preco_unitario_compra,
+          price_date: investment.data_investimento,
+          user_id: user.id,
+        }]);
+
+      if (priceHistoryError) {
+        console.warn("Failed to create initial price history:", priceHistoryError);
+      }
+
       return data;
     },
     onSuccess: () => {

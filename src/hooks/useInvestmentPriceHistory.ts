@@ -43,7 +43,16 @@ export const useUpsertInvestmentPrice = () => {
         );
       if (upsertErr) throw upsertErr;
 
-      // Update investment with the most recent price from history
+      // Get current investment data to compare dates
+      const { data: investment, error: investmentErr } = await supabase
+        .from("investments")
+        .select("data_atualizacao_preco")
+        .eq("id", payload.investmentId)
+        .single();
+
+      if (investmentErr) throw investmentErr;
+
+      // Get the most recent price from history
       const { data: latestPrice, error: latestPriceErr } = await supabase
         .from("investment_prices")
         .select("price, price_date")
@@ -52,16 +61,22 @@ export const useUpsertInvestmentPrice = () => {
         .limit(1)
         .single();
 
-      if (!latestPriceErr && latestPrice) {
-        const { error: updateErr } = await supabase
-          .from("investments")
-          .update({
-            preco_unitario_atual: latestPrice.price,
-            data_atualizacao_preco: new Date().toISOString()
-          })
-          .eq("id", payload.investmentId);
+      // Only update investment's current price if the historical price is newer
+      if (!latestPriceErr && latestPrice && investment) {
+        const latestPriceDate = new Date(latestPrice.price_date);
+        const currentUpdateDate = new Date(investment.data_atualizacao_preco);
         
-        if (updateErr) throw updateErr;
+        if (latestPriceDate > currentUpdateDate) {
+          const { error: updateErr } = await supabase
+            .from("investments")
+            .update({
+              preco_unitario_atual: latestPrice.price,
+              data_atualizacao_preco: new Date().toISOString()
+            })
+            .eq("id", payload.investmentId);
+          
+          if (updateErr) throw updateErr;
+        }
       }
 
       return true;
