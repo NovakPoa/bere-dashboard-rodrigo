@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -24,20 +24,23 @@ export default function ExpensesMonthlyChart({ expenses, categories }: ExpensesM
   });
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const initializedCategoriesRef = useRef(false);
 
-  // Initialize with all categories selected
+  // Initialize with all categories selected (run once when categories first arrive)
   useEffect(() => {
-    if (categories.length > 0 && selectedCategories.length === 0) {
+    if (!initializedCategoriesRef.current && categories.length > 0) {
       setSelectedCategories(categories);
+      initializedCategoriesRef.current = true;
     }
-  }, [categories, selectedCategories.length]);
+  }, [categories]);
 
   const chartData = useMemo(() => {
     if (!startDate || !endDate) return [];
+    if (selectedCategories.length === 0) return [];
 
     const filteredByDate = filterExpensesByDateRange(expenses, startDate, endDate);
     const filteredExpenses = filterExpenses(filteredByDate, {
-      category: selectedCategories.length > 0 ? selectedCategories : "all",
+      category: selectedCategories,
     });
     
     // Agregar despesas por mês
