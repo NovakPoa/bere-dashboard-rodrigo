@@ -112,6 +112,14 @@ const Index = () => {
         <section aria-labelledby="filters" className="space-y-4 md:space-y-6 min-w-0">
           <h2 id="filters" className="sr-only">Filtros</h2>
           <div className="space-y-3 md:space-y-4 min-w-0">
+            <div className="min-w-0">
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+              />
+            </div>
             <div className="grid gap-3 md:gap-6 grid-cols-1 md:grid-cols-3 min-w-0">
               <div className="min-w-0">
                 <Label htmlFor="description-filter">Descrição</Label>
@@ -141,14 +149,6 @@ const Index = () => {
                   placeholder="Todas as formas"
                 />
               </div>
-            </div>
-            <div className="min-w-0">
-              <DateRangePicker
-                startDate={startDate}
-                endDate={endDate}
-                onStartDateChange={setStartDate}
-                onEndDateChange={setEndDate}
-              />
             </div>
           </div>
         </section>
