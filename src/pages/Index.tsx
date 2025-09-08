@@ -177,7 +177,7 @@ const Index = () => {
 
         <section aria-labelledby="monthly-chart" className="min-w-0">
           <h2 id="monthly-chart" className="sr-only">Gráfico mensal de despesas</h2>
-          <ExpensesMonthlyChart expenses={expenses} />
+          <ExpensesMonthlyChart expenses={expenses} categories={categoriesList} />
         </section>
 
         <Separator />

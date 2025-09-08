@@ -1,14 +1,16 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MultiSelect } from "@/components/ui/multi-select";
 import DateRangePicker from "./DateRangePicker";
-import { filterExpensesByDateRange } from "@/lib/finance";
-import type { Expense } from "@/types/expense";
+import { filterExpensesByDateRange, filterExpenses } from "@/lib/finance";
+import type { Expense, Category } from "@/types/expense";
 
 interface ExpensesMonthlyChartProps {
   expenses: Expense[];
+  categories: Category[];
 }
 
 interface ChartData {
@@ -16,16 +18,27 @@ interface ChartData {
   despesas: number;
 }
 
-export default function ExpensesMonthlyChart({ expenses }: ExpensesMonthlyChartProps) {
+export default function ExpensesMonthlyChart({ expenses, categories }: ExpensesMonthlyChartProps) {
   const [startDate, setStartDate] = useState<Date | undefined>(() => {
     return subMonths(new Date(), 12);
   });
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+  const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
+
+  // Initialize with all categories selected
+  useEffect(() => {
+    if (categories.length > 0 && selectedCategories.length === 0) {
+      setSelectedCategories(categories);
+    }
+  }, [categories, selectedCategories.length]);
 
   const chartData = useMemo(() => {
     if (!startDate || !endDate) return [];
 
-    const filteredExpenses = filterExpensesByDateRange(expenses, startDate, endDate);
+    const filteredByDate = filterExpensesByDateRange(expenses, startDate, endDate);
+    const filteredExpenses = filterExpenses(filteredByDate, {
+      category: selectedCategories.length > 0 ? selectedCategories : "all",
+    });
     
     // Agregar despesas por mês
     const monthlyData: Record<string, number> = {};
@@ -43,7 +56,7 @@ export default function ExpensesMonthlyChart({ expenses }: ExpensesMonthlyChartP
         mes: format(new Date(monthKey + "-01"), "MMM/yy", { locale: ptBR }),
         despesas,
       }));
-  }, [expenses, startDate, endDate]);
+  }, [expenses, startDate, endDate, selectedCategories]);
 
   const currency = (value: number) => 
     value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -62,16 +75,36 @@ export default function ExpensesMonthlyChart({ expenses }: ExpensesMonthlyChartP
     return null;
   };
 
+  const categoryOptions = useMemo(() => 
+    categories.map(cat => ({ 
+      label: cat.charAt(0).toUpperCase() + cat.slice(1), 
+      value: cat 
+    })), 
+    [categories]
+  );
+
   return (
     <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="space-y-3 pb-2">
         <CardTitle className="text-base font-medium">Despesas por Mês</CardTitle>
-        <DateRangePicker
-          startDate={startDate}
-          endDate={endDate}
-          onStartDateChange={setStartDate}
-          onEndDateChange={setEndDate}
-        />
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+          <div className="flex-1 min-w-0">
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+            />
+          </div>
+          <div className="w-full sm:w-auto sm:min-w-64 min-w-0">
+            <MultiSelect
+              options={categoryOptions}
+              selected={selectedCategories}
+              onSelectionChange={(selected) => setSelectedCategories(selected as Category[])}
+              placeholder="Todas as categorias"
+            />
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="h-[300px] w-full">
