@@ -35,6 +35,7 @@ export default function IncomesMonthlyChart({ incomes, categories }: IncomesMont
 
   const chartData = useMemo(() => {
     if (!startDate || !endDate) return [];
+    if (selectedCategories.length === 0) return [];
 
     const filteredByDate = filterIncomesByDateRange(incomes, startDate, endDate);
     const filteredIncomes = filterIncomes(filteredByDate, {
