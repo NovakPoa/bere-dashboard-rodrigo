@@ -190,11 +190,11 @@ export default function InvestmentPriceHistory() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Atualizar Preço do Ativo
+                Registrar Preço do Ativo
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                 <div>
                   <Label htmlFor="month">Mês</Label>
                   <Select value={selectedMonth} onValueChange={setSelectedMonth}>
@@ -228,12 +228,32 @@ export default function InvestmentPriceHistory() {
                 </div>
 
                 <div>
-                  <Label htmlFor="price">Novo Preço</Label>
+                  <Label htmlFor="price">Preço</Label>
                   <Input
                     id="price"
                     placeholder={investment.moeda === "USD" ? "US$ 0,00" : "R$ 0,00"}
                     value={newPrice}
                     onChange={(e) => handlePriceChange(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="quantity">Quantidade</Label>
+                  <Input
+                    id="quantity"
+                    value={investment.quantidade.toLocaleString('pt-BR')}
+                    disabled
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="totalValue">Valor Total</Label>
+                  <Input
+                    id="totalValue"
+                    value={newPrice ? currency(parseFloat(newPrice.replace(/[^\d,.-]/g, '').replace(',', '.')) * investment.quantidade, investment.moeda) : currency(0, investment.moeda)}
+                    disabled
+                    className="bg-muted"
                   />
                 </div>
 

@@ -62,14 +62,8 @@ export const useUpsertInvestmentPrice = () => {
       const currentLast = inv?.data_atualizacao_preco ? new Date(inv.data_atualizacao_preco) : null;
       const investmentDate = inv?.data_investimento ? new Date(inv.data_investimento) : null;
 
-      // Find the earliest price (either from history or investment date)
+      // Only update purchase price if this is the earliest price
       let updateData: any = {};
-
-      // If the new price date is more recent, update the investment's current price and date
-      if (!currentLast || newDate.getTime() > currentLast.getTime()) {
-        updateData.preco_unitario_atual = payload.price;
-        updateData.data_atualizacao_preco = new Date(payload.priceDate).toISOString();
-      }
 
       // Find the earliest price to set as purchase price
       if (allPrices && allPrices.length > 0) {
