@@ -98,6 +98,7 @@ export default function ExpensesMonthlyChart({ expenses, categories }: ExpensesM
           </div>
           <div className="w-full sm:w-auto sm:min-w-64 min-w-0">
             <MultiSelect
+              label="Categoria"
               options={categoryOptions}
               selected={selectedCategories}
               onSelectionChange={(selected) => setSelectedCategories(selected as Category[])}
