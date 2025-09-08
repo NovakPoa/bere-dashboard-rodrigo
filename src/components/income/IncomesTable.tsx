@@ -1,12 +1,13 @@
 import { useMemo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useRemoveIncome } from "@/hooks/useIncome";
 import type { Income, PaymentMethod } from "@/types/income";
+import UpdateIncomeDialog from "./UpdateIncomeDialog";
 
 const METHOD_LABELS: Record<PaymentMethod, string> = {
   pix: "PIX",
@@ -47,7 +48,7 @@ export default function IncomesTable({ incomes, onChange }: { incomes: Income[];
                   <TableHead className="min-w-24">Método</TableHead>
                   <TableHead className="min-w-20">Parcela</TableHead>
                   <TableHead className="min-w-24 text-right">Valor</TableHead>
-                  <TableHead className="w-12"></TableHead>
+                  <TableHead className="w-20">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -74,16 +75,27 @@ export default function IncomesTable({ incomes, onChange }: { incomes: Income[];
                     <TableCell className="text-xs md:text-sm font-medium text-right text-green-600">
                       {currency(income.amount)}
                     </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDelete(income.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </TableCell>
+                     <TableCell>
+                       <div className="flex items-center gap-1">
+                         <UpdateIncomeDialog income={income}>
+                           <Button
+                             variant="ghost"
+                             size="icon"
+                             className="h-6 w-6 text-muted-foreground hover:text-primary"
+                           >
+                             <Edit className="h-3 w-3" />
+                           </Button>
+                         </UpdateIncomeDialog>
+                         <Button
+                           variant="ghost"
+                           size="icon"
+                           className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                           onClick={() => handleDelete(income.id)}
+                         >
+                           <Trash2 className="h-3 w-3" />
+                         </Button>
+                       </div>
+                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

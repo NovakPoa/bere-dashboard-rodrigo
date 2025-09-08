@@ -205,6 +205,47 @@ export const useAddIncome = () => {
   });
 };
 
+export const useUpdateIncome = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string } & Partial<Omit<Income, "id">>) => {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user) {
+        throw new Error("User not authenticated");
+      }
+
+      const updateData = convertFromIncome(updates as Omit<Income, "id">);
+      
+      const { data, error } = await supabase
+        .from("financeiro")
+        .update(updateData)
+        .eq("id", parseInt(id))
+        .eq("tipo", "ganho")
+        .select()
+        .single();
+
+      if (error) throw error;
+      return convertToIncome(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["incomes"] });
+      toast({
+        title: "Ganho atualizado com sucesso!",
+        description: "As informações do ganho foram atualizadas.",
+      });
+    },
+    onError: (error) => {
+      console.error("Error updating income:", error);
+      toast({
+        title: "Erro ao atualizar ganho",
+        description: "Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
 export const useRemoveIncome = () => {
   const queryClient = useQueryClient();
 
