@@ -260,6 +260,7 @@ export default function InvestmentPriceHistory() {
                   <TableRow>
                     <TableHead>Data de Atualização</TableHead>
                     <TableHead className="text-right">Preço</TableHead>
+                    <TableHead className="text-right">Quantidade</TableHead>
                     <TableHead className="text-right">Valor Total</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -273,19 +274,25 @@ export default function InvestmentPriceHistory() {
                         {currency(p.price, investment.moeda)}
                       </TableCell>
                       <TableCell className="text-right">
+                        {investment.quantidade.toLocaleString('pt-BR')}
+                      </TableCell>
+                      <TableCell className="text-right">
                         {currency(p.price * investment.quantidade, investment.moeda)}
                       </TableCell>
                     </TableRow>
                   ))}
                   <TableRow>
                     <TableCell>
-                      {format(new Date(investment.data_investimento), "dd/MM/yyyy", { locale: ptBR })} (Compra)
+                      {format(new Date(investment.data_investimento), "dd/MM/yyyy", { locale: ptBR })}
                     </TableCell>
                     <TableCell className="text-right">
                       {currency(investment.preco_unitario_compra, investment.moeda)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {currency(investment.valor_total_investido, investment.moeda)}
+                      {investment.quantidade.toLocaleString('pt-BR')}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {currency(investment.preco_unitario_compra * investment.quantidade, investment.moeda)}
                     </TableCell>
                   </TableRow>
                 </TableBody>
