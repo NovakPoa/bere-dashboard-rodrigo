@@ -62,6 +62,7 @@ All colors MUST be HSL.
     --org-yellow: 45 93% 47%;
     --org-green: 145 45% 35%;
     --org-blue: 213 94% 45%;
+    --org-blue-light: 213 94% 65%;
     --org-purple: 270 50% 45%;
     --org-pink: 330 70% 50%;
     --org-red: 0 84% 60%;
@@ -111,6 +112,7 @@ All colors MUST be HSL.
     --org-yellow: 45 93% 60%;
     --org-green: 145 45% 60%;
     --org-blue: 213 94% 70%;
+    --org-blue-light: 213 94% 80%;
     --org-purple: 270 50% 70%;
     --org-pink: 330 70% 72%;
     --org-red: 0 84% 68%;

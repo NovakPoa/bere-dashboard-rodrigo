@@ -128,13 +128,13 @@ export default function InvestmentsMonthlyChart({ investments, exchangeRate }: I
                 <Legend />
                 <Bar 
                   dataKey="valorInvestido" 
-                  fill="hsl(var(--chart-1))"
+                  fill="hsl(var(--org-blue))"
                   name="Valor Investido"
                   radius={[4, 4, 0, 0]}
                 />
                 <Bar 
                   dataKey="valorAtual" 
-                  fill="hsl(var(--org-green))"
+                  fill="hsl(var(--org-blue-light))"
                   name="Valor Atual"
                   radius={[4, 4, 0, 0]}
                 />
