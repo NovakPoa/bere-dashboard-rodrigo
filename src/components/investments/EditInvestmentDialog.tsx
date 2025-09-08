@@ -12,7 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, formatDateForDatabase, parseDateFromDatabase } from "@/lib/utils";
 import { useEditInvestment } from "@/hooks/useInvestments";
 import { Investment, Currency } from "@/types/investment";
 import { CURRENCY_LABELS } from "@/lib/investments";
@@ -48,7 +48,7 @@ export function EditInvestmentDialog({ investment, onUpdated, children }: EditIn
       moeda: investment.moeda,
       preco_unitario_compra: investment.preco_unitario_compra,
       quantidade: investment.quantidade,
-      data_investimento: new Date(investment.data_investimento),
+      data_investimento: parseDateFromDatabase(investment.data_investimento),
     },
   });
 
@@ -62,7 +62,7 @@ export function EditInvestmentDialog({ investment, onUpdated, children }: EditIn
         moeda: investment.moeda,
         preco_unitario_compra: investment.preco_unitario_compra,
         quantidade: investment.quantidade,
-        data_investimento: new Date(investment.data_investimento),
+        data_investimento: parseDateFromDatabase(investment.data_investimento),
       });
     }
   };
@@ -77,7 +77,7 @@ export function EditInvestmentDialog({ investment, onUpdated, children }: EditIn
       preco_unitario_compra: data.preco_unitario_compra,
       preco_unitario_atual: investment.preco_unitario_atual,
       quantidade: data.quantidade,
-      data_investimento: format(data.data_investimento, "yyyy-MM-dd"),
+      data_investimento: formatDateForDatabase(data.data_investimento),
     };
 
     editInvestment.mutate(formattedData, {

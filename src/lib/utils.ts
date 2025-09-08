@@ -11,3 +11,8 @@ export function formatDateForDatabase(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+export function parseDateFromDatabase(dateString: string): Date {
+  // Parse "YYYY-MM-DD" as local date by adding "T00:00:00" to ensure local timezone
+  return new Date(dateString + "T00:00:00");
+}

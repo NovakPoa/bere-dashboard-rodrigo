@@ -12,7 +12,7 @@ import { ArrowLeft, Calendar, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { currency } from "@/lib/investments";
-import { formatDateForDatabase } from "@/lib/utils";
+import { formatDateForDatabase, parseDateFromDatabase } from "@/lib/utils";
 import { Investment } from "@/types/investment";
 import { toast } from "@/hooks/use-toast";
 
@@ -178,7 +178,7 @@ export default function InvestmentPriceHistory() {
                 <div>
                   <Label className="text-sm text-muted-foreground">Última Atualização</Label>
                   <p className="font-medium">
-                    {format(new Date(investment.data_atualizacao_preco), "dd/MM/yyyy", { locale: ptBR })}
+                    {format(parseDateFromDatabase(investment.data_atualizacao_preco), "dd/MM/yyyy", { locale: ptBR })}
                   </p>
                 </div>
               </div>
@@ -269,7 +269,7 @@ export default function InvestmentPriceHistory() {
                   {priceHistory.map((p) => (
                     <TableRow key={p.id}>
                       <TableCell>
-                        {format(new Date(p.price_date), "dd/MM/yyyy", { locale: ptBR })}
+                        {format(parseDateFromDatabase(p.price_date), "dd/MM/yyyy", { locale: ptBR })}
                       </TableCell>
                       <TableCell className="text-right">
                         {currency(p.price, investment.moeda)}
@@ -284,7 +284,7 @@ export default function InvestmentPriceHistory() {
                   ))}
                   <TableRow>
                     <TableCell>
-                      {format(new Date(investment.data_investimento), "dd/MM/yyyy", { locale: ptBR })}
+                      {format(parseDateFromDatabase(investment.data_investimento), "dd/MM/yyyy", { locale: ptBR })}
                     </TableCell>
                     <TableCell className="text-right">
                       {currency(investment.preco_unitario_compra, investment.moeda)}

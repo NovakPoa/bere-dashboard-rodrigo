@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { currency, percentage, formatQuantity, formatLabel } from "@/lib/investments";
+import { parseDateFromDatabase } from "@/lib/utils";
 
 
 interface InvestmentsTableProps {
@@ -106,7 +107,7 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                     </div>
                   </TableCell>
                   <TableCell>
-                    {format(new Date(investment.data_investimento), "dd/MM/yyyy", { locale: ptBR })}
+                    {format(parseDateFromDatabase(investment.data_investimento), "dd/MM/yyyy", { locale: ptBR })}
                   </TableCell>
                     <TableCell className="text-center">
                      <div className="flex items-center justify-center gap-1">

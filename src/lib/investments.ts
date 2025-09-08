@@ -1,5 +1,6 @@
 import { Investment, Currency } from "@/types/investment";
 import { convertToReais } from "@/lib/currency";
+import { parseDateFromDatabase } from "@/lib/utils";
 
 export const currency = (amount: number, currencyType: Currency = "BRL"): string => {
   const locale = currencyType === "USD" ? "en-US" : "pt-BR";
@@ -69,7 +70,7 @@ export const filterInvestmentsByDateRange = (
   if (!startDate && !endDate) return investments;
 
   return investments.filter((investment) => {
-    const investmentDate = new Date(investment.data_investimento);
+    const investmentDate = parseDateFromDatabase(investment.data_investimento);
     
     if (startDate && investmentDate < startDate) return false;
     if (endDate && investmentDate > endDate) return false;
@@ -190,8 +191,8 @@ export const generateRentabilityData = (
     const dataPoint: any = { date: formattedDate };
 
     investments.forEach((investment) => {
-      const investmentDate = new Date(investment.data_investimento);
-      const updateDate = new Date(investment.data_atualizacao_preco);
+      const investmentDate = parseDateFromDatabase(investment.data_investimento);
+      const updateDate = parseDateFromDatabase(investment.data_atualizacao_preco);
 
       // Se a data é anterior ao investimento, rentabilidade é null
       if (date < investmentDate) {
