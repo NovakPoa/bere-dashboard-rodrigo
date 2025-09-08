@@ -137,10 +137,20 @@ export const filterIncomes = (
   incomes: Income[], 
   opts: { 
     category?: IncomeCategory[] | IncomeCategory | "all"; 
-    method?: PaymentMethod[] | PaymentMethod | "all" 
+    method?: PaymentMethod[] | PaymentMethod | "all";
+    description?: string;
   }
 ): Income[] => {
   return incomes.filter(income => {
+    // Description filter
+    if (opts.description && opts.description.trim()) {
+      const searchTerm = opts.description.toLowerCase().trim();
+      const note = income.note?.toLowerCase() || "";
+      if (!note.includes(searchTerm)) {
+        return false;
+      }
+    }
+
     // Category filter
     if (opts.category && opts.category !== "all") {
       const categories = Array.isArray(opts.category) ? opts.category : [opts.category];

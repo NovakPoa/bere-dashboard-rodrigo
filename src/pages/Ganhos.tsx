@@ -3,6 +3,8 @@ import { Plus } from "lucide-react";
 import { startOfMonth } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { MultiSelect } from "@/components/ui/multi-select";
 import DateRangePicker from "@/components/finance/DateRangePicker";
 import StatCard from "@/components/finance/StatCard";
@@ -12,19 +14,9 @@ import IncomesMonthlyChart from "@/components/income/IncomesMonthlyChart";
 import IncomesTable from "@/components/income/IncomesTable";
 import AddIncomeForm from "@/components/income/AddIncomeForm";
 import { useIncomes } from "@/hooks/useIncome";
+import { useIncomeCategories } from "@/hooks/useCategories";
 import { filterIncomes, filterIncomesByDateRange } from "@/lib/income";
 import type { IncomeCategory, PaymentMethod } from "@/types/income";
-
-const categoryOptions = [
-  { value: "Salário", label: "Salário" },
-  { value: "Freelance", label: "Freelance" },
-  { value: "Investimentos", label: "Investimentos" },
-  { value: "Vendas", label: "Vendas" },
-  { value: "Aluguéis", label: "Aluguéis" },
-  { value: "Prêmios", label: "Prêmios" },
-  { value: "Restituições", label: "Restituições" },
-  { value: "Outros", label: "Outros" }
-];
 
 const methodOptions = [
   { value: "pix", label: "PIX" },
@@ -34,10 +26,12 @@ const methodOptions = [
 
 export default function Ganhos() {
   const { data: incomes = [], refetch } = useIncomes();
+  const { data: userCategories = [] } = useIncomeCategories();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedMethods, setSelectedMethods] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date>(new Date());
+  const [descriptionFilter, setDescriptionFilter] = useState("");
   const [showIncomeForm, setShowIncomeForm] = useState(false);
 
   const handleIncomeAdded = () => {
@@ -57,9 +51,10 @@ export default function Ganhos() {
   const filtered = useMemo(() => 
     filterIncomes(filteredByDate, {
       category: selectedCategories.length > 0 ? selectedCategories as IncomeCategory[] : "all",
-      method: selectedMethods.length > 0 ? selectedMethods as PaymentMethod[] : "all"
+      method: selectedMethods.length > 0 ? selectedMethods as PaymentMethod[] : "all",
+      description: descriptionFilter
     }), 
-    [filteredByDate, selectedCategories, selectedMethods]
+    [filteredByDate, selectedCategories, selectedMethods, descriptionFilter]
   );
 
   const totalFiltered = useMemo(() => 
@@ -67,10 +62,10 @@ export default function Ganhos() {
     [filtered]
   );
 
-  const categoriesList = useMemo(() => {
-    const uniqueCategories = new Set(incomes.map(income => income.category));
-    return Array.from(uniqueCategories);
-  }, [incomes]);
+  const categoryOptions = useMemo(() => 
+    userCategories.map(category => ({ value: category, label: category })),
+    [userCategories]
+  );
 
   const currency = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -94,31 +89,46 @@ export default function Ganhos() {
 
       <main className="py-4 md:py-8 space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-          <div className="flex flex-col sm:flex-row gap-4 flex-1 min-w-0">
-            <MultiSelect
-              options={categoryOptions}
-              selected={selectedCategories}
-              onSelectionChange={setSelectedCategories}
-              placeholder="Todas as categorias"
-              label="Categorias"
-              className="min-w-48"
-            />
-            <MultiSelect
-              options={methodOptions}
-              selected={selectedMethods}
-              onSelectionChange={setSelectedMethods}
-              placeholder="Todos os métodos"
-              label="Métodos"
-              className="min-w-44"
+        <div className="space-y-3 md:space-y-4 min-w-0">
+          <div className="min-w-0">
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
             />
           </div>
-          <DateRangePicker
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
-          />
+          <div className="grid gap-3 md:gap-6 grid-cols-1 md:grid-cols-3 min-w-0">
+            <div className="min-w-0">
+              <Label htmlFor="description-filter">Descrição</Label>
+              <Input
+                id="description-filter"
+                type="text"
+                placeholder="Filtrar por descrição..."
+                value={descriptionFilter}
+                onChange={(e) => setDescriptionFilter(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="min-w-0">
+              <MultiSelect
+                options={categoryOptions}
+                selected={selectedCategories}
+                onSelectionChange={setSelectedCategories}
+                placeholder="Todas as categorias"
+                label="Categorias"
+              />
+            </div>
+            <div className="min-w-0">
+              <MultiSelect
+                options={methodOptions}
+                selected={selectedMethods}
+                onSelectionChange={setSelectedMethods}
+                placeholder="Todos os métodos"
+                label="Métodos"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Stats */}
