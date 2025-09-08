@@ -1,7 +1,10 @@
 import { useState, useMemo } from "react";
 import { Investment } from "@/types/investment";
 import { useInvestments, useExchangeRate } from "@/hooks/useInvestments";
+import { useInvestmentSnapshots } from "@/hooks/useInvestmentSnapshots";
 import { AddInvestmentForm } from "@/components/investments/AddInvestmentForm";
+import { MonthlySnapshotDialog } from "@/components/investments/MonthlySnapshotDialog";
+import { MonthlyProfitabilityChart } from "@/components/investments/MonthlyProfitabilityChart";
 import { InvestmentsTable } from "@/components/investments/InvestmentsTable";
 import { TypeChart } from "@/components/investments/TypeChart";
 import { BrokerChart } from "@/components/investments/BrokerChart";
@@ -12,7 +15,7 @@ import DateRangePicker from "@/components/finance/DateRangePicker";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { MultiSelect } from "@/components/ui/multi-select";
-import { Plus, TrendingUp, Wallet, Target, PieChart } from "lucide-react";
+import { Plus, TrendingUp, Wallet, Target, PieChart, Camera } from "lucide-react";
 import { 
   filterInvestments, 
   filterInvestmentsByDateRange, 
@@ -26,6 +29,7 @@ import { toast } from "sonner";
 export default function Investimentos() {
   const { data: investments = [], isLoading, error, refetch } = useInvestments();
   const { data: exchangeRate = 5.0 } = useExchangeRate();
+  const { data: snapshots = [] } = useInvestmentSnapshots();
   
   const [selectedNames, setSelectedNames] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
@@ -97,18 +101,30 @@ export default function Investimentos() {
       <header className="py-4 md:py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl md:text-4xl font-semibold text-foreground">Investimentos</h1>
 
-        <Drawer open={showForm} onOpenChange={setShowForm}>
-          <DrawerTrigger asChild>
-            <Button variant="outline" size="icon">
-              <Plus className="h-4 w-4" />
+        <div className="flex gap-2">
+          <MonthlySnapshotDialog
+            investments={filtered}
+            exchangeRate={exchangeRate}
+          >
+            <Button variant="outline">
+              <Camera className="h-4 w-4 mr-2" />
+              Criar Snapshot
             </Button>
-          </DrawerTrigger>
-          <DrawerContent className="max-h-[90vh]">
-            <div className="mx-auto w-full max-w-2xl p-4">
-              <AddInvestmentForm onAdded={handleInvestmentAdded} />
-            </div>
-          </DrawerContent>
-        </Drawer>
+          </MonthlySnapshotDialog>
+          
+          <Drawer open={showForm} onOpenChange={setShowForm}>
+            <DrawerTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent className="max-h-[90vh]">
+              <div className="mx-auto w-full max-w-2xl p-4">
+                <AddInvestmentForm onAdded={handleInvestmentAdded} />
+              </div>
+            </DrawerContent>
+          </Drawer>
+        </div>
       </header>
 
       <main className="py-4 md:py-8 space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
@@ -203,6 +219,12 @@ export default function Investimentos() {
         <InvestmentsMonthlyChart 
           investments={investments} 
           exchangeRate={exchangeRate}
+        />
+
+        {/* Gráfico de Rentabilidade Mensal por Snapshots */}
+        <MonthlyProfitabilityChart
+          investments={investments}
+          snapshots={snapshots}
         />
 
         {/* Tabela de Investimentos */}

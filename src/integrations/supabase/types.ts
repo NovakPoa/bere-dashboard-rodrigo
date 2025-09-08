@@ -430,6 +430,53 @@ export type Database = {
         }
         Relationships: []
       }
+      investment_monthly_snapshots: {
+        Row: {
+          cotacao_dolar: number | null
+          created_at: string
+          id: string
+          investment_id: string
+          preco_unitario: number
+          quantidade: number
+          snapshot_date: string
+          updated_at: string
+          user_id: string
+          valor_total_brl: number
+        }
+        Insert: {
+          cotacao_dolar?: number | null
+          created_at?: string
+          id?: string
+          investment_id: string
+          preco_unitario: number
+          quantidade: number
+          snapshot_date: string
+          updated_at?: string
+          user_id: string
+          valor_total_brl: number
+        }
+        Update: {
+          cotacao_dolar?: number | null
+          created_at?: string
+          id?: string
+          investment_id?: string
+          preco_unitario?: number
+          quantidade?: number
+          snapshot_date?: string
+          updated_at?: string
+          user_id?: string
+          valor_total_brl?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_investment_snapshots_investment_id"
+            columns: ["investment_id"]
+            isOneToOne: false
+            referencedRelation: "investments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investments: {
         Row: {
           corretora: string
