@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, TrendingUp, TrendingDown } from "lucide-react";
+import { Trash2, TrendingUp, TrendingDown, Edit } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { currency, percentage, formatQuantity, formatLabel } from "@/lib/investments";
@@ -18,6 +19,7 @@ interface InvestmentsTableProps {
 export function InvestmentsTable({ investments, onChange }: InvestmentsTableProps) {
   const memoizedInvestments = useMemo(() => investments, [investments]);
   const removeInvestment = useRemoveInvestment();
+  const navigate = useNavigate();
 
   const handleDelete = (id: string) => {
     console.log("[InvestmentsTable] Deleting investment", id);
@@ -61,7 +63,7 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                 <TableHead className="text-right">Valor Atual</TableHead>
                 <TableHead className="text-right">Rentabilidade</TableHead>
                 <TableHead>Data</TableHead>
-                <TableHead className="w-12"></TableHead>
+                <TableHead className="w-20">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -106,15 +108,26 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                     {format(new Date(investment.data_investimento), "dd/MM/yyyy", { locale: ptBR })}
                   </TableCell>
                   <TableCell className="text-center">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                      onClick={() => handleDelete(investment.id)}
-                      aria-label="Excluir investimento"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    <div className="flex items-center justify-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-primary"
+                        onClick={() => navigate(`/financeiro/investimentos/${investment.id}/historico-precos`)}
+                        aria-label="Editar investimento"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDelete(investment.id)}
+                        aria-label="Excluir investimento"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

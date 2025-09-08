@@ -134,13 +134,22 @@ export const useUpdateInvestment = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Investment> }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: { preco_unitario_atual?: number; data_atualizacao_preco?: string } }) => {
+      const updateData: any = {};
+      
+      if (updates.preco_unitario_atual !== undefined) {
+        updateData.preco_unitario_atual = updates.preco_unitario_atual;
+      }
+      
+      if (updates.data_atualizacao_preco !== undefined) {
+        updateData.data_atualizacao_preco = updates.data_atualizacao_preco;
+      } else {
+        updateData.data_atualizacao_preco = new Date().toISOString();
+      }
+
       const { data, error } = await supabase
         .from("investments")
-        .update({ 
-          preco_unitario_atual: updates.preco_unitario_atual,
-          data_atualizacao_preco: new Date().toISOString()
-        })
+        .update(updateData)
         .eq("id", id)
         .select()
         .single();

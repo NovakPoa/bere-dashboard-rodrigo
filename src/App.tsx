@@ -51,6 +51,7 @@ import Profile from "./pages/Profile";
 import Garmin from "./pages/Garmin";
 import Ganhos from "./pages/Ganhos";
 import Investimentos from "./pages/Investimentos";
+import InvestmentPriceHistory from "./pages/InvestmentPriceHistory";
 import Financeiro from "./pages/Financeiro";
 import Saude from "./pages/Saude";
 
@@ -93,6 +94,7 @@ const App = () => (
             <Route path="/financeiro/despesas" element={<Index />} />
             <Route path="/financeiro/ganhos" element={<Ganhos />} />
             <Route path="/financeiro/investimentos" element={<Investimentos />} />
+            <Route path="/financeiro/investimentos/:investmentId/historico-precos" element={<InvestmentPriceHistory />} />
             <Route path="/atividades" element={<Atividades />} />
             <Route path="/alimentacao" element={<Alimentacao />} />
             <Route path="/saude" element={<Saude />} />

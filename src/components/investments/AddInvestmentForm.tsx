@@ -267,6 +267,17 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
               {addInvestment.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Adicionar Investimento
             </Button>
+
+            <div className="text-center pt-4">
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => window.open("/financeiro/investimentos/new/historico-precos", "_blank")}
+                className="text-sm text-muted-foreground hover:text-primary"
+              >
+                Atualizar preço do ativo no tempo
+              </Button>
+            </div>
           </form>
         </Form>
       </CardContent>
