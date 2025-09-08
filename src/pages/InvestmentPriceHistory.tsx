@@ -93,6 +93,13 @@ export default function InvestmentPriceHistory() {
     const updateDate = new Date(year, monthIndex + 1, 0);
     const priceDate = formatDateForDatabase(updateDate);
 
+    // Prevent accidental overwrite if same date already exists
+    const alreadyExists = priceHistory.some((p) => p.price_date === priceDate);
+    if (alreadyExists) {
+      const proceed = window.confirm("Já existe um preço para esta data. Deseja sobrescrever?");
+      if (!proceed) return;
+    }
+
     upsertPrice.mutate(
       {
         investmentId: investment.id,
