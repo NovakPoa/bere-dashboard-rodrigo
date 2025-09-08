@@ -430,6 +430,44 @@ export type Database = {
         }
         Relationships: []
       }
+      investment_prices: {
+        Row: {
+          created_at: string
+          id: string
+          investment_id: string
+          price: number
+          price_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          investment_id: string
+          price: number
+          price_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          investment_id?: string
+          price?: number
+          price_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_investment_prices_investment_id"
+            columns: ["investment_id"]
+            isOneToOne: false
+            referencedRelation: "investments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investments: {
         Row: {
           corretora: string

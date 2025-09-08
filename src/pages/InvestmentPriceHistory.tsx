@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useInvestments, useUpdateInvestment } from "@/hooks/useInvestments";
+import { useInvestments } from "@/hooks/useInvestments";
+import { useInvestmentPrices, useUpsertInvestmentPrice } from "@/hooks/useInvestmentPriceHistory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,13 +19,14 @@ export default function InvestmentPriceHistory() {
   const { investmentId } = useParams<{ investmentId: string }>();
   const navigate = useNavigate();
   const { data: investments = [] } = useInvestments();
-  const updateInvestment = useUpdateInvestment();
+  const upsertPrice = useUpsertInvestmentPrice();
 
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [newPrice, setNewPrice] = useState("");
 
   const investment = investments.find(inv => inv.id === investmentId);
+  const { data: priceHistory = [] } = useInvestmentPrices(investment?.id);
 
   if (!investment && investmentId !== "new") {
     return (
@@ -84,26 +86,37 @@ export default function InvestmentPriceHistory() {
       return;
     }
 
-    // Create update date for the selected month/year (last day of the month)
-    const updateDate = new Date(parseInt(selectedYear), parseInt(selectedMonth), 0);
+    // Create update date for the selected month/year (use last day of selected month)
+    const year = parseInt(selectedYear, 10);
+    const monthIndex = parseInt(selectedMonth, 10) - 1; // 0-based
+    const updateDate = new Date(year, monthIndex + 1, 0);
+    const priceDate = updateDate.toISOString().slice(0, 10); // YYYY-MM-DD for DATE column
 
-    updateInvestment.mutate({
-      id: investment.id,
-      updates: {
-        preco_unitario_atual: priceValue,
-        data_atualizacao_preco: updateDate.toISOString(),
+    upsertPrice.mutate(
+      {
+        investmentId: investment.id,
+        price: priceValue,
+        priceDate,
       },
-    }, {
-      onSuccess: () => {
-        toast({
-          title: "Sucesso",
-          description: "Preço atualizado com sucesso",
-        });
-        setSelectedMonth("");
-        setSelectedYear("");
-        setNewPrice("");
-      },
-    });
+      {
+        onSuccess: () => {
+          toast({
+            title: "Sucesso",
+            description: "Preço registrado no histórico",
+          });
+          setSelectedMonth("");
+          setSelectedYear("");
+          setNewPrice("");
+        },
+        onError: (err: any) => {
+          toast({
+            title: "Erro",
+            description: err?.message ?? "Falha ao salvar preço",
+            variant: "destructive",
+          });
+        },
+      }
+    );
   };
 
   const formatCurrency = (value: string, currency: "BRL" | "USD") => {
@@ -226,10 +239,10 @@ export default function InvestmentPriceHistory() {
                 <div className="flex items-end">
                   <Button 
                     onClick={handleUpdatePrice}
-                    disabled={updateInvestment.isPending}
+                    disabled={upsertPrice.isPending}
                     className="w-full"
                   >
-                    {updateInvestment.isPending ? "Atualizando..." : "Atualizar Preço"}
+                    {upsertPrice.isPending ? "Salvando..." : "Salvar Preço"}
                   </Button>
                 </div>
               </div>
@@ -239,7 +252,7 @@ export default function InvestmentPriceHistory() {
           {/* Price History Table */}
           <Card>
             <CardHeader>
-              <CardTitle>Histórico de Atualizações</CardTitle>
+              <CardTitle>Histórico de Preços Registrados</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -251,17 +264,19 @@ export default function InvestmentPriceHistory() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell>
-                      {format(new Date(investment.data_atualizacao_preco), "dd/MM/yyyy", { locale: ptBR })}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {currency(investment.preco_unitario_atual, investment.moeda)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {currency(investment.valor_atual_total, investment.moeda)}
-                    </TableCell>
-                  </TableRow>
+                  {priceHistory.map((p) => (
+                    <TableRow key={p.id}>
+                      <TableCell>
+                        {format(new Date(p.price_date), "dd/MM/yyyy", { locale: ptBR })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {currency(p.price, investment.moeda)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {currency(p.price * investment.quantidade, investment.moeda)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
                   <TableRow>
                     <TableCell>
                       {format(new Date(investment.data_investimento), "dd/MM/yyyy", { locale: ptBR })} (Compra)
