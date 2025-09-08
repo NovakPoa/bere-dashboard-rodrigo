@@ -5,11 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, TrendingUp, TrendingDown, Edit } from "lucide-react";
+import { Trash2, TrendingUp, TrendingDown, History } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { currency, percentage, formatQuantity, formatLabel } from "@/lib/investments";
-import { UpdatePriceDialog } from "./UpdatePriceDialog";
+import { PriceHistoryDialog } from "./PriceHistoryDialog";
 
 interface InvestmentsTableProps {
   investments: Investment[];
@@ -108,17 +108,18 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex justify-center gap-2">
-                      <UpdatePriceDialog 
+                      <PriceHistoryDialog 
                         investment={investment} 
                         onUpdated={onChange}
                       >
                         <Button
                           variant="outline"
                           size="sm"
+                          title="Gerenciar histórico de preços"
                         >
-                          <Edit className="h-4 w-4" />
+                          <History className="h-4 w-4" />
                         </Button>
-                      </UpdatePriceDialog>
+                      </PriceHistoryDialog>
                       <Button
                         variant="ghost"
                         size="icon"
