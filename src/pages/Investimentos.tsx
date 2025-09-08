@@ -126,31 +126,40 @@ export default function Investimentos() {
           
           {/* Segunda linha - Filtro por nome */}
           <div className="min-w-0">
-            <MultiSelect
-              options={nameOptions}
-              selected={selectedNames}
-              onSelectionChange={(selected) => setSelectedNames(selected as string[])}
-              placeholder="Filtrar por nome do investimento"
-            />
+            <label className="text-sm text-muted-foreground">Nome do investimento</label>
+            <div className="mt-1">
+              <MultiSelect
+                options={nameOptions}
+                selected={selectedNames}
+                onSelectionChange={(selected) => setSelectedNames(selected as string[])}
+                placeholder="Filtrar por nome do investimento"
+              />
+            </div>
           </div>
           
           {/* Terceira linha - Grid 2 colunas */}
           <div className="grid gap-3 md:gap-6 grid-cols-1 md:grid-cols-2 min-w-0">
             <div className="min-w-0">
-              <MultiSelect
-                options={typeOptions}
-                selected={selectedTypes}
-                onSelectionChange={(selected) => setSelectedTypes(selected as string[])}
-                placeholder="Filtrar por tipo"
-              />
+              <label className="text-sm text-muted-foreground">Tipo de investimento</label>
+              <div className="mt-1">
+                <MultiSelect
+                  options={typeOptions}
+                  selected={selectedTypes}
+                  onSelectionChange={(selected) => setSelectedTypes(selected as string[])}
+                  placeholder="Filtrar por tipo"
+                />
+              </div>
             </div>
             <div className="min-w-0">
-              <MultiSelect
-                options={brokerOptions}
-                selected={selectedBrokers}
-                onSelectionChange={(selected) => setSelectedBrokers(selected as string[])}
-                placeholder="Filtrar por corretora"
-              />
+              <label className="text-sm text-muted-foreground">Corretora</label>
+              <div className="mt-1">
+                <MultiSelect
+                  options={brokerOptions}
+                  selected={selectedBrokers}
+                  onSelectionChange={(selected) => setSelectedBrokers(selected as string[])}
+                  placeholder="Filtrar por corretora"
+                />
+              </div>
             </div>
           </div>
         </div>
