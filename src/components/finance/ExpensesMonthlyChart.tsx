@@ -90,8 +90,8 @@ export default function ExpensesMonthlyChart({ expenses, categories }: ExpensesM
     <Card className="w-full">
       <CardHeader className="space-y-3 pb-2">
         <CardTitle className="text-base font-medium">Despesas por Mês</CardTitle>
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
-          <div className="flex-1 min-w-0">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-end">
+          <div className="w-full lg:flex-1">
             <DateRangePicker
               startDate={startDate}
               endDate={endDate}
@@ -99,7 +99,7 @@ export default function ExpensesMonthlyChart({ expenses, categories }: ExpensesM
               onEndDateChange={setEndDate}
             />
           </div>
-          <div className="w-full sm:w-auto sm:min-w-64 min-w-0">
+          <div className="w-full lg:w-80">
             <MultiSelect
               label="Categoria"
               options={categoryOptions}

@@ -20,7 +20,7 @@ export default function DateRangePicker({
   onEndDateChange,
 }: DateRangePickerProps) {
   return (
-    <div className="flex flex-col md:flex-row gap-3">
+    <div className="flex flex-col lg:flex-row gap-3">
       <div className="flex-1">
         <label className="text-sm text-muted-foreground">Data início</label>
         <Popover>
