@@ -5,12 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, TrendingUp, TrendingDown, Edit, History } from "lucide-react";
+import { Trash2, TrendingUp, TrendingDown, Edit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { currency, percentage, formatQuantity, formatLabel } from "@/lib/investments";
-import { EditInvestmentDialog } from "./EditInvestmentDialog";
+
 
 interface InvestmentsTableProps {
   investments: Investment[];
@@ -108,18 +108,8 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                   <TableCell>
                     {format(new Date(investment.data_investimento), "dd/MM/yyyy", { locale: ptBR })}
                   </TableCell>
-                   <TableCell className="text-center">
+                    <TableCell className="text-center">
                      <div className="flex items-center justify-center gap-1">
-                       <EditInvestmentDialog investment={investment} onUpdated={onChange}>
-                         <Button
-                           variant="ghost"
-                           size="icon"
-                           className="h-6 w-6 text-muted-foreground hover:text-primary"
-                           aria-label="Editar investimento"
-                         >
-                           <Edit className="h-3 w-3" />
-                         </Button>
-                       </EditInvestmentDialog>
                        <Button
                          variant="ghost"
                          size="icon"
@@ -127,7 +117,7 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                          onClick={() => navigate(`/financeiro/investimentos/${investment.id}/historico-precos`)}
                          aria-label="Histórico de preços"
                        >
-                         <History className="h-3 w-3" />
+                         <Edit className="h-3 w-3" />
                        </Button>
                        <Button
                          variant="ghost"
@@ -139,7 +129,7 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                          <Trash2 className="h-3 w-3" />
                        </Button>
                      </div>
-                   </TableCell>
+                    </TableCell>
                 </TableRow>
               ))}
             </TableBody>
