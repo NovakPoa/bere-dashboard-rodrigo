@@ -290,7 +290,8 @@ export function filterExpenses(
   expenses: Expense[],
   opts: { 
     category?: Category[] | Category | "all"; 
-    method?: PaymentMethod[] | PaymentMethod | "all" 
+    method?: PaymentMethod[] | PaymentMethod | "all";
+    description?: string;
   }
 ) {
   return expenses.filter((e) => {
@@ -314,7 +315,13 @@ export function filterExpenses(
       }
     }
 
-    return okCat && okMet;
+    // Handle description filtering
+    let okDesc = true;
+    if (opts.description && opts.description.trim()) {
+      okDesc = e.note.toLowerCase().includes(opts.description.toLowerCase().trim());
+    }
+
+    return okCat && okMet && okDesc;
   });
 }
 

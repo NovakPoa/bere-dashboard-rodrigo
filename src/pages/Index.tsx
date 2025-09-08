@@ -4,6 +4,8 @@ import { startOfMonth, endOfMonth } from "date-fns";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Plus } from "lucide-react";
 import { filterExpenses, filterExpensesByDateRange, parseDateOnly } from "@/lib/finance";
@@ -21,6 +23,7 @@ const Index = () => {
   const { data: expenses = [] } = useExpenses();
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
   const [selectedMethods, setSelectedMethods] = useState<PaymentMethod[]>([]);
+  const [descriptionFilter, setDescriptionFilter] = useState("");
   const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [showExpenseForm, setShowExpenseForm] = useState(false);
@@ -43,9 +46,10 @@ const Index = () => {
   const filtered = useMemo(() => 
     filterExpenses(filteredByDate, { 
       category: selectedCategories.length > 0 ? selectedCategories : "all",
-      method: selectedMethods.length > 0 ? selectedMethods : "all" 
+      method: selectedMethods.length > 0 ? selectedMethods : "all",
+      description: descriptionFilter
     }), 
-    [filteredByDate, selectedCategories, selectedMethods]
+    [filteredByDate, selectedCategories, selectedMethods, descriptionFilter]
   );
   
   const totalFiltered = useMemo(() => 
@@ -77,6 +81,10 @@ const Index = () => {
     setSelectedMethods(selected as PaymentMethod[]);
   };
 
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDescriptionFilter(e.target.value);
+  };
+
   const currency = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   return (
@@ -103,9 +111,19 @@ const Index = () => {
       <main className="py-4 md:py-8 space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
         <section aria-labelledby="filters" className="space-y-4 md:space-y-6 min-w-0">
           <h2 id="filters" className="sr-only">Filtros</h2>
-          <div className="grid gap-3 md:gap-6 grid-cols-1 md:grid-cols-2 min-w-0">
-            <div className="flex flex-col md:flex-row gap-3 min-w-0">
-              <div className="flex-1 min-w-0">
+          <div className="space-y-3 md:space-y-4 min-w-0">
+            <div className="grid gap-3 md:gap-6 grid-cols-1 md:grid-cols-3 min-w-0">
+              <div className="min-w-0">
+                <Label htmlFor="description-filter">Descrição</Label>
+                <Input
+                  id="description-filter"
+                  placeholder="Filtrar por descrição..."
+                  value={descriptionFilter}
+                  onChange={handleDescriptionChange}
+                  className="mt-1"
+                />
+              </div>
+              <div className="min-w-0">
                 <MultiSelect
                   label="Categoria"
                   options={categoryOptions}
@@ -114,7 +132,7 @@ const Index = () => {
                   placeholder="Todas as categorias"
                 />
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0">
                 <MultiSelect
                   label="Forma de pagamento"
                   options={methodOptions}
