@@ -175,11 +175,6 @@ const Index = () => {
           </div>
         </section>
 
-        <section aria-labelledby="monthly-chart" className="min-w-0">
-          <h2 id="monthly-chart" className="sr-only">Gráfico mensal de despesas</h2>
-          <ExpensesMonthlyChart expenses={expenses} categories={categoriesList} />
-        </section>
-
         <Separator />
 
         <section aria-labelledby="list" className="min-w-0">
@@ -190,6 +185,11 @@ const Index = () => {
               onChange={() => {}} 
             />
           </div>
+        </section>
+
+        <section aria-labelledby="monthly-chart" className="min-w-0">
+          <h2 id="monthly-chart" className="sr-only">Gráfico mensal de despesas</h2>
+          <ExpensesMonthlyChart expenses={expenses} categories={categoriesList} />
         </section>
       </main>
     </div>
