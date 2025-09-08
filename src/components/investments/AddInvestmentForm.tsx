@@ -11,7 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, formatDateForDatabase } from "@/lib/utils";
 import { useAddInvestment } from "@/hooks/useInvestments";
 import { Currency } from "@/types/investment";
 import { CURRENCY_LABELS } from "@/lib/investments";
@@ -57,7 +57,7 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
       preco_unitario_compra: data.preco_unitario_atual, // Set purchase price equal to current price
       preco_unitario_atual: data.preco_unitario_atual,
       quantidade: data.quantidade,
-      data_investimento: format(data.data_investimento, "yyyy-MM-dd"),
+      data_investimento: formatDateForDatabase(data.data_investimento),
     };
 
     addInvestment.mutate(formattedData, {

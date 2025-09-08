@@ -12,6 +12,7 @@ import { ArrowLeft, Calendar, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { currency } from "@/lib/investments";
+import { formatDateForDatabase } from "@/lib/utils";
 import { Investment } from "@/types/investment";
 import { toast } from "@/hooks/use-toast";
 
@@ -90,7 +91,7 @@ export default function InvestmentPriceHistory() {
     const year = parseInt(selectedYear, 10);
     const monthIndex = parseInt(selectedMonth, 10) - 1; // 0-based
     const updateDate = new Date(year, monthIndex + 1, 0);
-    const priceDate = updateDate.toISOString().slice(0, 10); // YYYY-MM-DD for DATE column
+    const priceDate = formatDateForDatabase(updateDate);
 
     upsertPrice.mutate(
       {
