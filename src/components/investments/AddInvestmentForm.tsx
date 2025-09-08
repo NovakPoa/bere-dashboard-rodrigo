@@ -21,7 +21,6 @@ const formSchema = z.object({
   tipo_investimento: z.string().min(1, "Tipo é obrigatório"),
   corretora: z.string().min(1, "Corretora é obrigatória"),
   moeda: z.enum(["BRL", "USD"] as const),
-  preco_unitario_compra: z.number().min(0, "Preço de compra não pode ser negativo"),
   preco_unitario_atual: z.number().min(0, "Preço atual não pode ser negativo"),
   quantidade: z.number().min(0.000001, "Quantidade deve ser maior que zero"),
   data_investimento: z.date({ required_error: "Data é obrigatória" }),
@@ -43,7 +42,6 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
       tipo_investimento: "",
       corretora: "",
       moeda: "BRL",
-      preco_unitario_compra: 0,
       preco_unitario_atual: 0,
       quantidade: 0,
       data_investimento: new Date(),
@@ -56,7 +54,7 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
       tipo_investimento: data.tipo_investimento,
       corretora: data.corretora,
       moeda: data.moeda,
-      preco_unitario_compra: data.preco_unitario_compra,
+      preco_unitario_compra: data.preco_unitario_atual, // Set purchase price equal to current price
       preco_unitario_atual: data.preco_unitario_atual,
       quantidade: data.quantidade,
       data_investimento: format(data.data_investimento, "yyyy-MM-dd"),
@@ -154,28 +152,6 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
 
               <FormField
                 control={form.control}
-                name="preco_unitario_compra"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Preço de Compra</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder={form.watch("moeda") === "USD" ? "US$ 0.00" : "R$ 0,00"}
-                        value={field.value >= 0 ? formatCurrency(field.value.toString(), form.watch("moeda")) : ""}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, "");
-                          const floatValue = parseFloat(value) / 100;
-                          field.onChange(floatValue || 0);
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="preco_unitario_atual"
                 render={({ field }) => (
                   <FormItem>
@@ -222,7 +198,7 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
                   <FormControl>
                     <Input
                       value={(() => {
-                        const preco = form.watch("preco_unitario_compra") || 0;
+                        const preco = form.watch("preco_unitario_atual") || 0;
                         const quantidade = form.watch("quantidade") || 0;
                         const total = preco * quantidade;
                         const moeda = form.watch("moeda");
@@ -231,7 +207,7 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
                         }
                         return moeda === "USD" ? "US$ 0.00" : "R$ 0,00";
                       })()}
-                      placeholder="Preço de Compra × Quantidade"
+                      placeholder="Preço Atual × Quantidade"
                       disabled
                       className="bg-muted"
                     />

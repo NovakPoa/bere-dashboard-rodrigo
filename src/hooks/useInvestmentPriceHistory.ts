@@ -43,25 +43,50 @@ export const useUpsertInvestmentPrice = () => {
         );
       if (upsertErr) throw upsertErr;
 
-      // Fetch current last update of the investment
+      // Fetch current investment data and all price history
       const { data: inv, error: invErr } = await supabase
         .from("investments")
-        .select("id, data_atualizacao_preco")
+        .select("id, data_atualizacao_preco, data_investimento")
         .eq("id", payload.investmentId)
         .single();
       if (invErr) throw invErr;
 
+      const { data: allPrices, error: pricesErr } = await supabase
+        .from("investment_prices")
+        .select("price_date, price")
+        .eq("investment_id", payload.investmentId)
+        .order("price_date", { ascending: true });
+      if (pricesErr) throw pricesErr;
+
       const newDate = new Date(payload.priceDate);
       const currentLast = inv?.data_atualizacao_preco ? new Date(inv.data_atualizacao_preco) : null;
+      const investmentDate = inv?.data_investimento ? new Date(inv.data_investimento) : null;
+
+      // Find the earliest price (either from history or investment date)
+      let updateData: any = {};
 
       // If the new price date is more recent, update the investment's current price and date
       if (!currentLast || newDate.getTime() > currentLast.getTime()) {
+        updateData.preco_unitario_atual = payload.price;
+        updateData.data_atualizacao_preco = new Date(payload.priceDate).toISOString();
+      }
+
+      // Find the earliest price to set as purchase price
+      if (allPrices && allPrices.length > 0) {
+        const earliestPrice = allPrices[0]; // Already ordered by price_date ascending
+        const earliestDate = new Date(earliestPrice.price_date);
+        
+        // If this is the earliest price (older than investment date or no investment date), update purchase price
+        if (!investmentDate || earliestDate.getTime() <= investmentDate.getTime()) {
+          updateData.preco_unitario_compra = earliestPrice.price;
+        }
+      }
+
+      // Update investment if we have any changes
+      if (Object.keys(updateData).length > 0) {
         const { error: updErr } = await supabase
           .from("investments")
-          .update({
-            preco_unitario_atual: payload.price,
-            data_atualizacao_preco: new Date(payload.priceDate).toISOString(),
-          })
+          .update(updateData)
           .eq("id", payload.investmentId);
         if (updErr) throw updErr;
       }
