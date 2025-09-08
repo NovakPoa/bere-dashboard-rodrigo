@@ -1,8 +1,9 @@
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,8 +13,8 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { useAddInvestment } from "@/hooks/useInvestments";
-import { Currency } from "@/types/investment";
+import { useEditInvestment } from "@/hooks/useInvestments";
+import { Investment, Currency } from "@/types/investment";
 import { CURRENCY_LABELS } from "@/lib/investments";
 
 const formSchema = z.object({
@@ -22,50 +23,67 @@ const formSchema = z.object({
   corretora: z.string().min(1, "Corretora é obrigatória"),
   moeda: z.enum(["BRL", "USD"] as const),
   preco_unitario_compra: z.number().min(0, "Preço de compra não pode ser negativo"),
-  preco_unitario_atual: z.number().min(0, "Preço atual não pode ser negativo"),
   quantidade: z.number().min(0.000001, "Quantidade deve ser maior que zero"),
   data_investimento: z.date({ required_error: "Data é obrigatória" }),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-interface AddInvestmentFormProps {
-  onAdded?: () => void;
+interface EditInvestmentDialogProps {
+  investment: Investment;
+  onUpdated?: () => void;
+  children: React.ReactNode;
 }
 
-export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
-  const addInvestment = useAddInvestment();
+export function EditInvestmentDialog({ investment, onUpdated, children }: EditInvestmentDialogProps) {
+  const [open, setOpen] = useState(false);
+  const editInvestment = useEditInvestment();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      nome_investimento: "",
-      tipo_investimento: "",
-      corretora: "",
-      moeda: "BRL",
-      preco_unitario_compra: 0,
-      preco_unitario_atual: 0,
-      quantidade: 0,
-      data_investimento: new Date(),
+      nome_investimento: investment.nome_investimento,
+      tipo_investimento: investment.tipo_investimento,
+      corretora: investment.corretora,
+      moeda: investment.moeda,
+      preco_unitario_compra: investment.preco_unitario_compra,
+      quantidade: investment.quantidade,
+      data_investimento: new Date(investment.data_investimento),
     },
   });
 
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (newOpen) {
+      form.reset({
+        nome_investimento: investment.nome_investimento,
+        tipo_investimento: investment.tipo_investimento,
+        corretora: investment.corretora,
+        moeda: investment.moeda,
+        preco_unitario_compra: investment.preco_unitario_compra,
+        quantidade: investment.quantidade,
+        data_investimento: new Date(investment.data_investimento),
+      });
+    }
+  };
+
   const onSubmit = (data: FormData) => {
     const formattedData = {
+      id: investment.id,
       nome_investimento: data.nome_investimento,
       tipo_investimento: data.tipo_investimento,
       corretora: data.corretora,
       moeda: data.moeda,
       preco_unitario_compra: data.preco_unitario_compra,
-      preco_unitario_atual: data.preco_unitario_atual,
+      preco_unitario_atual: investment.preco_unitario_atual,
       quantidade: data.quantidade,
       data_investimento: format(data.data_investimento, "yyyy-MM-dd"),
     };
 
-    addInvestment.mutate(formattedData, {
+    editInvestment.mutate(formattedData, {
       onSuccess: () => {
-        form.reset();
-        onAdded?.();
+        setOpen(false);
+        onUpdated?.();
       },
     });
   };
@@ -80,11 +98,14 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Adicionar Investimento</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        {children}
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Editar Investimento</DialogTitle>
+        </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -176,28 +197,6 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
 
               <FormField
                 control={form.control}
-                name="preco_unitario_atual"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Preço Atual</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder={form.watch("moeda") === "USD" ? "US$ 0.00" : "R$ 0,00"}
-                        value={field.value >= 0 ? formatCurrency(field.value.toString(), form.watch("moeda")) : ""}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, "");
-                          const floatValue = parseFloat(value) / 100;
-                          field.onChange(floatValue || 0);
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="quantidade"
                 render={({ field }) => (
                   <FormItem>
@@ -218,7 +217,7 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
 
               <div className="md:col-span-1">
                 <FormItem>
-                  <FormLabel>Valor Total</FormLabel>
+                  <FormLabel>Valor Total Investido</FormLabel>
                   <FormControl>
                     <Input
                       value={(() => {
@@ -280,31 +279,23 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
                   </FormItem>
                 )}
               />
-
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={addInvestment.isPending}
-            >
-              {addInvestment.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Adicionar Investimento
-            </Button>
-
-            <div className="text-center pt-4">
-              <Button
-                type="button"
-                variant="link"
-                onClick={() => window.open("/financeiro/investimentos/new/historico-precos", "_blank")}
-                className="text-sm text-muted-foreground hover:text-primary"
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={editInvestment.isPending}
               >
-                Atualizar preço do ativo no tempo
+                {editInvestment.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Salvar Alterações
               </Button>
             </div>
           </form>
         </Form>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 }

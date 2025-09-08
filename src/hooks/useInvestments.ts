@@ -168,6 +168,40 @@ export const useUpdateInvestment = () => {
   });
 };
 
+export const useEditInvestment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (investment: Omit<Investment, 'valor_total_investido' | 'valor_atual_total' | 'rentabilidade_absoluta' | 'rentabilidade_percentual' | 'created_at' | 'updated_at' | 'data_atualizacao_preco'>) => {
+      const { data, error } = await supabase
+        .from("investments")
+        .update({
+          nome_investimento: investment.nome_investimento,
+          tipo_investimento: investment.tipo_investimento,
+          corretora: investment.corretora,
+          moeda: investment.moeda,
+          preco_unitario_compra: investment.preco_unitario_compra,
+          quantidade: investment.quantidade,
+          data_investimento: investment.data_investimento,
+        })
+        .eq("id", investment.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["investments"] });
+      toast.success("Investimento editado com sucesso!");
+    },
+    onError: (error) => {
+      console.error("Erro ao editar investimento:", error);
+      toast.error("Erro ao editar investimento");
+    },
+  });
+};
+
 export const useRemoveInvestment = () => {
   const queryClient = useQueryClient();
 
