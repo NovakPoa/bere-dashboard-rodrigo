@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -24,12 +24,14 @@ export default function IncomesMonthlyChart({ incomes, categories }: IncomesMont
   });
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
-    if (categories.length > 0 && selectedCategories.length === 0) {
+    if (categories.length > 0 && !hasInitialized.current) {
       setSelectedCategories(categories);
+      hasInitialized.current = true;
     }
-  }, [categories, selectedCategories.length]);
+  }, [categories]);
 
   const chartData = useMemo(() => {
     if (!startDate || !endDate) return [];
