@@ -23,7 +23,7 @@ export default function ExpensesMonthlyChart({ expenses, categories }: ExpensesM
     return subMonths(new Date(), 12);
   });
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
-  const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   // Initialize with all categories selected
   useEffect(() => {
@@ -101,7 +101,7 @@ export default function ExpensesMonthlyChart({ expenses, categories }: ExpensesM
               label="Categoria"
               options={categoryOptions}
               selected={selectedCategories}
-              onSelectionChange={(selected) => setSelectedCategories(selected as Category[])}
+              onSelectionChange={(selected) => setSelectedCategories(selected)}
               placeholder="Todas as categorias"
             />
           </div>
