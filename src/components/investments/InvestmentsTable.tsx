@@ -5,11 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, TrendingUp, TrendingDown, History } from "lucide-react";
+import { Trash2, TrendingUp, TrendingDown } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { currency, percentage, formatQuantity, formatLabel } from "@/lib/investments";
-import { PriceHistoryDialog } from "./PriceHistoryDialog";
 
 interface InvestmentsTableProps {
   investments: Investment[];
@@ -107,29 +106,15 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                     {format(new Date(investment.data_investimento), "dd/MM/yyyy", { locale: ptBR })}
                   </TableCell>
                   <TableCell className="text-center">
-                    <div className="flex justify-center gap-2">
-                      <PriceHistoryDialog 
-                        investment={investment} 
-                        onUpdated={onChange}
-                      >
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          title="Gerenciar histórico de preços"
-                        >
-                          <History className="h-4 w-4" />
-                        </Button>
-                      </PriceHistoryDialog>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDelete(investment.id)}
-                        aria-label="Excluir investimento"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                      onClick={() => handleDelete(investment.id)}
+                      aria-label="Excluir investimento"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
