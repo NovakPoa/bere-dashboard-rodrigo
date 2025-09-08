@@ -38,15 +38,11 @@ export default function IncomesMonthlyChart({ incomes }: IncomesMonthlyChartProp
 
     // Converter para array e ordenar por data
     return Object.entries(monthlyData)
+      .sort(([a], [b]) => a.localeCompare(b))
       .map(([monthKey, ganhos]) => ({
         mes: format(new Date(monthKey + "-01"), "MMM/yy", { locale: ptBR }),
         ganhos,
-      }))
-      .sort((a, b) => {
-        const dateA = new Date(a.mes.split('/').reverse().join('-') + '-01');
-        const dateB = new Date(b.mes.split('/').reverse().join('-') + '-01');
-        return dateA.getTime() - dateB.getTime();
-      });
+      }));
   }, [incomes, startDate, endDate]);
 
   const currency = (value: number) => 
