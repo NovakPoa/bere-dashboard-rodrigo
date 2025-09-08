@@ -122,14 +122,15 @@ const Index = () => {
             </div>
             <div className="grid gap-3 md:gap-6 grid-cols-1 md:grid-cols-3 min-w-0">
               <div className="min-w-0">
-                <Label htmlFor="description-filter">Descrição</Label>
-                <Input
-                  id="description-filter"
-                  placeholder="Filtrar por descrição..."
-                  value={descriptionFilter}
-                  onChange={handleDescriptionChange}
-                  className="mt-1"
-                />
+                <div className="space-y-2">
+                  <label className="text-sm text-muted-foreground">Descrição</label>
+                  <Input
+                    placeholder="Filtrar por descrição..."
+                    value={descriptionFilter}
+                    onChange={handleDescriptionChange}
+                    className="w-full"
+                  />
+                </div>
               </div>
               <div className="min-w-0">
                 <MultiSelect
