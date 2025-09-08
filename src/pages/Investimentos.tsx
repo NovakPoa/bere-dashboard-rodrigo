@@ -6,8 +6,7 @@ import { InvestmentsTable } from "@/components/investments/InvestmentsTable";
 import { TypeChart } from "@/components/investments/TypeChart";
 import { BrokerChart } from "@/components/investments/BrokerChart";
 import { CurrencyChart } from "@/components/investments/CurrencyChart";
-import { RentabilityChart } from "@/components/investments/RentabilityChart";
-import { RentabilityFilters } from "@/components/investments/RentabilityFilters";
+import InvestmentsMonthlyChart from "@/components/investments/InvestmentsMonthlyChart";
 import { StatCard } from "@/components/investments/StatCard";
 import DateRangePicker from "@/components/finance/DateRangePicker";
 import { Button } from "@/components/ui/button";
@@ -34,11 +33,6 @@ export default function Investimentos() {
   const [endDate, setEndDate] = useState<Date>();
   const [showForm, setShowForm] = useState(false);
   
-  // Estados para o gráfico de rentabilidade
-  const [rentabilityPeriod, setRentabilityPeriod] = useState<"7days" | "month" | "year">("month");
-  const [selectedRentabilityNames, setSelectedRentabilityNames] = useState<string[]>([]);
-  const [selectedRentabilityTypes, setSelectedRentabilityTypes] = useState<string[]>([]);
-  const [showRentabilityValue, setShowRentabilityValue] = useState(true);
 
   const handleInvestmentAdded = () => {
     refetch();
@@ -169,27 +163,11 @@ export default function Investimentos() {
           <CurrencyChart investments={filtered} exchangeRate={exchangeRate} />
         </div>
 
-        {/* Gráfico de Rentabilidade no Tempo */}
-        <div className="space-y-4">
-          <RentabilityFilters
-            investments={investments}
-            selectedPeriod={rentabilityPeriod}
-            onPeriodChange={setRentabilityPeriod}
-            selectedNames={selectedRentabilityNames}
-            onNamesChange={setSelectedRentabilityNames}
-            selectedTypes={selectedRentabilityTypes}
-            onTypesChange={setSelectedRentabilityTypes}
-            showValue={showRentabilityValue}
-            onToggleDisplay={() => setShowRentabilityValue(!showRentabilityValue)}
-          />
-          <RentabilityChart
-            investments={investments}
-            selectedPeriod={rentabilityPeriod}
-            selectedNames={selectedRentabilityNames}
-            selectedTypes={selectedRentabilityTypes}
-            showValue={showRentabilityValue}
-          />
-        </div>
+        {/* Gráfico de Investimentos por Mês */}
+        <InvestmentsMonthlyChart 
+          investments={investments} 
+          exchangeRate={exchangeRate}
+        />
 
         {/* Tabela de Investimentos */}
         <InvestmentsTable 
