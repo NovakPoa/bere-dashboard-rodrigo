@@ -29,6 +29,8 @@ export function MultiSelect({
   label,
   className,
 }: MultiSelectProps) {
+  const [open, setOpen] = React.useState(false);
+
   const handleSelect = (value: string) => {
     if (selected.includes(value)) {
       onSelectionChange(selected.filter((item) => item !== value));
@@ -57,7 +59,7 @@ export function MultiSelect({
       {label && (
         <label className="text-sm text-muted-foreground">{label}</label>
       )}
-      <DropdownMenu>
+      <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
@@ -112,11 +114,23 @@ export function MultiSelect({
               key={option.value}
               checked={selected.includes(option.value)}
               onCheckedChange={() => handleSelect(option.value)}
+              onSelect={(e) => e.preventDefault()}
               className="capitalize"
             >
               {option.label}
             </DropdownMenuCheckboxItem>
           ))}
+          <DropdownMenuSeparator />
+          <div className="p-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs"
+              onClick={() => setOpen(false)}
+            >
+              Concluído
+            </Button>
+          </div>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
