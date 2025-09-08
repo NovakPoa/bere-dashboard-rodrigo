@@ -154,7 +154,7 @@ export default function Ganhos() {
         </div>
 
         {/* Monthly Chart */}
-        <IncomesMonthlyChart incomes={incomes} />
+        <IncomesMonthlyChart incomes={incomes} categories={userCategories} />
 
         {/* Table */}
         <IncomesTable 

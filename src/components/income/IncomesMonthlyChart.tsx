@@ -1,14 +1,16 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MultiSelect } from "@/components/ui/multi-select";
 import DateRangePicker from "@/components/finance/DateRangePicker";
-import { filterIncomesByDateRange } from "@/lib/income";
-import type { Income } from "@/types/income";
+import { filterIncomes, filterIncomesByDateRange } from "@/lib/income";
+import type { Income, IncomeCategory } from "@/types/income";
 
 interface IncomesMonthlyChartProps {
   incomes: Income[];
+  categories: string[];
 }
 
 interface ChartData {
@@ -16,16 +18,28 @@ interface ChartData {
   ganhos: number;
 }
 
-export default function IncomesMonthlyChart({ incomes }: IncomesMonthlyChartProps) {
+export default function IncomesMonthlyChart({ incomes, categories }: IncomesMonthlyChartProps) {
   const [startDate, setStartDate] = useState<Date | undefined>(() => {
     return subMonths(new Date(), 12);
   });
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (categories.length > 0 && selectedCategories.length === 0) {
+      setSelectedCategories(categories);
+    }
+  }, [categories, selectedCategories.length]);
 
   const chartData = useMemo(() => {
     if (!startDate || !endDate) return [];
 
-    const filteredIncomes = filterIncomesByDateRange(incomes, startDate, endDate);
+    const filteredByDate = filterIncomesByDateRange(incomes, startDate, endDate);
+    const filteredIncomes = filterIncomes(filteredByDate, {
+      category: selectedCategories.length > 0 ? selectedCategories as IncomeCategory[] : "all",
+      method: "all",
+      description: ""
+    });
     
     // Agregar ganhos por mês
     const monthlyData: Record<string, number> = {};
@@ -43,7 +57,12 @@ export default function IncomesMonthlyChart({ incomes }: IncomesMonthlyChartProp
         mes: format(new Date(monthKey + "-01"), "MMM/yy", { locale: ptBR }),
         ganhos,
       }));
-  }, [incomes, startDate, endDate]);
+  }, [incomes, startDate, endDate, selectedCategories]);
+
+  const categoryOptions = useMemo(() => 
+    categories.map(category => ({ value: category, label: category })),
+    [categories]
+  );
 
   const currency = (value: number) => 
     value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -64,14 +83,25 @@ export default function IncomesMonthlyChart({ incomes }: IncomesMonthlyChartProp
 
   return (
     <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="space-y-3 pb-4">
         <CardTitle className="text-base font-medium">Ganhos por Mês</CardTitle>
-        <DateRangePicker
-          startDate={startDate}
-          endDate={endDate}
-          onStartDateChange={setStartDate}
-          onEndDateChange={setEndDate}
-        />
+        <div className="flex flex-col lg:flex-row gap-4">
+          <DateRangePicker
+            startDate={startDate}
+            endDate={endDate}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+          />
+          <div className="w-full lg:w-80">
+            <MultiSelect
+              options={categoryOptions}
+              selected={selectedCategories}
+              onSelectionChange={setSelectedCategories}
+              placeholder="Todas as categorias"
+              label="Categorias"
+            />
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="h-[300px] w-full">
