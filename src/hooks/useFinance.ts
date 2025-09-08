@@ -278,6 +278,47 @@ onSuccess: (newExpense) => {
   });
 }
 
+export function useUpdateExpense() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Expense> }) => {
+      const updateData: any = {};
+      
+      if (updates.amount !== undefined) updateData.valor = updates.amount;
+      if (updates.category !== undefined) updateData.categoria = updates.category;
+      if (updates.method !== undefined) updateData.forma_pagamento = updates.method;
+      if (updates.note !== undefined) updateData.descricao = updates.note;
+      if (updates.date !== undefined) updateData.data = updates.date;
+
+      const { data, error } = await supabase
+        .from("financeiro")
+        .update(updateData)
+        .eq("id", parseInt(id))
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      toast({
+        title: "Despesa atualizada",
+        description: "Despesa foi atualizada com sucesso!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: `Falha ao atualizar despesa: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
 export function useRemoveExpense() {
   const queryClient = useQueryClient();
   const { toast } = useToast();

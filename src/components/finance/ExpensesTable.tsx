@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useRemoveExpense } from "@/hooks/useFinance";
 import { toast } from "@/hooks/use-toast";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit } from "lucide-react";
 import { parseDateOnly } from "@/lib/finance";
+import { UpdateExpenseDialog } from "./UpdateExpenseDialog";
 
 
 const METHOD_LABELS: Record<Expense["method"], string> = {
@@ -83,7 +84,7 @@ export default function ExpensesTable({ expenses, onChange }: { expenses: Expens
                 <TableHead className="min-w-[70px] text-xs md:text-sm">Forma de pagamento</TableHead>
                 <TableHead className="min-w-[50px] text-xs md:text-sm">Parcela</TableHead>
                 <TableHead className="text-right min-w-[60px] text-xs md:text-sm">Valor</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
+                <TableHead className="w-[80px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -103,9 +104,16 @@ export default function ExpensesTable({ expenses, onChange }: { expenses: Expens
                   </TableCell>
                   <TableCell className="text-right font-medium text-xs md:text-sm">{e.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" aria-label="Excluir" onClick={() => handleDelete(e.id)} className="h-8 w-8 p-0">
-                      <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
-                    </Button>
+                    <div className="flex gap-1 justify-end">
+                      <UpdateExpenseDialog expense={e} onUpdated={onChange}>
+                        <Button variant="ghost" size="sm" aria-label="Editar" className="h-8 w-8 p-0">
+                          <Edit className="h-3 w-3 md:h-4 md:w-4" />
+                        </Button>
+                      </UpdateExpenseDialog>
+                      <Button variant="ghost" size="sm" aria-label="Excluir" onClick={() => handleDelete(e.id)} className="h-8 w-8 p-0">
+                        <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
