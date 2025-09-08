@@ -28,11 +28,22 @@ export const formatQuantity = (quantity: number): string => {
 export const filterInvestments = (
   investments: Investment[],
   filters: {
+    name?: string[] | string | "all";
     type?: string[] | string | "all";
     broker?: string[] | string | "all";
   }
 ): Investment[] => {
   let filtered = investments;
+
+  // Filtro por nome
+  if (filters.name && filters.name !== "all") {
+    const names = Array.isArray(filters.name) ? filters.name : [filters.name];
+    filtered = filtered.filter((investment) => 
+      names.some(name => 
+        investment.nome_investimento.toLowerCase().includes(name.toLowerCase())
+      )
+    );
+  }
 
   // Filtro por tipo
   if (filters.type && filters.type !== "all") {

@@ -27,6 +27,7 @@ export default function Investimentos() {
   const { data: investments = [], isLoading, error, refetch } = useInvestments();
   const { data: exchangeRate = 5.0 } = useExchangeRate();
   
+  const [selectedNames, setSelectedNames] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedBrokers, setSelectedBrokers] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date>();
@@ -47,10 +48,11 @@ export default function Investimentos() {
 
   const filtered = useMemo(() => {
     return filterInvestments(filteredByDate, {
+      name: selectedNames.length > 0 ? selectedNames : "all",
       type: selectedTypes.length > 0 ? selectedTypes : "all",
       broker: selectedBrokers.length > 0 ? selectedBrokers : "all",
     });
-  }, [filteredByDate, selectedTypes, selectedBrokers]);
+  }, [filteredByDate, selectedNames, selectedTypes, selectedBrokers]);
 
   // Cálculos do portfólio
   const portfolioTotals = useMemo(() => {
@@ -58,6 +60,14 @@ export default function Investimentos() {
   }, [filtered, exchangeRate]);
 
   // Opções para filtros - buscar valores únicos dos investimentos
+  const nameOptions = useMemo(() => {
+    const uniqueNames = [...new Set(investments.map(inv => inv.nome_investimento))].filter(Boolean);
+    return uniqueNames.map(name => ({
+      label: name,
+      value: name,
+    }));
+  }, [investments]);
+
   const typeOptions = useMemo(() => {
     const uniqueTypes = [...new Set(investments.map(inv => inv.tipo_investimento))].filter(Boolean);
     return uniqueTypes.map(type => ({
@@ -114,7 +124,17 @@ export default function Investimentos() {
             />
           </div>
           
-          {/* Segunda linha - Grid 2 colunas */}
+          {/* Segunda linha - Filtro por nome */}
+          <div className="min-w-0">
+            <MultiSelect
+              options={nameOptions}
+              selected={selectedNames}
+              onSelectionChange={(selected) => setSelectedNames(selected as string[])}
+              placeholder="Filtrar por nome do investimento"
+            />
+          </div>
+          
+          {/* Terceira linha - Grid 2 colunas */}
           <div className="grid gap-3 md:gap-6 grid-cols-1 md:grid-cols-2 min-w-0">
             <div className="min-w-0">
               <MultiSelect
