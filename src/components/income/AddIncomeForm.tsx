@@ -78,7 +78,7 @@ export default function AddIncomeForm({ onAdded }: { onAdded: () => void }) {
     addIncome.mutate({
       note: data.note,
       category: data.category,
-      date: data.date.toISOString().split('T')[0],
+      date: format(data.date, "yyyy-MM-dd"),
       amount,
       method: data.method,
       source: "manual",

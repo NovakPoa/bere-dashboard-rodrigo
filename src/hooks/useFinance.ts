@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { PaymentMethod, Category, Expense } from "@/types/expense";
@@ -171,7 +172,7 @@ export function useAddExpense() {
 
       // Use provided date or current date
       const expenseDate = expense.date || new Date();
-      const localDateStr = `${expenseDate.getFullYear()}-${String(expenseDate.getMonth() + 1).padStart(2, '0')}-${String(expenseDate.getDate()).padStart(2, '0')}`;
+      const localDateStr = format(expenseDate, "yyyy-MM-dd");
 
       const installments = expense.installments || 1;
       const isInstallmentPurchase = installments > 1 && expense.method === "credit";
