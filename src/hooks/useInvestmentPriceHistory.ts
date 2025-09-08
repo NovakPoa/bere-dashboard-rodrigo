@@ -43,6 +43,27 @@ export const useUpsertInvestmentPrice = () => {
         );
       if (upsertErr) throw upsertErr;
 
+      // Update investment with the most recent price from history
+      const { data: latestPrice, error: latestPriceErr } = await supabase
+        .from("investment_prices")
+        .select("price, price_date")
+        .eq("investment_id", payload.investmentId)
+        .order("price_date", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!latestPriceErr && latestPrice) {
+        const { error: updateErr } = await supabase
+          .from("investments")
+          .update({
+            preco_unitario_atual: latestPrice.price,
+            data_atualizacao_preco: new Date().toISOString()
+          })
+          .eq("id", payload.investmentId);
+        
+        if (updateErr) throw updateErr;
+      }
+
       return true;
     },
     onSuccess: async (_data, variables) => {
