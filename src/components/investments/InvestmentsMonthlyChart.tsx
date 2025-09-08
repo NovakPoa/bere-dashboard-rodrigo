@@ -1,11 +1,13 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MultiSelect } from "@/components/ui/multi-select";
 import DateRangePicker from "@/components/finance/DateRangePicker";
 import { Investment } from "@/types/investment";
 import { convertToReais } from "@/lib/currency";
+import { filterInvestments } from "@/lib/investments";
 
 interface InvestmentsMonthlyChartProps {
   investments: Investment[];
@@ -24,14 +26,34 @@ export default function InvestmentsMonthlyChart({ investments, exchangeRate }: I
     return subMonths(new Date(), 12);
   });
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+  const [selectedNames, setSelectedNames] = useState<string[]>([]);
+  const hasInitialized = useRef(false);
+
+  // Initialize with all investment names selected
+  const uniqueNames = useMemo(() => {
+    return [...new Set(investments.map(inv => inv.nome_investimento))].filter(Boolean);
+  }, [investments]);
+
+  useEffect(() => {
+    if (uniqueNames.length > 0 && !hasInitialized.current) {
+      setSelectedNames(uniqueNames);
+      hasInitialized.current = true;
+    }
+  }, [uniqueNames]);
 
   const chartData = useMemo(() => {
     if (!startDate || !endDate) return [];
+    if (selectedNames.length === 0) return [];
 
     // Filtrar investimentos por período baseado na data_investimento
-    const filteredInvestments = investments.filter((investment) => {
+    const filteredByDate = investments.filter((investment) => {
       const investmentDate = new Date(investment.data_investimento + 'T00:00:00');
       return investmentDate >= startDate && investmentDate <= endDate;
+    });
+
+    // Filtrar por nomes selecionados
+    const filteredInvestments = filterInvestments(filteredByDate, {
+      name: selectedNames.length > 0 ? selectedNames : "all",
     });
     
     // Agregar investimentos por mês
@@ -63,7 +85,7 @@ export default function InvestmentsMonthlyChart({ investments, exchangeRate }: I
         valorAtual: data.valorAtual,
         rentabilidade: data.rentabilidade,
       }));
-  }, [investments, startDate, endDate, exchangeRate]);
+  }, [investments, startDate, endDate, exchangeRate, selectedNames]);
 
   const currency = (value: number) => 
     value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -86,16 +108,32 @@ export default function InvestmentsMonthlyChart({ investments, exchangeRate }: I
     return null;
   };
 
+  const nameOptions = useMemo(() => 
+    uniqueNames.map(name => ({ value: name, label: name })),
+    [uniqueNames]
+  );
+
   return (
     <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="space-y-3 pb-4">
         <CardTitle className="text-base font-medium">Investimentos por Mês</CardTitle>
-        <DateRangePicker
-          startDate={startDate}
-          endDate={endDate}
-          onStartDateChange={setStartDate}
-          onEndDateChange={setEndDate}
-        />
+        <div className="flex flex-col lg:flex-row gap-4">
+          <DateRangePicker
+            startDate={startDate}
+            endDate={endDate}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+          />
+          <div className="w-full lg:w-80">
+            <MultiSelect
+              options={nameOptions}
+              selected={selectedNames}
+              onSelectionChange={setSelectedNames}
+              placeholder="Todos os investimentos"
+              label="Investimentos"
+            />
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="h-[300px] w-full">
