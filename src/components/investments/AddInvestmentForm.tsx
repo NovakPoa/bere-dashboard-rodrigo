@@ -155,7 +155,7 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
                 name="preco_unitario_atual"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Preço Unitário</FormLabel>
+                    <FormLabel>Preço Unitário Atual</FormLabel>
                     <FormControl>
                       <Input
                         placeholder={form.watch("moeda") === "USD" ? "US$ 0.00" : "R$ 0,00"}
@@ -191,6 +191,29 @@ export function AddInvestmentForm({ onAdded }: AddInvestmentFormProps) {
                   </FormItem>
                 )}
               />
+
+              <div className="md:col-span-1">
+                <FormItem>
+                  <FormLabel>Valor Total</FormLabel>
+                  <FormControl>
+                    <Input
+                      value={(() => {
+                        const preco = form.watch("preco_unitario_atual") || 0;
+                        const quantidade = form.watch("quantidade") || 0;
+                        const total = preco * quantidade;
+                        const moeda = form.watch("moeda");
+                        if (total > 0) {
+                          return formatCurrency(total.toString(), moeda);
+                        }
+                        return moeda === "USD" ? "US$ 0.00" : "R$ 0,00";
+                      })()}
+                      placeholder="Preço × Quantidade"
+                      disabled
+                      className="bg-muted"
+                    />
+                  </FormControl>
+                </FormItem>
+              </div>
 
               <FormField
                 control={form.control}
