@@ -8,8 +8,8 @@ export function parseDateOnly(dateStr: string): Date {
   return new Date(year, month - 1, day, 12, 0, 0); // Set to noon to avoid DST issues
 }
 
-const CATEGORY_SYNONYMS: Record<string, Category> = {
-  // Restaurante
+const CATEGORY_SYNONYMS: Record<string, string> = {
+  // Restaurante / Food
   alimentacao: "Restaurante",
   "alimentação": "Restaurante",
   comida: "Restaurante",
@@ -24,7 +24,7 @@ const CATEGORY_SYNONYMS: Record<string, Category> = {
   hamburguer: "Restaurante",
   "hambúrguer": "Restaurante",
 
-  // Mercado
+  // Mercado / Groceries
   mercado: "Mercado",
   supermercado: "Mercado",
   supermarket: "Mercado",
@@ -37,7 +37,7 @@ const CATEGORY_SYNONYMS: Record<string, Category> = {
   atacadao: "Mercado",
   "atacadão": "Mercado",
 
-  // Moradia
+  // Moradia / Housing
   casa: "Moradia",
   moradia: "Moradia",
   aluguel: "Moradia",
@@ -53,7 +53,7 @@ const CATEGORY_SYNONYMS: Record<string, Category> = {
   internet: "Moradia",
   telefone: "Moradia",
 
-  // Transporte
+  // Transporte / Transport
   transporte: "Transporte",
   gas: "Transporte",
   gasolina: "Transporte",
@@ -62,7 +62,7 @@ const CATEGORY_SYNONYMS: Record<string, Category> = {
   uber: "Transporte",
   taxi: "Transporte",
 
-  // Saúde
+  // Saúde / Health
   saude: "Saúde",
   "saúde": "Saúde",
   farmacia: "Saúde",
@@ -70,60 +70,56 @@ const CATEGORY_SYNONYMS: Record<string, Category> = {
   medico: "Saúde",
   "médico": "Saúde",
 
-  // Educação
+  // Educação / Education
   educacao: "Educação",
   "educação": "Educação",
   escola: "Educação",
   curso: "Educação",
 
-  // Trabalho
+  // Trabalho / Work
   trabalho: "Trabalho",
   office: "Trabalho",
   escritorio: "Trabalho",
 
-  // Assinaturas
+  // Assinaturas / Subscriptions
   assinaturas: "Assinaturas",
   assinatura: "Assinaturas",
   streaming: "Assinaturas",
   netflix: "Assinaturas",
   spotify: "Assinaturas",
 
-  // Lazer
+  // Lazer / Entertainment
   lazer: "Lazer",
   cinema: "Lazer",
   bar: "Lazer",
   show: "Lazer",
 
-  // Viagens
+  // Viagens / Travel
   viagens: "Viagens",
   viagem: "Viagens",
   turismo: "Viagens",
 
-  // Vestuário
+  // Vestuário / Clothing
   vestuario: "Vestuário",
   "vestuário": "Vestuário",
   roupa: "Vestuário",
   roupas: "Vestuário",
 
-  // Família
+  // Família / Family
   familia: "Família",
   "família": "Família",
 
-  // Impostos
+  // Impostos / Taxes
   impostos: "Impostos",
   imposto: "Impostos",
   taxa: "Impostos",
 
-  // Doações & Presentes
+  // Doações & Presentes / Gifts & Donations
   presentes: "Doações & Presentes",
   presente: "Doações & Presentes",
   gift: "Doações & Presentes",
   doacoes: "Doações & Presentes",
   "doações": "Doações & Presentes",
-
-  // Outros
-  outros: "Outros",
-  outro: "Outros",
 };
 
 const METHOD_SYNONYMS: Record<string, PaymentMethod> = {
@@ -157,7 +153,7 @@ export function parseExpenseMessage(message: string): Omit<Expense, "id" | "date
   }
 
   // category from synonyms first
-  let category: Category | undefined;
+  let category: string | undefined;
   let matchedCategoryKey: string | undefined;
   for (const key of Object.keys(CATEGORY_SYNONYMS)) {
     if (lower.includes(key)) {
@@ -174,7 +170,10 @@ export function parseExpenseMessage(message: string): Omit<Expense, "id" | "date
     if (matchedMethodKey) remaining = remaining.replace(new RegExp(matchedMethodKey, "g"), " ");
     remaining = remaining.replace(/r\$/g, " ");
     const maybeCat = remaining.replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
-    if (maybeCat) category = maybeCat as Category;
+    if (maybeCat) {
+      // Capitalize first letter for custom categories
+      category = maybeCat.charAt(0).toUpperCase() + maybeCat.slice(1);
+    }
   }
 
   if (!isFinite(amount) || amount <= 0 || !method || !category) {

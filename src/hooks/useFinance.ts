@@ -20,44 +20,16 @@ interface FinanceRecord {
   is_installment?: boolean;
 }
 
-// Category normalization mapping
+// Category normalization - now just cleans and capitalizes
 const normalizeCategory = (category: string): Category => {
-  const normalized = category?.toLowerCase().trim() || "";
+  if (!category || typeof category !== "string") return "Outros";
   
-  // Map old categories to new ones
-  const categoryMap: Record<string, Category> = {
-    "alimentação": "Restaurante",
-    "alimentacao": "Restaurante", 
-    "restaurante": "Restaurante",
-    "comida": "Restaurante",
-    "refeição": "Restaurante",
-    "refeicao": "Restaurante",
-    "mercado": "Mercado",
-    "supermercado": "Mercado",
-    "feira": "Mercado",
-    "compras": "Mercado",
-    "moradia": "Moradia", 
-    "transporte": "Transporte",
-    "combustível": "Transporte", // Map combustível to Transporte
-    "combustivel": "Transporte",
-    "saúde": "Saúde",
-    "saude": "Saúde",
-    "educação": "Educação",
-    "educacao": "Educação",
-    "trabalho": "Trabalho",
-    "assinaturas": "Assinaturas",
-    "lazer": "Lazer",
-    "viagens": "Viagens",
-    "vestuário": "Vestuário",
-    "vestuario": "Vestuário",
-    "família": "Família",
-    "familia": "Família",
-    "impostos": "Impostos",
-    "doações & presentes": "Doações & Presentes",
-    "outros": "Outros"
-  };
+  // Clean and capitalize
+  const cleaned = category.trim();
+  if (!cleaned) return "Outros";
   
-  return categoryMap[normalized] || "Outros";
+  // Capitalize first letter
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
 };
 
 // Payment method normalization mapping

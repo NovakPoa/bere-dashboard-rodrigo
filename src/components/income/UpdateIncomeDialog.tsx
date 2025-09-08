@@ -31,19 +31,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { CategoryCombobox } from "@/components/ui/category-combobox";
 import { useUpdateIncome } from "@/hooks/useIncome";
+import { useIncomeCategories, INCOME_SUGGESTIONS } from "@/hooks/useCategories";
 import type { Income, IncomeCategory, PaymentMethod } from "@/types/income";
 
-const INCOME_CATEGORIES: IncomeCategory[] = [
-  "Salário",
-  "Freelance", 
-  "Investimentos",
-  "Vendas",
-  "Aluguéis",
-  "Prêmios",
-  "Restituições",
-  "Outros"
-];
 
 const PAYMENT_METHODS: PaymentMethod[] = ["pix", "boleto", "credit"];
 
@@ -55,7 +47,7 @@ const METHOD_LABELS: Record<PaymentMethod, string> = {
 
 const formSchema = z.object({
   amount: z.number().min(0.01, "Valor deve ser maior que zero"),
-  category: z.enum(INCOME_CATEGORIES as [IncomeCategory, ...IncomeCategory[]]),
+  category: z.string().min(1, "Categoria é obrigatória").max(50, "Categoria muito longa"),
   method: z.enum(PAYMENT_METHODS as [PaymentMethod, ...PaymentMethod[]]),
   date: z.string().min(1, "Data é obrigatória"),
   note: z.string().optional(),
@@ -71,6 +63,7 @@ interface UpdateIncomeDialogProps {
 export default function UpdateIncomeDialog({ income, children }: UpdateIncomeDialogProps) {
   const [open, setOpen] = useState(false);
   const updateIncome = useUpdateIncome();
+  const { data: userCategories = [] } = useIncomeCategories();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -170,20 +163,14 @@ export default function UpdateIncomeDialog({ income, children }: UpdateIncomeDia
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Categoria</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma categoria" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {INCOME_CATEGORIES.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <CategoryCombobox
+                      value={field.value}
+                      onChange={field.onChange}
+                      suggestions={[...INCOME_SUGGESTIONS, ...userCategories]}
+                      placeholder="Selecione ou digite uma categoria..."
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

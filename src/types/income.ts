@@ -1,14 +1,6 @@
 export type PaymentMethod = "pix" | "boleto" | "credit";
 
-export type IncomeCategory = 
-  | "Salário"
-  | "Freelance"
-  | "Investimentos"
-  | "Vendas"
-  | "Aluguéis"
-  | "Prêmios"
-  | "Restituições"
-  | "Outros";
+export type IncomeCategory = string;
 
 export interface Income {
   id: string;

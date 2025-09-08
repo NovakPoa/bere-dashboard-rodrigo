@@ -12,28 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { CategoryCombobox } from "@/components/ui/category-combobox";
 import { useAddExpense } from "@/hooks/useFinance";
+import { useExpenseCategories, EXPENSE_SUGGESTIONS } from "@/hooks/useCategories";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Category, PaymentMethod } from "@/types/expense";
-
-const categories: Category[] = [
-  "Restaurante",
-  "Mercado",
-  "Moradia",
-  "Transporte", 
-  "Saúde",
-  "Educação",
-  "Trabalho",
-  "Assinaturas",
-  "Lazer",
-  "Viagens",
-  "Vestuário",
-  "Família",
-  "Impostos",
-  "Doações & Presentes",
-  "Outros"
-];
 
 const paymentMethods: { value: PaymentMethod; label: string }[] = [
   { value: "pix", label: "PIX" },
@@ -43,9 +27,7 @@ const paymentMethods: { value: PaymentMethod; label: string }[] = [
 
 const formSchema = z.object({
   note: z.string().min(1, "Descrição é obrigatória"),
-  category: z.enum(categories as [Category, ...Category[]], {
-    required_error: "Categoria é obrigatória"
-  }),
+  category: z.string().min(1, "Categoria é obrigatória").max(50, "Categoria muito longa"),
   date: z.date({
     required_error: "Data é obrigatória"
   }).refine((date) => date <= new Date(), "Data não pode ser futura"),
@@ -63,6 +45,7 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function AddExpenseForm({ onAdded }: { onAdded: () => void }) {
   const addExpense = useAddExpense();
+  const { data: userCategories = [] } = useExpenseCategories();
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -144,20 +127,14 @@ export default function AddExpenseForm({ onAdded }: { onAdded: () => void }) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Categoria</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma categoria" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <CategoryCombobox
+                      value={field.value}
+                      onChange={field.onChange}
+                      suggestions={[...EXPENSE_SUGGESTIONS, ...userCategories]}
+                      placeholder="Selecione ou digite uma categoria..."
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

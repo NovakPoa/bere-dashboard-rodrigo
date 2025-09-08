@@ -26,33 +26,14 @@ interface FinanceRecord {
 
 // Normalization functions
 const normalizeCategory = (category: string): IncomeCategory => {
-  const categoryMap: Record<string, IncomeCategory> = {
-    "salario": "Salário",
-    "salário": "Salário", 
-    "salary": "Salário",
-    "freelance": "Freelance",
-    "free": "Freelance",
-    "investimentos": "Investimentos",
-    "investimento": "Investimentos",
-    "investment": "Investimentos",
-    "vendas": "Vendas",
-    "venda": "Vendas",
-    "sales": "Vendas",
-    "alugueis": "Aluguéis",
-    "aluguel": "Aluguéis",
-    "rent": "Aluguéis",
-    "premios": "Prêmios",
-    "premio": "Prêmios",
-    "prize": "Prêmios",
-    "restituicoes": "Restituições",
-    "restituicao": "Restituições",
-    "refund": "Restituições",
-    "outros": "Outros",
-    "other": "Outros"
-  };
+  if (!category || typeof category !== "string") return "Outros";
   
-  const normalized = categoryMap[category?.toLowerCase()] || "Outros";
-  return normalized;
+  // Clean and capitalize
+  const cleaned = category.trim();
+  if (!cleaned) return "Outros";
+  
+  // Capitalize first letter
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
 };
 
 const normalizePaymentMethod = (method: string): PaymentMethod => {
