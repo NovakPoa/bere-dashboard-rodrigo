@@ -93,7 +93,7 @@ const convertToCultureItem = (record: CultureRecord): Item => {
     domain,
     subtype: mapSubtype(record.tipo, domain),
     rating: record.nota || undefined,
-    year: record.data ? new Date(record.data).getFullYear() : undefined,
+    year: record.data ? parseInt(record.data.split('-')[0]) : undefined,
     genre: record.genero || undefined,
     author: record.autor || undefined,
   };
