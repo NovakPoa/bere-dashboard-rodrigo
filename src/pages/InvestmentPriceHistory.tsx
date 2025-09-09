@@ -308,57 +308,65 @@ export default function InvestmentPriceHistory() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {priceHistory.map((p) => {
-                    const rentabilidadeAbsoluta = (p.price - investment.preco_unitario_compra) * investment.quantidade;
-                    const rentabilidadePercentual = ((p.price - investment.preco_unitario_compra) / investment.preco_unitario_compra) * 100;
+                  {(() => {
+                    // Create complete history including initial investment if not in history
+                    const allHistoryItems = [...priceHistory];
+                    if (!hasInitialInHistory) {
+                      allHistoryItems.push({
+                        id: 'initial',
+                        investment_id: investment.id,
+                        price: investment.preco_unitario_compra,
+                        price_date: investment.data_investimento,
+                        user_id: '',
+                        created_at: '',
+                        updated_at: ''
+                      });
+                    }
                     
-                    return (
-                      <TableRow key={p.id}>
-                        <TableCell>
-                          {format(parseDateFromDatabase(p.price_date), "dd/MM/yyyy", { locale: ptBR })}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {currency(p.price, investment.moeda)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {investment.quantidade.toLocaleString('pt-BR')}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {currency(p.price * investment.quantidade, investment.moeda)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className={`${rentabilidadeAbsoluta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            <div>{currency(rentabilidadeAbsoluta, investment.moeda)}</div>
-                            <div className="text-xs">
-                              {rentabilidadePercentual.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
-                            </div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  {!hasInitialInHistory && (
-                    <TableRow>
-                      <TableCell>
-                        {format(parseDateFromDatabase(investment.data_investimento), "dd/MM/yyyy", { locale: ptBR })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {currency(investment.preco_unitario_compra, investment.moeda)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {investment.quantidade.toLocaleString('pt-BR')}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {currency(investment.preco_unitario_compra * investment.quantidade, investment.moeda)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="text-muted-foreground">
-                          <div>{currency(0, investment.moeda)}</div>
-                          <div className="text-xs">0,00%</div>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
+                    // Sort by date to find the earliest (baseline) price
+                    const sortedHistory = allHistoryItems.sort((a, b) => a.price_date.localeCompare(b.price_date));
+                    const baselinePrice = sortedHistory[0]?.price || investment.preco_unitario_compra;
+                    
+                    // Sort back to descending order for display
+                    return sortedHistory.sort((a, b) => b.price_date.localeCompare(a.price_date)).map((p) => {
+                      const rentabilidadeAbsoluta = (p.price - baselinePrice) * investment.quantidade;
+                      const rentabilidadePercentual = baselinePrice > 0 ? ((p.price - baselinePrice) / baselinePrice) * 100 : 0;
+                      const isBaseline = p.price_date === sortedHistory[0]?.price_date;
+                      
+                      return (
+                        <TableRow key={p.id}>
+                          <TableCell>
+                            {format(parseDateFromDatabase(p.price_date), "dd/MM/yyyy", { locale: ptBR })}
+                            {isBaseline && <span className="ml-2 text-xs text-muted-foreground">(baseline)</span>}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {currency(p.price, investment.moeda)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {investment.quantidade.toLocaleString('pt-BR')}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {currency(p.price * investment.quantidade, investment.moeda)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {isBaseline ? (
+                              <div className="text-muted-foreground">
+                                <div>{currency(0, investment.moeda)}</div>
+                                <div className="text-xs">0,00%</div>
+                              </div>
+                            ) : (
+                              <div className={`${rentabilidadeAbsoluta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                <div>{currency(rentabilidadeAbsoluta, investment.moeda)}</div>
+                                <div className="text-xs">
+                                  {rentabilidadePercentual.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                                </div>
+                              </div>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    });
+                  })()}
                 </TableBody>
               </Table>
             </CardContent>

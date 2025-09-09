@@ -46,7 +46,7 @@ export const useUpsertInvestmentPrice = () => {
       // Get current investment data to compare dates
       const { data: investment, error: investmentErr } = await supabase
         .from("investments")
-        .select("data_atualizacao_preco")
+        .select("data_atualizacao_preco, data_investimento")
         .eq("id", payload.investmentId)
         .single();
 
@@ -64,16 +64,19 @@ export const useUpsertInvestmentPrice = () => {
       // Only update investment's current price if the historical price is newer
       if (!latestPriceErr && latestPrice && investment) {
         const latestPriceDate = new Date(`${latestPrice.price_date}T00:00:00`);
-        const currentUpdateRaw = investment.data_atualizacao_preco as unknown as string | null;
-        const parsedCurrent = currentUpdateRaw ? new Date(currentUpdateRaw) : new Date(0);
-        const currentUpdateDate = isNaN(parsedCurrent.getTime()) ? new Date(0) : parsedCurrent;
         
+        // Use data_investimento as fallback if data_atualizacao_preco is null
+        const currentUpdateRaw = investment.data_atualizacao_preco as unknown as string | null;
+        const fallbackDate = investment.data_investimento as unknown as string;
+        const parsedCurrent = currentUpdateRaw ? new Date(currentUpdateRaw) : new Date(`${fallbackDate}T00:00:00`);
+        const currentUpdateDate = isNaN(parsedCurrent.getTime()) ? new Date(`${fallbackDate}T00:00:00`) : parsedCurrent;
+        
+        // Only update if the latest price date is strictly newer than current update date
         if (latestPriceDate > currentUpdateDate) {
           const { error: updateErr } = await supabase
             .from("investments")
             .update({
               preco_unitario_atual: latestPrice.price,
-              // align update date with the historical price date at midnight
               data_atualizacao_preco: new Date(`${latestPrice.price_date}T00:00:00`).toISOString()
             })
             .eq("id", payload.investmentId);
