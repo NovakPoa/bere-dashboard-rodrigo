@@ -28,7 +28,9 @@ export default function InvestmentPriceHistory() {
 
   const investment = investments.find(inv => inv.id === investmentId);
   const { data: priceHistory = [] } = useInvestmentPrices(investment?.id);
-
+  const hasInitialInHistory = investment
+    ? priceHistory.some((p) => p.price_date === investment.data_investimento)
+    : false;
   if (!investment && investmentId !== "new") {
     return (
       <div className="container mx-auto py-6">
@@ -309,20 +311,22 @@ export default function InvestmentPriceHistory() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  <TableRow>
-                    <TableCell>
-                      {format(parseDateFromDatabase(investment.data_investimento), "dd/MM/yyyy", { locale: ptBR })}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {currency(investment.preco_unitario_compra, investment.moeda)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {investment.quantidade.toLocaleString('pt-BR')}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {currency(investment.preco_unitario_compra * investment.quantidade, investment.moeda)}
-                    </TableCell>
-                  </TableRow>
+                  {!hasInitialInHistory && (
+                    <TableRow>
+                      <TableCell>
+                        {format(parseDateFromDatabase(investment.data_investimento), "dd/MM/yyyy", { locale: ptBR })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {currency(investment.preco_unitario_compra, investment.moeda)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {investment.quantidade.toLocaleString('pt-BR')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {currency(investment.preco_unitario_compra * investment.quantidade, investment.moeda)}
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

@@ -17,21 +17,30 @@ export function parseDateFromDatabase(dateString: string | null | undefined): Da
   if (!dateString) {
     return new Date(); // Return current date as fallback
   }
-  
-  // Ensure we have a valid date string format
-  if (typeof dateString !== 'string' || !dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    console.warn('Invalid date format received:', dateString);
-    return new Date(); // Return current date as fallback
+
+  if (typeof dateString !== 'string') {
+    return new Date();
   }
-  
-  // Parse "YYYY-MM-DD" as local date by adding "T00:00:00" to ensure local timezone
-  const localDate = new Date(dateString + "T00:00:00");
-  
-  // Check if the resulting date is valid
-  if (isNaN(localDate.getTime())) {
-    console.warn('Invalid date value:', dateString);
-    return new Date(); // Return current date as fallback
+
+  // Case 1: Strict date-only format YYYY-MM-DD -> parse as local midnight
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    const localDate = new Date(dateString + 'T00:00:00');
+    if (!isNaN(localDate.getTime())) return localDate;
   }
-  
-  return localDate;
+
+  // Case 2: ISO 8601 or other date strings -> let Date parse it
+  const parsed = new Date(dateString);
+  if (!isNaN(parsed.getTime())) {
+    return parsed;
+  }
+
+  // Case 3: Try to fallback to the date prefix if available
+  const match = dateString.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (match) {
+    const localDate = new Date(match[1] + 'T00:00:00');
+    if (!isNaN(localDate.getTime())) return localDate;
+  }
+
+  console.warn('Invalid date format received:', dateString);
+  return new Date();
 }
