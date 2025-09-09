@@ -101,6 +101,7 @@ export function dailySeriesMinutes(entries: FitnessEntry[]) {
 
 // Supabase integration
 export type DbActivityRow = {
+  id: number;
   modalidade?: string | null;
   distancia_km?: number | string | null;
   duracao_min?: number | string | null;
@@ -113,11 +114,12 @@ export type DbActivityRow = {
 const toNum = (v: unknown | null | undefined): number | undefined =>
   v === null || v === undefined || v === "" ? undefined : Number(v);
 
-export function mapDbRowToFitnessEntry(r: DbActivityRow): FitnessEntry {
+export function mapDbRowToFitnessEntry(r: DbActivityRow): FitnessEntry & { id: string } {
   const minutos = Number(r.duracao_min ?? 0);
   const distanciaKm = toNum(r.distancia_km);
   const d = r.ts || r.data || new Date().toISOString();
   return {
+    id: String(r.id),
     tipo: (r.modalidade || r.tipo || "atividade")!,
     minutos,
     distanciaKm,
@@ -126,10 +128,10 @@ export function mapDbRowToFitnessEntry(r: DbActivityRow): FitnessEntry {
   };
 }
 
-export async function fetchActivitiesFromSupabase(from?: Date, to?: Date): Promise<FitnessEntry[]> {
+export async function fetchActivitiesFromSupabase(from?: Date, to?: Date): Promise<(FitnessEntry & { id: string })[]> {
   let query = supabase
     .from("atividade_fisica")
-    .select("modalidade, distancia_km, duracao_min, calorias, data, ts, tipo")
+    .select("id, modalidade, distancia_km, duracao_min, calorias, data, ts, tipo")
     .order("data", { ascending: false });
 
   if (from && to) {

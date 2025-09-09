@@ -29,7 +29,7 @@ export default function Atividades() {
     queryKey: ["activities", efFrom.toISOString(), efTo.toISOString()],
     queryFn: () => fetchActivitiesFromSupabase(efFrom, efTo),
   });
-  const entries = (dbEntries as FitnessEntry[] | undefined) ?? [];
+  const entries = (dbEntries as (FitnessEntry & { id: string })[] | undefined) ?? [];
 
   const queryClient = useQueryClient();
   useEffect(() => {
@@ -124,6 +124,10 @@ export default function Atividades() {
     [periodEntries]
   );
 
+  const handleActivityChange = () => {
+    queryClient.invalidateQueries({ queryKey: ["activities"] });
+  };
+
   const formatHm = (mins: number) => {
     const h = Math.floor(mins / 60);
     const m = mins % 60;
@@ -204,7 +208,7 @@ export default function Atividades() {
 
         <section aria-labelledby="list">
           <h2 id="list" className="text-lg font-medium mb-3">Atividades</h2>
-          <ActivitiesTable entries={periodEntriesSorted} />
+          <ActivitiesTable entries={periodEntriesSorted} onActivityChange={handleActivityChange} />
         </section>
       </main>
     </div>

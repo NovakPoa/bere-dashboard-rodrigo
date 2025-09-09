@@ -1,6 +1,10 @@
 import { FitnessEntry, estimateCalories } from "@/lib/fitness";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useRemoveActivity } from "@/hooks/useFitness";
+import { UpdateActivityDialog } from "./UpdateActivityDialog";
+import { toast } from "@/hooks/use-toast";
 import { 
   Activity, 
   Bike, 
@@ -11,7 +15,9 @@ import {
   Waves,
   TreePine,
   Heart,
-  Footprints
+  Footprints,
+  Edit,
+  Trash2
 } from "lucide-react";
 
 // Helper function for activity icons
@@ -41,7 +47,8 @@ function getActivityVariant(tipo: string) {
   return 'secondary';
 }
 
-export default function ActivitiesTable({ entries }: { entries: FitnessEntry[] }) {
+export default function ActivitiesTable({ entries, onActivityChange }: { entries: (FitnessEntry & { id: string })[]; onActivityChange?: () => void }) {
+  const removeActivity = useRemoveActivity();
   const fmtHm = (mins: number) => {
     const h = Math.floor((mins || 0) / 60);
     const m = (mins || 0) % 60;
@@ -56,6 +63,15 @@ export default function ActivitiesTable({ entries }: { entries: FitnessEntry[] }
     const seconds = Math.round((paceMinPerKm - minutes) * 60);
     
     return `${minutes}:${seconds.toString().padStart(2, '0')}/km`;
+  };
+
+  const handleDelete = (id: string) => {
+    removeActivity.mutate(id, {
+      onSuccess: () => {
+        toast({ title: "Atividade excluída" });
+        onActivityChange?.();
+      }
+    });
   };
 
   if (entries.length === 0) {
@@ -102,25 +118,44 @@ export default function ActivitiesTable({ entries }: { entries: FitnessEntry[] }
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:flex sm:items-center gap-4 sm:gap-6 text-sm">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span>{fmtHm(entry.minutos || 0)}</span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="grid grid-cols-2 sm:flex sm:items-center gap-4 sm:gap-6 text-sm">
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      <span>{fmtHm(entry.minutos || 0)}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-4 h-4 text-muted-foreground" />
+                      <span>{(entry.distanciaKm ?? 0).toFixed(1)} km</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-1">
+                      <Activity className="w-4 h-4 text-muted-foreground" />
+                      <span>{formatPace(entry.distanciaKm, entry.minutos)}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-1">
+                      <Zap className="w-4 h-4 text-muted-foreground" />
+                      <span>{(calories || 0).toLocaleString()}</span>
+                    </div>
                   </div>
                   
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4 text-muted-foreground" />
-                    <span>{(entry.distanciaKm ?? 0).toFixed(1)} km</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-1">
-                    <Activity className="w-4 h-4 text-muted-foreground" />
-                    <span>{formatPace(entry.distanciaKm, entry.minutos)}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-1">
-                    <Zap className="w-4 h-4 text-muted-foreground" />
-                    <span>{(calories || 0).toLocaleString()}</span>
+                  <div className="flex gap-1">
+                    <UpdateActivityDialog activity={entry} onUpdated={() => onActivityChange?.()}>
+                      <Button variant="ghost" size="sm" aria-label="Editar" className="h-8 w-8 p-0">
+                        <Edit className="h-3 w-3 md:h-4 md:w-4" />
+                      </Button>
+                    </UpdateActivityDialog>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      aria-label="Excluir" 
+                      onClick={() => handleDelete(entry.id)} 
+                      className="h-8 w-8 p-0"
+                    >
+                      <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
+                    </Button>
                   </div>
                 </div>
               </div>
