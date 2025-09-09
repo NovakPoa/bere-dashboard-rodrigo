@@ -27,7 +27,6 @@ const itemsBeforeFinance = [
 const healthItems = [
   { title: "Atividade Física", url: "/atividades", icon: HeartPulse },
   { title: "Alimentação", url: "/alimentacao", icon: Utensils },
-  { title: "Garmin", url: "/garmin", icon: Watch },
 ];
 
 const itemsAfterFinance = [
@@ -52,7 +51,7 @@ export function AppSidebar() {
 
   const isActive = (path: string) => currentPath === path;
   const isFinanceActive = currentPath.startsWith("/financeiro");
-  const isHealthActive = currentPath.startsWith("/saude") || currentPath.startsWith("/atividades") || currentPath.startsWith("/alimentacao") || currentPath.startsWith("/garmin");
+  const isHealthActive = currentPath.startsWith("/saude") || currentPath.startsWith("/atividades") || currentPath.startsWith("/alimentacao");
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-muted text-primary font-medium" : "hover:bg-muted/50";
 
@@ -86,7 +85,7 @@ export function AppSidebar() {
 
   const handleHealthClick = () => {
     const isOnMainHealthPage = currentPath === "/saude";
-    const isOnHealthSubpage = currentPath.startsWith("/atividades") || currentPath.startsWith("/alimentacao") || currentPath.startsWith("/garmin");
+    const isOnHealthSubpage = currentPath.startsWith("/atividades") || currentPath.startsWith("/alimentacao");
     
     if (isOnMainHealthPage) {
       // Se já estiver na página principal, apenas toggle o dropdown
@@ -116,7 +115,7 @@ export function AppSidebar() {
 
   // Auto-open health group when navigating to health subroutes
   useEffect(() => {
-    const isHealthSubroute = currentPath.startsWith("/atividades") || currentPath.startsWith("/alimentacao") || currentPath.startsWith("/garmin");
+    const isHealthSubroute = currentPath.startsWith("/atividades") || currentPath.startsWith("/alimentacao");
     if (isHealthSubroute && !isHealthOpen) {
       setIsHealthOpen(true);
     }
