@@ -158,21 +158,32 @@ export const getPeriodVariation = (
 
     if (investmentPrices.length === 0) return;
 
-    // Encontrar preço no início do período (ou mais próximo)
-    const startPrices = investmentPrices.filter(
-      (price) => new Date(`${price.price_date}T00:00:00`) <= startDate
-    );
-    const startPrice = startPrices.length > 0 
-      ? startPrices[startPrices.length - 1].price 
-      : investment.preco_unitario_compra;
+    // Ordenar por data ascendente para garantir ordem
+    const sortedPrices = [...investmentPrices].sort((a, b) => a.price_date.localeCompare(b.price_date));
 
-    // Encontrar preço no final do período (ou mais próximo)
-    const endPrices = investmentPrices.filter(
-      (price) => new Date(`${price.price_date}T00:00:00`) <= endDate
-    );
-    const endPrice = endPrices.length > 0 
-      ? endPrices[endPrices.length - 1].price 
-      : investment.preco_unitario_atual;
+    // Preço de início: último <= startDate, senão primeiro >= startDate, senão preço de compra
+    let startIndexLE = -1;
+    for (let i = 0; i < sortedPrices.length; i++) {
+      if (new Date(`${sortedPrices[i].price_date}T00:00:00`) <= startDate) {
+        startIndexLE = i;
+      }
+    }
+    let startPrice: number;
+    if (startIndexLE !== -1) {
+      startPrice = sortedPrices[startIndexLE].price;
+    } else {
+      const geItem = sortedPrices.find((p) => new Date(`${p.price_date}T00:00:00`) >= startDate);
+      startPrice = geItem ? geItem.price : investment.preco_unitario_compra;
+    }
+
+    // Preço de fim: último <= endDate, senão preço atual do investimento
+    let endIndexLE = -1;
+    for (let i = 0; i < sortedPrices.length; i++) {
+      if (new Date(`${sortedPrices[i].price_date}T00:00:00`) <= endDate) {
+        endIndexLE = i;
+      }
+    }
+    const endPrice = endIndexLE !== -1 ? sortedPrices[endIndexLE].price : investment.preco_unitario_atual;
 
     // Calcular valores em reais
     const startValueInvestment = startPrice * investment.quantidade;
