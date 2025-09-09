@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,13 +6,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { DrawerClose } from "@/components/ui/drawer";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { estimateCalories } from "@/lib/fitness";
+import { calculateCaloriesWithProfile, estimateCalories } from "@/lib/fitness";
 import { useToast } from "@/hooks/use-toast";
+import { useProfile } from "@/hooks/useProfile";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const activityTypes = [
   "corrida",
@@ -41,6 +44,33 @@ export default function AddActivityForm() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
+
+  // Calculate estimated calories in real-time
+  const estimatedCalories = useMemo(() => {
+    if (!activityType || !duration) return 0;
+    
+    const durationNum = parseInt(duration);
+    if (isNaN(durationNum) || durationNum <= 0) return 0;
+
+    if (profile?.weight) {
+      return calculateCaloriesWithProfile(activityType, durationNum, {
+        weight: profile.weight,
+        height: profile.height,
+        age: profile.age,
+        gender: profile.gender,
+      });
+    }
+
+    // Fallback to basic estimation
+    return estimateCalories({
+      tipo: activityType,
+      minutos: durationNum,
+      data: date.toISOString(),
+    });
+  }, [activityType, duration, profile, date]);
+
+  const hasCompleteProfile = profile?.weight && profile?.height && profile?.age && profile?.gender;
 
   const resetForm = () => {
     setActivityType("");
@@ -90,12 +120,22 @@ export default function AddActivityForm() {
         data: date.toISOString(),
       };
       
+      // Use profile-based calculation if available
+      const calories = profile?.weight 
+        ? calculateCaloriesWithProfile(activityType, durationNum, {
+            weight: profile.weight,
+            height: profile.height,
+            age: profile.age,
+            gender: profile.gender,
+          })
+        : estimateCalories(entry);
+      
       const payload = {
         modalidade: activityType,
         tipo: activityType,
         distancia_km: distanceNum,
         duracao_min: durationNum,
-        calorias: estimateCalories(entry),
+        calorias: calories,
         data: date.toISOString().slice(0, 10),
         ts: date.toISOString(),
         user_id: session.user.id,
@@ -131,33 +171,63 @@ export default function AddActivityForm() {
   };
 
   return (
-    <div className="px-4 pb-4 space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="activity-type">Tipo de Atividade</Label>
-        <Select value={activityType} onValueChange={setActivityType}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecione uma atividade" />
-          </SelectTrigger>
-          <SelectContent>
-            {activityTypes.map((type) => (
-              <SelectItem key={type} value={type}>
-                {type.charAt(0).toUpperCase() + type.slice(1)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+    <TooltipProvider>
+      <div className="px-4 pb-4 space-y-4">
+        {!hasCompleteProfile && (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Complete seu perfil (peso, altura, idade, gênero) para cálculos de calorias mais precisos.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        <div className="space-y-2">
+          <Label htmlFor="activity-type">Tipo de Atividade</Label>
+          <Select value={activityType} onValueChange={setActivityType}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione uma atividade" />
+            </SelectTrigger>
+            <SelectContent>
+              {activityTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="duration">Duração (minutos)</Label>
-        <Input
-          id="duration"
-          type="number"
-          value={duration}
-          onChange={(e) => setDuration(e.target.value)}
-          placeholder="Ex: 30"
-        />
-      </div>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="duration">Duração (minutos)</Label>
+            {estimatedCalories > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="text-sm text-muted-foreground flex items-center gap-1">
+                    <span>~{estimatedCalories} cal</span>
+                    <Info className="h-3 w-3" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    {hasCompleteProfile 
+                      ? "Cálculo personalizado baseado no seu perfil (fórmula MET)"
+                      : "Estimativa básica - complete seu perfil para cálculo mais preciso"
+                    }
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+          <Input
+            id="duration"
+            type="number"
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            placeholder="Ex: 30"
+          />
+        </div>
 
       <div className="space-y-2">
         <Label htmlFor="distance">Distância (km)</Label>
@@ -212,7 +282,8 @@ export default function AddActivityForm() {
             {isSubmitting ? "Salvando..." : "Adicionar"}
           </Button>
         </DrawerClose>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }

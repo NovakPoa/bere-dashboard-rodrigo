@@ -47,6 +47,34 @@ export function groupTotalsByModality(entries: FitnessEntry[]) {
   return map;
 }
 
+// MET values (Metabolic Equivalent of Task) from Compendium of Physical Activities
+const MET_VALUES: Record<string, number> = {
+  corrida: 8.0,
+  running: 8.0,
+  natação: 8.0,
+  natacao: 8.0,
+  swim: 8.0,
+  bike: 8.0,
+  ciclismo: 8.0,
+  caminhada: 3.5,
+  walking: 3.5,
+  musculação: 6.0,
+  musculacao: 6.0,
+  "jiu-jitsu": 10.0,
+  jiujitsu: 10.0,
+  bjj: 10.0,
+  yoga: 2.5,
+  pilates: 3.0,
+  crossfit: 8.0,
+  futebol: 7.0,
+  basquete: 6.5,
+  vôlei: 4.0,
+  tênis: 7.0,
+  dança: 4.8,
+  outro: 6.0,
+};
+
+// Legacy calorie calculation for backward compatibility
 const CAL_PER_MIN: Record<string, number> = {
   corrida: 10,
   running: 10,
@@ -64,7 +92,37 @@ const CAL_PER_MIN: Record<string, number> = {
   bjj: 10,
 };
 
-export function estimateCalories(e: FitnessEntry) {
+export interface UserProfile {
+  weight?: number;
+  height?: number;
+  age?: number;
+  gender?: 'masculino' | 'feminino';
+}
+
+export function calculateCaloriesWithProfile(activity: string, durationMinutes: number, profile: UserProfile): number {
+  if (!profile.weight || profile.weight <= 0) {
+    // Fallback to old calculation if no weight data
+    return estimateCalories({ tipo: activity, minutos: durationMinutes, data: new Date().toISOString() });
+  }
+
+  const tipo = activity.toLowerCase();
+  const metKey = Object.keys(MET_VALUES).find((k) => tipo.includes(k));
+  const metValue = metKey ? MET_VALUES[metKey] : 6.0; // Default MET value
+  
+  // Formula: Calories = METs × Weight (kg) × Duration (hours)
+  const durationHours = durationMinutes / 60;
+  const calories = metValue * profile.weight * durationHours;
+  
+  return Math.round(calories);
+}
+
+export function estimateCalories(e: FitnessEntry, profile?: UserProfile) {
+  // Use profile-based calculation if available
+  if (profile?.weight) {
+    return calculateCaloriesWithProfile(e.tipo, e.minutos || 0, profile);
+  }
+  
+  // Fallback to legacy calculation
   const tipo = (e.tipo || "").toLowerCase();
   const key = Object.keys(CAL_PER_MIN).find((k) => tipo.includes(k));
   const perMin = key ? CAL_PER_MIN[key] : 6;
