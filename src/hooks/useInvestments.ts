@@ -22,8 +22,10 @@ interface InvestmentRecord {
 
 // Conversão de dados com lógica corrigida
 
-const convertToInvestment = (record: InvestmentRecord): Investment => {
-  const valorTotalInvestido = record.preco_unitario_compra * record.quantidade;
+const convertToInvestment = (record: InvestmentRecord, baselinePrice?: number): Investment => {
+  // Use baseline price if available, otherwise fallback to purchase price
+  const actualBaselinePrice = baselinePrice ?? record.preco_unitario_compra;
+  const valorTotalInvestido = actualBaselinePrice * record.quantidade;
   const valorAtualTotal = record.preco_unitario_atual * record.quantidade;
   const rentabilidadeAbsoluta = valorAtualTotal - valorTotalInvestido;
   const rentabilidadePercentual = valorTotalInvestido > 0 ? (rentabilidadeAbsoluta / valorTotalInvestido) * 100 : 0;
@@ -77,13 +79,48 @@ export const useInvestments = () => {
   return useQuery({
     queryKey: ["investments"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: investments, error } = await supabase
         .from("investments")
         .select("*")
         .order("data_investimento", { ascending: false });
 
       if (error) throw error;
-      return data?.map(convertToInvestment) || [];
+      if (!investments) return [];
+
+      // Fetch baseline prices for all investments
+      const investmentIds = investments.map(inv => inv.id);
+      const { data: priceHistory } = await supabase
+        .from("investment_prices")
+        .select("investment_id, price, price_date")
+        .in("investment_id", investmentIds)
+        .order("price_date", { ascending: true });
+
+      // Create map of baseline prices (earliest price for each investment)
+      const baselinePrices = new Map<string, number>();
+      
+      if (priceHistory) {
+        // Group by investment_id and get the earliest price for each
+        const groupedHistory = priceHistory.reduce((acc, item) => {
+          if (!acc[item.investment_id]) {
+            acc[item.investment_id] = [];
+          }
+          acc[item.investment_id].push(item);
+          return acc;
+        }, {} as Record<string, typeof priceHistory>);
+
+        Object.entries(groupedHistory).forEach(([investmentId, prices]) => {
+          // Sort by date ascending to get earliest price
+          const sortedPrices = prices.sort((a, b) => a.price_date.localeCompare(b.price_date));
+          if (sortedPrices.length > 0) {
+            baselinePrices.set(investmentId, Number(sortedPrices[0].price));
+          }
+        });
+      }
+
+      // Convert investments using baseline prices
+      return investments.map(investment => 
+        convertToInvestment(investment, baselinePrices.get(investment.id))
+      );
     },
   });
 };
