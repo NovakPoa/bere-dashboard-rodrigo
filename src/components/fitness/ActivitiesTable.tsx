@@ -62,7 +62,7 @@ export default function ActivitiesTable({ entries }: { entries: FitnessEntry[] }
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm text-muted-foreground">Atividades recentes</CardTitle>
+          <CardTitle className="text-sm">Atividades</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center text-muted-foreground py-10 text-sm">
@@ -76,7 +76,7 @@ export default function ActivitiesTable({ entries }: { entries: FitnessEntry[] }
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm text-muted-foreground">Atividades recentes</CardTitle>
+        <CardTitle className="text-sm">Atividades</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {entries.map((entry, idx) => {
