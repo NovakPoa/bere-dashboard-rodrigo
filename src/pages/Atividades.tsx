@@ -15,6 +15,7 @@ import WearableButton from "@/components/fitness/WearableButton";
 import { FitnessEntry, groupTotalsByModality, totalCalories, fetchActivitiesFromSupabase } from "@/lib/fitness";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useProfile, calculateBMR } from "@/hooks/useProfile";
 
 export default function Atividades() {
   const [startDate, setStartDate] = useState<Date | undefined>(() => startOfMonth(new Date()));
@@ -85,6 +86,10 @@ export default function Atividades() {
 
   const totals = useMemo(() => groupTotalsByModality(periodEntries), [periodEntries]);
 
+  // Get profile data for BMR calculation
+  const { data: profile } = useProfile();
+  const metabolicRates = useMemo(() => profile ? calculateBMR(profile) : null, [profile]);
+
   const modalities = useMemo(() => Array.from(new Set(periodEntries.map((e) => e.tipo?.toLowerCase() || "atividade"))), [periodEntries]);
   const series = useMemo(() => {
     const efFrom = startOfDay(startDate ?? startOfMonth(new Date()));
@@ -98,16 +103,26 @@ export default function Atividades() {
           return d >= day && d < next;
         });
         const row: any = { dia: format(day, "dd/MM") };
+        
+        // Add minutes for each modality
         for (const m of modalities) row[m] = 0;
         for (const e of slice) {
           const k = e.tipo?.toLowerCase() || "atividade";
           row[k] += e.minutos || 0;
         }
+        
+        // Add calorie data
+        const dailyActivityCalories = totalCalories(slice);
+        const dailyBMR = metabolicRates ? metabolicRates.bmr : 0;
+        row.calorias_atividades = dailyActivityCalories;
+        row.tmb = dailyBMR;
+        row.calorias_totais = dailyBMR + dailyActivityCalories;
+        
         return row;
       }),
       modalities,
     };
-  }, [periodEntries, startDate, endDate, modalities]);
+  }, [periodEntries, startDate, endDate, modalities, metabolicRates]);
 
   const sessionsCount = periodEntries.length;
   const totalMinutes = periodEntries.reduce((s, e) => s + (e.minutos || 0), 0);
@@ -196,7 +211,14 @@ export default function Atividades() {
           <h2 id="chart" className="sr-only">Desempenho por modalidade e dia</h2>
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">Minutos por dia</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">
+                Minutos por dia e Gasto Calórico
+                {!metabolicRates && (
+                  <span className="block text-xs text-muted-foreground mt-1">
+                    Complete seu perfil para visualizar o gasto calórico total
+                  </span>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent className="px-2 sm:px-6">
               <div className="h-[300px] w-full">
