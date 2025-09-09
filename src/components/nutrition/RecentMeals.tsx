@@ -84,21 +84,25 @@ export default function RecentMeals({ entries, dateRange }: RecentMealsProps) {
                       <p className="text-sm truncate">{entry.description}</p>
                     </div>
                     
-                    <div className="grid grid-cols-2 sm:flex sm:gap-4 gap-2 text-xs">
+                     <div className="grid grid-cols-2 sm:flex sm:gap-4 gap-2 text-xs">
                       <div className="flex items-center gap-1">
                         <Zap className="h-3 w-3 text-yellow-500" />
+                        <span className="text-muted-foreground">Cal:</span>
                         <span className="font-mono">{entry.calories?.toLocaleString() || '-'}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Beef className="h-3 w-3 text-red-500" />
+                        <span className="text-muted-foreground">Prot:</span>
                         <span className="font-mono">{entry.protein}g</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Wheat className="h-3 w-3 text-orange-500" />
+                        <span className="text-muted-foreground">Carb:</span>
                         <span className="font-mono">{entry.carbs}g</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Droplets className="h-3 w-3 text-blue-500" />
+                        <span className="text-muted-foreground">Gord:</span>
                         <span className="font-mono">{entry.fat}g</span>
                       </div>
                     </div>
