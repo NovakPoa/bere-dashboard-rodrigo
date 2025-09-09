@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { setPageSEO } from "@/lib/seo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,23 +60,6 @@ export default function Cultura() {
     }));
   };
 
-  const addInline = (list: NonNullable<typeof newForm>["list"]) => {
-    if (!newForm.title.trim()) return;
-    const domain = list.startsWith("video") ? "videos" : "books";
-    const status = list.endsWith("done") ? "done" : "backlog";
-    const it: Omit<Item, "id"> = {
-      domain: domain as "videos" | "books",
-      status: status as "done" | "backlog",
-      title: newForm.title.trim(),
-      author: newForm.author?.trim() || undefined,
-      subtype: domain === "videos" ? newForm.subtype : undefined,
-      genre: newForm.genre?.trim() || undefined,
-      rating: newForm.rating || undefined,
-      year: newForm.year || undefined,
-    };
-    addItem.mutate(it);
-    setNewForm((prev) => ({ ...prev, isOpen: false, title: "", author: "", genre: "", rating: 0, year: 0 }));
-  };
 
   const handleUpdateItem = (id: string, patch: Partial<Item>) => updateItem.mutate({ id, updates: patch });
   const handleRemoveItem = (id: string) => removeItem.mutate(id);
@@ -137,72 +120,147 @@ export default function Cultura() {
 
 
 
-  const AddForm = ({ list }: { list: NonNullable<typeof newForm>["list"] }) => (
-    <div className="rounded-md border p-3 grid gap-2">
-      <Input 
-        placeholder="Título" 
-        value={newForm.title} 
-        onChange={(e) => setNewForm((prev) => ({ ...prev, title: e.target.value }))}
-        autoFocus
-      />
-      <Input 
-        placeholder="Autor" 
-        value={newForm.author} 
-        onChange={(e) => setNewForm((prev) => ({ ...prev, author: e.target.value }))}
-      />
-      {list.startsWith("video") ? (
+  const AddForm = ({ list }: { list: NonNullable<typeof newForm>["list"] }) => {
+    // Local form state to prevent cursor jumping
+    const [formData, setFormData] = useState({
+      title: newForm.title,
+      author: newForm.author,
+      subtype: newForm.subtype,
+      genre: newForm.genre,
+      rating: newForm.rating,
+      year: newForm.year,
+    });
+
+    // Memoized change handlers to prevent re-renders
+    const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData(prev => ({ ...prev, title: e.target.value }));
+    }, []);
+
+    const handleAuthorChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData(prev => ({ ...prev, author: e.target.value }));
+    }, []);
+
+    const handleGenreChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData(prev => ({ ...prev, genre: e.target.value }));
+    }, []);
+
+    const handleYearChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData(prev => ({ ...prev, year: e.target.value ? parseInt(e.target.value) : 0 }));
+    }, []);
+
+    const handleSubtypeChange = useCallback((v: string) => {
+      setFormData(prev => ({ ...prev, subtype: v as "movie" | "series" }));
+    }, []);
+
+    const handleRatingChange = useCallback((rating: number) => {
+      setFormData(prev => ({ ...prev, rating }));
+    }, []);
+
+    const handleCancel = useCallback(() => {
+      setNewForm(prev => ({ ...prev, isOpen: false }));
+      setFormData({
+        title: "",
+        author: "",
+        subtype: "movie",
+        genre: "",
+        rating: 0,
+        year: 0,
+      });
+    }, []);
+
+    const handleAdd = useCallback(() => {
+      if (!formData.title.trim()) return;
+      const domain = list.startsWith("video") ? "videos" : "books";
+      const status = list.endsWith("done") ? "done" : "backlog";
+      const it: Omit<Item, "id"> = {
+        domain: domain as "videos" | "books",
+        status: status as "done" | "backlog",
+        title: formData.title.trim(),
+        author: formData.author?.trim() || undefined,
+        subtype: domain === "videos" ? formData.subtype : undefined,
+        genre: formData.genre?.trim() || undefined,
+        rating: formData.rating || undefined,
+        year: formData.year || undefined,
+      };
+      addItem.mutate(it);
+      setNewForm(prev => ({ ...prev, isOpen: false }));
+      setFormData({
+        title: "",
+        author: "",
+        subtype: "movie",
+        genre: "",
+        rating: 0,
+        year: 0,
+      });
+    }, [formData, list, addItem]);
+
+    return (
+      <div className="rounded-md border p-3 grid gap-2">
+        <Input 
+          placeholder="Título" 
+          value={formData.title} 
+          onChange={handleTitleChange}
+          autoFocus
+        />
+        <Input 
+          placeholder="Autor" 
+          value={formData.author} 
+          onChange={handleAuthorChange}
+        />
+        {list.startsWith("video") ? (
+          <div className="grid gap-2 sm:grid-cols-3">
+            <Select value={formData.subtype} onValueChange={handleSubtypeChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="movie">Filme</SelectItem>
+                <SelectItem value="series">Série</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input 
+              placeholder="Gênero" 
+              value={formData.genre} 
+              onChange={handleGenreChange} 
+            />
+            <Input 
+              type="number" 
+              placeholder="Ano" 
+              value={formData.year || ""} 
+              onChange={handleYearChange} 
+            />
+          </div>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Input 
+              placeholder="Gênero" 
+              value={formData.genre} 
+              onChange={handleGenreChange} 
+            />
+            <Input 
+              type="number" 
+              placeholder="Ano" 
+              value={formData.year || ""} 
+              onChange={handleYearChange} 
+            />
+          </div>
+        )}
         <div className="grid gap-2 sm:grid-cols-3">
-          <Select value={newForm.subtype} onValueChange={(v) => setNewForm((prev) => ({ ...prev, subtype: v as "movie" | "series" }))}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="movie">Filme</SelectItem>
-              <SelectItem value="series">Série</SelectItem>
-            </SelectContent>
-          </Select>
-          <Input 
-            placeholder="Gênero" 
-            value={newForm.genre} 
-            onChange={(e) => setNewForm((prev) => ({ ...prev, genre: e.target.value }))} 
-          />
-          <Input 
-            type="number" 
-            placeholder="Ano" 
-            value={newForm.year || ""} 
-            onChange={(e) => setNewForm((prev) => ({ ...prev, year: e.target.value ? parseInt(e.target.value) : 0 }))} 
-          />
+          <div className="flex items-center gap-3">
+            <label className="text-sm text-muted-foreground">Nota</label>
+            <StarRating
+              rating={formData.rating}
+              onRatingChange={handleRatingChange}
+            />
+          </div>
         </div>
-      ) : (
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Input 
-            placeholder="Gênero" 
-            value={newForm.genre} 
-            onChange={(e) => setNewForm((prev) => ({ ...prev, genre: e.target.value }))} 
-          />
-          <Input 
-            type="number" 
-            placeholder="Ano" 
-            value={newForm.year || ""} 
-            onChange={(e) => setNewForm((prev) => ({ ...prev, year: e.target.value ? parseInt(e.target.value) : 0 }))} 
-          />
-        </div>
-      )}
-      <div className="grid gap-2 sm:grid-cols-3">
-        <div className="flex items-center gap-3">
-          <label className="text-sm text-muted-foreground">Nota</label>
-          <StarRating
-            rating={newForm.rating}
-            onRatingChange={(rating) => setNewForm((prev) => ({ ...prev, rating }))}
-          />
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={handleCancel}>Cancelar</Button>
+          <Button onClick={handleAdd}>Adicionar</Button>
         </div>
       </div>
-      <div className="flex justify-end gap-2">
-        <Button variant="secondary" onClick={() => setNewForm((prev) => ({ ...prev, isOpen: false }))}>Cancelar</Button>
-        <Button onClick={() => addInline(list)}>Adicionar</Button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen w-full min-w-0 overflow-x-hidden">
