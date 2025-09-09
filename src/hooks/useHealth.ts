@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { format, parseISO } from "date-fns";
 import { useFoodEntries } from "./useNutrition";
+import { useProfile, calculateBMR } from "./useProfile";
 import { useQuery } from "@tanstack/react-query";
 import { fetchActivitiesFromSupabase, totalCalories, estimateCalories } from "@/lib/fitness";
 
@@ -8,6 +9,8 @@ export interface DailyHealthData {
   date: string;
   consumedCalories: number;
   burnedCalories: number;
+  exerciseCalories: number;
+  bmrCalories: number;
   balance: number;
 }
 
@@ -24,15 +27,25 @@ export function useHealthData(dateRange?: { from: Date; to: Date }) {
   // Get nutrition data
   const { data: foodEntries = [] } = useFoodEntries();
   
+  // Get profile data for BMR calculation
+  const { data: profile } = useProfile();
+  
   // Get fitness data
   const { data: fitnessEntries = [] } = useQuery({
     queryKey: ["fitness-activities", dateRange?.from, dateRange?.to],
     queryFn: () => fetchActivitiesFromSupabase(dateRange?.from, dateRange?.to),
   });
 
+  // Calculate BMR once
+  const bmrData = useMemo(() => {
+    if (!profile) return null;
+    return calculateBMR(profile);
+  }, [profile]);
+
   const dailyData = useMemo(() => {
     // Create a map to aggregate data by date
     const dataMap = new Map<string, DailyHealthData>();
+    const dailyBMR = bmrData?.bmr || 0;
 
     // Filter entries by date range if provided
     const filteredFoodEntries = dateRange
@@ -56,7 +69,9 @@ export function useHealthData(dateRange?: { from: Date; to: Date }) {
         dataMap.set(dateKey, {
           date: dateKey,
           consumedCalories: 0,
-          burnedCalories: 0,
+          burnedCalories: dailyBMR,
+          exerciseCalories: 0,
+          bmrCalories: dailyBMR,
           balance: 0,
         });
       }
@@ -64,21 +79,45 @@ export function useHealthData(dateRange?: { from: Date; to: Date }) {
       dayData.consumedCalories += entry.calories;
     });
 
-    // Process fitness entries (burned calories)
+    // Process fitness entries (exercise calories)
     filteredFitnessEntries.forEach(entry => {
       const dateKey = format(parseISO(entry.data), 'yyyy-MM-dd');
       if (!dataMap.has(dateKey)) {
         dataMap.set(dateKey, {
           date: dateKey,
           consumedCalories: 0,
-          burnedCalories: 0,
+          burnedCalories: dailyBMR,
+          exerciseCalories: 0,
+          bmrCalories: dailyBMR,
           balance: 0,
         });
       }
       const dayData = dataMap.get(dateKey)!;
       const calories = entry.calorias || estimateCalories(entry);
-      dayData.burnedCalories += calories;
+      dayData.exerciseCalories += calories;
+      dayData.burnedCalories += calories; // Add to total burned (BMR + exercise)
     });
+
+    // Create entries for days with only BMR (no food or exercise data)
+    if (dateRange && dailyBMR > 0) {
+      const currentDate = new Date(dateRange.from);
+      const endDate = new Date(dateRange.to);
+      
+      while (currentDate <= endDate) {
+        const dateKey = format(currentDate, 'yyyy-MM-dd');
+        if (!dataMap.has(dateKey)) {
+          dataMap.set(dateKey, {
+            date: dateKey,
+            consumedCalories: 0,
+            burnedCalories: dailyBMR,
+            exerciseCalories: 0,
+            bmrCalories: dailyBMR,
+            balance: 0,
+          });
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    }
 
     // Calculate balance and sort by date
     const result = Array.from(dataMap.values())
@@ -89,7 +128,7 @@ export function useHealthData(dateRange?: { from: Date; to: Date }) {
       .sort((a, b) => a.date.localeCompare(b.date));
 
     return result;
-  }, [foodEntries, fitnessEntries, dateRange]);
+  }, [foodEntries, fitnessEntries, dateRange, bmrData]);
 
   const metrics = useMemo((): HealthMetrics => {
     if (dailyData.length === 0) {

@@ -14,8 +14,16 @@ const chartConfig = {
     color: "hsl(var(--success))",
   },
   burnedCalories: {
-    label: "Calorias Gastas",
+    label: "Calorias Gastas (Total)",
     color: "hsl(var(--destructive))",
+  },
+  exerciseCalories: {
+    label: "Calorias do Exercício",
+    color: "hsl(var(--warning))",
+  },
+  bmrCalories: {
+    label: "Taxa Metabólica Basal",
+    color: "hsl(var(--muted-foreground))",
   },
 } as const;
 
@@ -49,10 +57,18 @@ export default function HealthChart({ data }: HealthChartProps) {
               <ChartTooltip 
                 content={
                   <ChartTooltipContent 
-                    formatter={(value, name) => [
-                      `${Math.round(Number(value))} kcal`,
-                      name === 'consumedCalories' ? 'Consumidas' : 'Gastas'
-                    ]}
+                    formatter={(value, name) => {
+                      const labels = {
+                        consumedCalories: 'Consumidas',
+                        burnedCalories: 'Gastas (Total)',
+                        exerciseCalories: 'Exercício',
+                        bmrCalories: 'TMB'
+                      };
+                      return [
+                        `${Math.round(Number(value))} kcal`,
+                        labels[name as keyof typeof labels] || name
+                      ];
+                    }}
                     labelFormatter={(label) => `Data: ${label}`}
                   />
                 }
@@ -73,6 +89,23 @@ export default function HealthChart({ data }: HealthChartProps) {
                 strokeWidth={2}
                 dot={{ r: 3 }}
                 activeDot={{ r: 5 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="exerciseCalories"
+                stroke={chartConfig.exerciseCalories.color}
+                strokeWidth={2}
+                dot={{ r: 2 }}
+                activeDot={{ r: 4 }}
+                strokeDasharray="5 5"
+              />
+              <Line
+                type="monotone"
+                dataKey="bmrCalories"
+                stroke={chartConfig.bmrCalories.color}
+                strokeWidth={1}
+                dot={false}
+                strokeDasharray="2 2"
               />
             </LineChart>
           </ResponsiveContainer>
