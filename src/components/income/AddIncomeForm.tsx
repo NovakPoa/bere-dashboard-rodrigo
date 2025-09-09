@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
+import { formatDateForDatabase } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,7 +69,7 @@ export default function AddIncomeForm({ onAdded }: { onAdded: () => void }) {
     addIncome.mutate({
       note: data.note,
       category: data.category,
-      date: format(data.date, "yyyy-MM-dd"),
+      date: formatDateForDatabase(data.date),
       amount,
       method: data.method,
       source: "manual",
