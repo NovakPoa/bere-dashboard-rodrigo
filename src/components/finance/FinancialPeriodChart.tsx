@@ -8,7 +8,7 @@ import { filterExpensesByDateRange } from "@/lib/finance";
 import { filterIncomesByDateRange } from "@/lib/income";
 import { format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
+import { parseDateFromDatabase } from "@/lib/utils";
 interface FinancialPeriodChartProps {
   expenses: Expense[];
   incomes: Income[];
@@ -38,10 +38,10 @@ export default function FinancialPeriodChart({ expenses, incomes }: FinancialPer
 
     // Adicionar despesas
     filteredExpenses.forEach((expense) => {
-      const monthKey = format(new Date(expense.date), "yyyy-MM");
+      const monthKey = format(parseDateFromDatabase(expense.date), "yyyy-MM");
       if (!dataMap[monthKey]) {
         dataMap[monthKey] = {
-          mes: format(new Date(expense.date), "MMM/yy", { locale: ptBR }),
+          mes: format(parseDateFromDatabase(expense.date), "MMM/yy", { locale: ptBR }),
           despesas: 0,
           ganhos: 0,
           saldo: 0
@@ -52,10 +52,10 @@ export default function FinancialPeriodChart({ expenses, incomes }: FinancialPer
 
     // Adicionar ganhos
     filteredIncomes.forEach((income) => {
-      const monthKey = format(new Date(income.date), "yyyy-MM");
+      const monthKey = format(parseDateFromDatabase(income.date), "yyyy-MM");
       if (!dataMap[monthKey]) {
         dataMap[monthKey] = {
-          mes: format(new Date(income.date), "MMM/yy", { locale: ptBR }),
+          mes: format(parseDateFromDatabase(income.date), "MMM/yy", { locale: ptBR }),
           despesas: 0,
           ganhos: 0,
           saldo: 0

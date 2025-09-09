@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { parseDateFromDatabase } from "@/lib/utils";
 import { Trash2, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,7 +56,7 @@ export default function IncomesTable({ incomes, onChange }: { incomes: Income[];
                 {rows.map((income) => (
                   <TableRow key={income.id}>
                     <TableCell className="text-xs md:text-sm">
-                      {format(new Date(income.date), "dd/MM/yy", { locale: ptBR })}
+                      {format(parseDateFromDatabase(income.date), "dd/MM/yy", { locale: ptBR })}
                     </TableCell>
                     <TableCell className="text-xs md:text-sm font-medium max-w-40 truncate">
                       {income.note || "Sem descrição"}
