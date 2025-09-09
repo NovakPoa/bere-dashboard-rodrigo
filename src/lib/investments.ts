@@ -160,7 +160,7 @@ export const getPeriodVariation = (
 
     // Encontrar preço no início do período (ou mais próximo)
     const startPrices = investmentPrices.filter(
-      (price) => new Date(price.price_date) <= startDate
+      (price) => new Date(`${price.price_date}T00:00:00`) <= startDate
     );
     const startPrice = startPrices.length > 0 
       ? startPrices[startPrices.length - 1].price 
@@ -168,7 +168,7 @@ export const getPeriodVariation = (
 
     // Encontrar preço no final do período (ou mais próximo)
     const endPrices = investmentPrices.filter(
-      (price) => new Date(price.price_date) <= endDate
+      (price) => new Date(`${price.price_date}T00:00:00`) <= endDate
     );
     const endPrice = endPrices.length > 0 
       ? endPrices[endPrices.length - 1].price 
