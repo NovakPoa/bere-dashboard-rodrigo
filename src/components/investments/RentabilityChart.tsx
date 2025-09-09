@@ -11,6 +11,7 @@ interface RentabilityChartProps {
   selectedNames: string[];
   selectedTypes: string[];
   showValue: boolean; // true for R$, false for %
+  priceHistory?: any[];
 }
 
 const COLORS = [
@@ -27,6 +28,7 @@ export const RentabilityChart: React.FC<RentabilityChartProps> = ({
   selectedNames,
   selectedTypes,
   showValue,
+  priceHistory = [],
 }) => {
   const filteredInvestments = useMemo(() => {
     return investments.filter((inv) => {
@@ -37,8 +39,8 @@ export const RentabilityChart: React.FC<RentabilityChartProps> = ({
   }, [investments, selectedNames, selectedTypes]);
 
   const chartData = useMemo(() => {
-    return generateRentabilityData(filteredInvestments, selectedPeriod);
-  }, [filteredInvestments, selectedPeriod]);
+    return generateRentabilityData(filteredInvestments, selectedPeriod, priceHistory);
+  }, [filteredInvestments, selectedPeriod, priceHistory]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -100,7 +102,7 @@ export const RentabilityChart: React.FC<RentabilityChartProps> = ({
               <Line
                 key={investment.id}
                 type="monotone"
-                dataKey={investment.id}
+                dataKey={showValue ? investment.id : `${investment.id}_percent`}
                 stroke={COLORS[index % COLORS.length]}
                 strokeWidth={2}
                 dot={{ fill: COLORS[index % COLORS.length], strokeWidth: 2, r: 4 }}

@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Plus, TrendingUp, Wallet, Target, PieChart } from "lucide-react";
+import { RentabilityChart } from "@/components/investments/RentabilityChart";
+import { RentabilityFilters } from "@/components/investments/RentabilityFilters";
 import { 
   filterInvestments, 
   filterInvestmentsByDateRange, 
@@ -35,6 +37,12 @@ export default function Investimentos() {
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [showForm, setShowForm] = useState(false);
+  
+  // Rentability chart state
+  const [rentabilityPeriod, setRentabilityPeriod] = useState<"7days" | "month" | "year">("month");
+  const [rentabilityNames, setRentabilityNames] = useState<string[]>([]);
+  const [rentabilityTypes, setRentabilityTypes] = useState<string[]>([]);
+  const [showRentabilityValue, setShowRentabilityValue] = useState(true);
   
 
   const handleInvestmentAdded = () => {
@@ -233,6 +241,29 @@ export default function Investimentos() {
           investments={investments} 
           exchangeRate={exchangeRate}
         />
+
+        {/* Gráfico de Rentabilidade Histórica */}
+        <div className="space-y-4">
+          <RentabilityFilters
+            investments={investments}
+            selectedPeriod={rentabilityPeriod}
+            onPeriodChange={setRentabilityPeriod}
+            selectedNames={rentabilityNames}
+            onNamesChange={setRentabilityNames}
+            selectedTypes={rentabilityTypes}
+            onTypesChange={setRentabilityTypes}
+            showValue={showRentabilityValue}
+            onToggleDisplay={() => setShowRentabilityValue(!showRentabilityValue)}
+          />
+          <RentabilityChart
+            investments={investments}
+            selectedPeriod={rentabilityPeriod}
+            selectedNames={rentabilityNames}
+            selectedTypes={rentabilityTypes}
+            showValue={showRentabilityValue}
+            priceHistory={priceHistory}
+          />
+        </div>
 
 
         {/* Tabela de Investimentos */}

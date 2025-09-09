@@ -208,7 +208,8 @@ export const getPeriodVariation = (
 // Geração de dados para gráfico de rentabilidade temporal
 export const generateRentabilityData = (
   investments: Investment[],
-  period: "7days" | "month" | "year"
+  period: "7days" | "month" | "year",
+  priceHistory: any[] = []
 ) => {
   const now = new Date();
   const startDate = new Date();
@@ -256,36 +257,64 @@ export const generateRentabilityData = (
 
     const dataPoint: any = { date: formattedDate };
 
+    // Group price history by investment
+    const pricesByInvestment = priceHistory.reduce((acc, price) => {
+      if (!acc[price.investment_id]) {
+        acc[price.investment_id] = [];
+      }
+      acc[price.investment_id].push(price);
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    // Sort price history for each investment by date
+    Object.keys(pricesByInvestment).forEach(investmentId => {
+      pricesByInvestment[investmentId].sort((a, b) => a.price_date.localeCompare(b.price_date));
+    });
+
     investments.forEach((investment) => {
       const investmentDate = parseDateFromDatabase(investment.data_investimento);
-      const updateDate = parseDateFromDatabase(investment.data_atualizacao_preco);
 
       // Se a data é anterior ao investimento, rentabilidade é null
       if (date < investmentDate) {
         dataPoint[investment.id] = null;
+        dataPoint[`${investment.id}_percent`] = null;
         return;
       }
 
-      // Se a data é igual ou posterior à data de investimento
-      let profitability: number;
-
-      if (date >= updateDate) {
-        // Usar rentabilidade atual
-        profitability = investment.rentabilidade_absoluta;
-      } else {
-        // Interpolar linearmente entre data de investimento (0) e data de atualização (atual)
-        const totalDays = (updateDate.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24);
-        const daysSinceInvestment = (date.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24);
+      // Find the appropriate price for this date
+      let priceForDate = investment.preco_unitario_compra; // Default to purchase price
+      
+      const investmentPrices = pricesByInvestment[investment.id] || [];
+      
+      if (investmentPrices.length > 0) {
+        // Find the most recent price on or before this date
+        let latestPrice = null;
+        for (const price of investmentPrices) {
+          const priceDate = new Date(price.price_date);
+          if (priceDate <= date) {
+            latestPrice = price;
+          } else {
+            break; // Prices are sorted, so we can stop here
+          }
+        }
         
-        if (totalDays === 0) {
-          profitability = 0;
+        if (latestPrice) {
+          priceForDate = latestPrice.price;
         } else {
-          const ratio = daysSinceInvestment / totalDays;
-          profitability = investment.rentabilidade_absoluta * ratio;
+          // If no historical price before this date, check if there's a price after
+          const futurePrice = investmentPrices.find(p => new Date(p.price_date) >= date);
+          if (futurePrice) {
+            priceForDate = futurePrice.price;
+          }
         }
       }
 
-      dataPoint[investment.id] = profitability;
+      // Calculate profitability
+      const rentabilityAbsolute = (priceForDate - investment.preco_unitario_compra) * investment.quantidade;
+      const rentabilityPercentual = ((priceForDate - investment.preco_unitario_compra) / investment.preco_unitario_compra) * 100;
+      
+      dataPoint[investment.id] = rentabilityAbsolute;
+      dataPoint[`${investment.id}_percent`] = rentabilityPercentual;
     });
 
     return dataPoint;
