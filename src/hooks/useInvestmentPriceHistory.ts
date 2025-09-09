@@ -106,3 +106,28 @@ export const useDeleteInvestmentPrice = () => {
     },
   });
 };
+
+export const useInvestmentPricesByRange = (
+  investmentIds: string[],
+  startDate?: Date,
+  endDate?: Date
+) => {
+  return useQuery({
+    queryKey: ["investment_prices_range", investmentIds, startDate, endDate],
+    enabled: investmentIds.length > 0 && !!startDate && !!endDate,
+    queryFn: async (): Promise<InvestmentPrice[]> => {
+      if (investmentIds.length === 0) return [];
+
+      const { data, error } = await supabase
+        .from("investment_prices")
+        .select("*")
+        .in("investment_id", investmentIds)
+        .gte("price_date", startDate!.toISOString().split('T')[0])
+        .lte("price_date", endDate!.toISOString().split('T')[0])
+        .order("price_date", { ascending: true });
+
+      if (error) throw error;
+      return (data as InvestmentPrice[]) ?? [];
+    },
+  });
+};

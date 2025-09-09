@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Investment } from "@/types/investment";
 import { useInvestments, useExchangeRate } from "@/hooks/useInvestments";
+import { useInvestmentPricesByRange } from "@/hooks/useInvestmentPriceHistory";
 import { AddInvestmentForm } from "@/components/investments/AddInvestmentForm";
 import { InvestmentsTable } from "@/components/investments/InvestmentsTable";
 import { TypeChart } from "@/components/investments/TypeChart";
@@ -17,6 +18,7 @@ import {
   filterInvestments, 
   filterInvestmentsByDateRange, 
   getPortfolioTotals,
+  getPeriodVariation,
   currency, 
   percentage 
 } from "@/lib/investments";
@@ -54,10 +56,24 @@ export default function Investimentos() {
     });
   }, [filteredByDate, selectedNames, selectedTypes, selectedBrokers]);
 
+  // Buscar histórico de preços se há período selecionado
+  const investmentIds = useMemo(() => filtered.map(inv => inv.id), [filtered]);
+  const { data: priceHistory = [] } = useInvestmentPricesByRange(
+    investmentIds, 
+    startDate, 
+    endDate
+  );
+
   // Cálculos do portfólio
   const portfolioTotals = useMemo(() => {
     return getPortfolioTotals(filtered, exchangeRate);
   }, [filtered, exchangeRate]);
+
+  // Cálculo de variação no período
+  const periodVariation = useMemo(() => {
+    if (!startDate || !endDate || priceHistory.length === 0) return null;
+    return getPeriodVariation(filtered, priceHistory, startDate, endDate, exchangeRate);
+  }, [filtered, priceHistory, startDate, endDate, exchangeRate]);
 
   // Opções para filtros - buscar valores únicos dos investimentos
   const nameOptions = useMemo(() => {
@@ -167,7 +183,7 @@ export default function Investimentos() {
         </div>
 
         {/* Cards de Estatísticas */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Investido"
             value={currency(portfolioTotals.totalInvestido)}
@@ -179,7 +195,7 @@ export default function Investimentos() {
             icon={TrendingUp}
           />
           <StatCard
-            title="Rentabilidade"
+            title="Rentabilidade (desde a compra)"
             value={currency(portfolioTotals.rentabilidadeAbsoluta)}
             icon={Target}
             trend={{
@@ -187,6 +203,17 @@ export default function Investimentos() {
               isPositive: portfolioTotals.rentabilidadeAbsoluta >= 0,
             }}
           />
+          {periodVariation && (
+            <StatCard
+              title="Variação no Período"
+              value={currency(periodVariation.variationAbsolute)}
+              icon={PieChart}
+              trend={{
+                value: percentage(periodVariation.variationPercentual),
+                isPositive: periodVariation.variationAbsolute >= 0,
+              }}
+            />
+          )}
         </div>
 
         {/* Indicador de Cotação */}

@@ -139,6 +139,61 @@ export const CURRENCY_LABELS: Record<Currency, string> = {
   USD: "Dólar (US$)",
 };
 
+// Cálculo de variação no período usando histórico de preços
+export const getPeriodVariation = (
+  investments: Investment[],
+  priceHistory: any[], // InvestmentPrice[]
+  startDate: Date,
+  endDate: Date,
+  cotacaoDolar: number = 5.0
+) => {
+  let totalVariationAbsolute = 0;
+  let totalStartValue = 0;
+
+  investments.forEach((investment) => {
+    // Filtrar histórico de preços para este investimento
+    const investmentPrices = priceHistory.filter(
+      (price) => price.investment_id === investment.id
+    );
+
+    if (investmentPrices.length === 0) return;
+
+    // Encontrar preço no início do período (ou mais próximo)
+    const startPrices = investmentPrices.filter(
+      (price) => new Date(price.price_date) <= startDate
+    );
+    const startPrice = startPrices.length > 0 
+      ? startPrices[startPrices.length - 1].price 
+      : investment.preco_unitario_compra;
+
+    // Encontrar preço no final do período (ou mais próximo)
+    const endPrices = investmentPrices.filter(
+      (price) => new Date(price.price_date) <= endDate
+    );
+    const endPrice = endPrices.length > 0 
+      ? endPrices[endPrices.length - 1].price 
+      : investment.preco_unitario_atual;
+
+    // Calcular valores em reais
+    const startValueInvestment = startPrice * investment.quantidade;
+    const endValueInvestment = endPrice * investment.quantidade;
+    
+    const startValueReais = convertToReais(startValueInvestment, investment.moeda, cotacaoDolar);
+    const endValueReais = convertToReais(endValueInvestment, investment.moeda, cotacaoDolar);
+
+    totalStartValue += startValueReais;
+    totalVariationAbsolute += (endValueReais - startValueReais);
+  });
+
+  const variationPercentual = totalStartValue > 0 ? (totalVariationAbsolute / totalStartValue) * 100 : 0;
+
+  return {
+    variationAbsolute: totalVariationAbsolute,
+    variationPercentual,
+    startValue: totalStartValue,
+  };
+};
+
 // Geração de dados para gráfico de rentabilidade temporal
 export const generateRentabilityData = (
   investments: Investment[],
