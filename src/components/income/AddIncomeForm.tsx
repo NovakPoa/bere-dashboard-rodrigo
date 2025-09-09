@@ -97,11 +97,8 @@ export default function AddIncomeForm({ onAdded }: { onAdded: () => void }) {
   };
 
   return (
-    <Card className="bg-card/60 backdrop-blur">
-      <CardHeader>
-        <CardTitle className="text-sm text-muted-foreground">Novo Ganho</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="space-y-4">
+      <div className="space-y-4">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -269,7 +266,7 @@ export default function AddIncomeForm({ onAdded }: { onAdded: () => void }) {
             </div>
           </form>
         </Form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

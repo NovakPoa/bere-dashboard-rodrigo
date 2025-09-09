@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { startOfMonth } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -79,8 +79,11 @@ export default function Ganhos() {
               <Plus className="h-4 w-4" />
             </Button>
           </DrawerTrigger>
-          <DrawerContent className="max-h-[90vh] overflow-y-auto">
-            <div className="p-4">
+          <DrawerContent className="max-h-[95vh]">
+            <DrawerHeader className="pb-2">
+              <DrawerTitle>Adicionar Ganho</DrawerTitle>
+            </DrawerHeader>
+            <div className="px-4 pb-4 overflow-y-auto flex-1">
               <AddIncomeForm onAdded={handleIncomeAdded} />
             </div>
           </DrawerContent>
