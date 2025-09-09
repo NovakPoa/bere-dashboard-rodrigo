@@ -4,9 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
-import { Plus, Settings } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useCalendarSettings } from "@/hooks/useCalendarSettings";
 
 export default function Calendario() {
@@ -15,9 +14,6 @@ export default function Calendario() {
   const [draftTz, setDraftTz] = useState("America/Sao_Paulo");
   const [draftView, setDraftView] = useState("WEEK");
   const [showConnectionForm, setShowConnectionForm] = useState(false);
-  const [showPrint, setShowPrint] = useState(false);
-  const [showTabs, setShowTabs] = useState(false);
-  const [showCalendars, setShowCalendars] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => setPageSEO("Calendário", "Visualize seu Google Agenda"), []);
@@ -35,20 +31,20 @@ export default function Calendario() {
     const tz = encodeURIComponent(settings.timezone);
     const mode = encodeURIComponent(settings.defaultView);
     
-    // Modern URL parameters for cleaner appearance
+    // Fixed parameters for cleaner appearance
     const params = new URLSearchParams({
       src: settings.calendarId,
       ctz: settings.timezone,
       mode: settings.defaultView,
-      showPrint: showPrint ? "1" : "0",
-      showTabs: showTabs ? "1" : "0", 
-      showCalendars: showCalendars ? "1" : "0",
+      showPrint: "0",
+      showTabs: "1", 
+      showCalendars: "0",
       showTz: "0",
       bgcolor: "%23ffffff"
     });
     
     return `https://calendar.google.com/calendar/embed?${params.toString()}`;
-  }, [settings, showPrint, showTabs, showCalendars]);
+  }, [settings]);
 
   const handleSaveSettings = async () => {
     const success = await saveSettings(draftId, draftTz, draftView);
@@ -130,30 +126,6 @@ export default function Calendario() {
       </header>
 
       <main className="container py-8 space-y-6">
-        {embedUrl && (
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm text-muted-foreground">Personalização</CardTitle>
-                <Settings className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center space-x-2">
-                <Switch checked={showPrint} onCheckedChange={setShowPrint} />
-                <label className="text-sm">Mostrar botão imprimir</label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch checked={showTabs} onCheckedChange={setShowTabs} />
-                <label className="text-sm">Mostrar abas</label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch checked={showCalendars} onCheckedChange={setShowCalendars} />
-                <label className="text-sm">Mostrar lista de calendários</label>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         <section aria-labelledby="agenda">
           <h2 id="agenda" className="sr-only">Agenda</h2>
