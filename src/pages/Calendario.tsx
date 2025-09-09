@@ -12,6 +12,7 @@ export default function Calendario() {
   const { settings, loading, saveSettings, deleteSettings } = useCalendarSettings();
   const [draftId, setDraftId] = useState("");
   const [draftTz, setDraftTz] = useState("America/Sao_Paulo");
+  const [draftView, setDraftView] = useState("WEEK");
   const [showConnectionForm, setShowConnectionForm] = useState(false);
 
   useEffect(() => setPageSEO("Calendário", "Visualize seu Google Agenda"), []);
@@ -20,17 +21,19 @@ export default function Calendario() {
   useEffect(() => {
     setDraftId(settings.calendarId);
     setDraftTz(settings.timezone);
+    setDraftView(settings.defaultView);
   }, [settings]);
 
   const embedUrl = useMemo(() => {
     if (!settings.calendarId) return "";
     const src = encodeURIComponent(settings.calendarId);
     const tz = encodeURIComponent(settings.timezone);
-    return `https://calendar.google.com/calendar/embed?src=${src}&ctz=${tz}`;
+    const mode = encodeURIComponent(settings.defaultView);
+    return `https://calendar.google.com/calendar/embed?src=${src}&ctz=${tz}&mode=${mode}`;
   }, [settings]);
 
   const handleSaveSettings = async () => {
-    const success = await saveSettings(draftId, draftTz);
+    const success = await saveSettings(draftId, draftTz, draftView);
     if (success) {
       setShowConnectionForm(false);
     }
@@ -77,8 +80,21 @@ export default function Calendario() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="grid gap-2">
+                  <label className="text-sm text-muted-foreground">Visualização padrão</label>
+                  <Select value={draftView} onValueChange={(v) => setDraftView(v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="WEEK">Semanal</SelectItem>
+                      <SelectItem value="MONTH">Mensal</SelectItem>
+                      <SelectItem value="AGENDA">Agenda</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="md:col-span-3 flex flex-col sm:flex-row justify-end gap-2">
-                  <Button variant="secondary" onClick={() => { setDraftId(settings.calendarId); setDraftTz(settings.timezone); setShowConnectionForm(false); }}>Cancelar</Button>
+                  <Button variant="secondary" onClick={() => { setDraftId(settings.calendarId); setDraftTz(settings.timezone); setDraftView(settings.defaultView); setShowConnectionForm(false); }}>Cancelar</Button>
                   <Button onClick={handleSaveSettings}>Salvar</Button>
                   {settings.calendarId && (
                     <Button variant="outline" onClick={handleDisconnect}>Desconectar</Button>

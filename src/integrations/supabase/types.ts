@@ -114,6 +114,7 @@ export type Database = {
         Row: {
           calendar_id: string
           created_at: string
+          default_view: string
           id: string
           timezone: string
           updated_at: string
@@ -122,6 +123,7 @@ export type Database = {
         Insert: {
           calendar_id: string
           created_at?: string
+          default_view?: string
           id?: string
           timezone?: string
           updated_at?: string
@@ -130,6 +132,7 @@ export type Database = {
         Update: {
           calendar_id?: string
           created_at?: string
+          default_view?: string
           id?: string
           timezone?: string
           updated_at?: string

@@ -5,12 +5,13 @@ import { useToast } from "@/hooks/use-toast";
 type CalendarSettings = {
   calendarId: string;
   timezone: string;
+  defaultView: string;
 };
 
 const STORAGE_KEY = "calendar_settings_v2";
 
 export const useCalendarSettings = () => {
-  const [settings, setSettings] = useState<CalendarSettings>({ calendarId: "", timezone: "America/Sao_Paulo" });
+  const [settings, setSettings] = useState<CalendarSettings>({ calendarId: "", timezone: "America/Sao_Paulo", defaultView: "WEEK" });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -21,7 +22,7 @@ export const useCalendarSettings = () => {
       if (localData) {
         const parsed = JSON.parse(localData);
         if (parsed.calendarId && parsed.calendarId !== "rodrigohcribeiro@gmail.com") {
-          await saveSettings(parsed.calendarId, parsed.timezone || "America/Sao_Paulo");
+          await saveSettings(parsed.calendarId, parsed.timezone || "America/Sao_Paulo", parsed.defaultView || "WEEK");
           localStorage.removeItem(STORAGE_KEY);
         }
       }
@@ -41,7 +42,7 @@ export const useCalendarSettings = () => {
 
       const { data, error } = await supabase
         .from("calendar_settings")
-        .select("calendar_id, timezone")
+        .select("calendar_id, timezone, default_view")
         .eq("user_id", user.id)
         .single();
 
@@ -54,7 +55,8 @@ export const useCalendarSettings = () => {
       if (data) {
         setSettings({
           calendarId: data.calendar_id,
-          timezone: data.timezone
+          timezone: data.timezone,
+          defaultView: data.default_view || "WEEK"
         });
       } else {
         // Try to migrate localStorage data
@@ -68,7 +70,7 @@ export const useCalendarSettings = () => {
   };
 
   // Save settings to Supabase
-  const saveSettings = async (calendarId: string, timezone: string) => {
+  const saveSettings = async (calendarId: string, timezone: string, defaultView: string = "WEEK") => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -85,7 +87,8 @@ export const useCalendarSettings = () => {
         .upsert({
           user_id: user.id,
           calendar_id: calendarId.trim(),
-          timezone: timezone
+          timezone: timezone,
+          default_view: defaultView
         });
 
       if (error) {
@@ -98,7 +101,7 @@ export const useCalendarSettings = () => {
         return false;
       }
 
-      setSettings({ calendarId: calendarId.trim(), timezone });
+      setSettings({ calendarId: calendarId.trim(), timezone, defaultView });
       toast({
         title: "Sucesso",
         description: "Configurações do calendário salvas com sucesso"
@@ -131,7 +134,7 @@ export const useCalendarSettings = () => {
         return false;
       }
 
-      setSettings({ calendarId: "", timezone: "America/Sao_Paulo" });
+      setSettings({ calendarId: "", timezone: "America/Sao_Paulo", defaultView: "WEEK" });
       toast({
         title: "Sucesso",
         description: "Configurações do calendário removidas"
