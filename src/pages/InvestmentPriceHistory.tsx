@@ -322,31 +322,37 @@ export default function InvestmentPriceHistory() {
                         updated_at: ''
                       });
                     }
-                    
-                    // Sort by date to find the earliest (baseline) price
-                    const sortedHistory = allHistoryItems.sort((a, b) => a.price_date.localeCompare(b.price_date));
-                    const baselinePrice = sortedHistory[0]?.price || investment.preco_unitario_compra;
-                    
-                    // Sort back to descending order for display
-                    return sortedHistory.sort((a, b) => b.price_date.localeCompare(a.price_date)).map((p) => {
-                      const rentabilidadeAbsoluta = (p.price - baselinePrice) * investment.quantidade;
-                      const rentabilidadePercentual = baselinePrice > 0 ? ((p.price - baselinePrice) / baselinePrice) * 100 : 0;
-                      const isBaseline = p.price_date === sortedHistory[0]?.price_date;
-                      
+
+                    // Find earliest (baseline) without mutating the original array
+                    const historyAsc = [...allHistoryItems].sort((a, b) => a.price_date.localeCompare(b.price_date));
+                    const baseline = historyAsc[0];
+                    const baselinePrice = Number(baseline?.price ?? investment.preco_unitario_compra);
+                    const baselineDate = baseline?.price_date ?? investment.data_investimento;
+
+                    // Prepare list for display (descending)
+                    const historyDesc = [...allHistoryItems].sort((a, b) => b.price_date.localeCompare(a.price_date));
+
+                    return historyDesc.map((p) => {
+                      const priceNum = Number(p.price);
+                      const qtyNum = Number(investment.quantidade);
+
+                      const rentabilidadeAbsoluta = (priceNum - baselinePrice) * qtyNum;
+                      const rentabilidadePercentual = baselinePrice > 0 ? ((priceNum - baselinePrice) / baselinePrice) * 100 : 0;
+                      const isBaseline = p.price_date === baselineDate;
+
                       return (
                         <TableRow key={p.id}>
                           <TableCell>
                             {format(parseDateFromDatabase(p.price_date), "dd/MM/yyyy", { locale: ptBR })}
-                            {isBaseline && <span className="ml-2 text-xs text-muted-foreground">(baseline)</span>}
                           </TableCell>
                           <TableCell className="text-right">
-                            {currency(p.price, investment.moeda)}
+                            {currency(priceNum, investment.moeda)}
                           </TableCell>
                           <TableCell className="text-right">
-                            {investment.quantidade.toLocaleString('pt-BR')}
+                            {qtyNum.toLocaleString('pt-BR')}
                           </TableCell>
                           <TableCell className="text-right">
-                            {currency(p.price * investment.quantidade, investment.moeda)}
+                            {currency(priceNum * qtyNum, investment.moeda)}
                           </TableCell>
                           <TableCell className="text-right">
                             {isBaseline ? (
