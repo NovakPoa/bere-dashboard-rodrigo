@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
-import { Plus } from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 import { useCalendarSettings } from "@/hooks/useCalendarSettings";
 
 export default function Calendario() {
@@ -14,6 +15,10 @@ export default function Calendario() {
   const [draftTz, setDraftTz] = useState("America/Sao_Paulo");
   const [draftView, setDraftView] = useState("WEEK");
   const [showConnectionForm, setShowConnectionForm] = useState(false);
+  const [showPrint, setShowPrint] = useState(false);
+  const [showTabs, setShowTabs] = useState(false);
+  const [showCalendars, setShowCalendars] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => setPageSEO("Calendário", "Visualize seu Google Agenda"), []);
   
@@ -29,8 +34,21 @@ export default function Calendario() {
     const src = encodeURIComponent(settings.calendarId);
     const tz = encodeURIComponent(settings.timezone);
     const mode = encodeURIComponent(settings.defaultView);
-    return `https://calendar.google.com/calendar/embed?src=${src}&ctz=${tz}&mode=${mode}`;
-  }, [settings]);
+    
+    // Modern URL parameters for cleaner appearance
+    const params = new URLSearchParams({
+      src: settings.calendarId,
+      ctz: settings.timezone,
+      mode: settings.defaultView,
+      showPrint: showPrint ? "1" : "0",
+      showTabs: showTabs ? "1" : "0", 
+      showCalendars: showCalendars ? "1" : "0",
+      showTz: "0",
+      bgcolor: "%23ffffff"
+    });
+    
+    return `https://calendar.google.com/calendar/embed?${params.toString()}`;
+  }, [settings, showPrint, showTabs, showCalendars]);
 
   const handleSaveSettings = async () => {
     const success = await saveSettings(draftId, draftTz, draftView);
@@ -111,7 +129,32 @@ export default function Calendario() {
         </Drawer>
       </header>
 
-      <main className="container py-8">
+      <main className="container py-8 space-y-6">
+        {embedUrl && (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm text-muted-foreground">Personalização</CardTitle>
+                <Settings className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center space-x-2">
+                <Switch checked={showPrint} onCheckedChange={setShowPrint} />
+                <label className="text-sm">Mostrar botão imprimir</label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch checked={showTabs} onCheckedChange={setShowTabs} />
+                <label className="text-sm">Mostrar abas</label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch checked={showCalendars} onCheckedChange={setShowCalendars} />
+                <label className="text-sm">Mostrar lista de calendários</label>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <section aria-labelledby="agenda">
           <h2 id="agenda" className="sr-only">Agenda</h2>
           <Card>
@@ -120,11 +163,36 @@ export default function Calendario() {
             </CardHeader>
             <CardContent>
               {embedUrl ? (
-                <div className="rounded-md overflow-hidden border">
-                  <iframe title="Google Calendar" src={embedUrl} className="w-full" style={{ minHeight: 640 }} loading="lazy" />
+                <div className="relative">
+                  {isLoading && (
+                    <div className="absolute inset-0 bg-background/50 flex items-center justify-center rounded-lg">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  )}
+                  <div className="rounded-lg overflow-hidden border bg-card shadow-sm">
+                    <iframe 
+                      title="Google Calendar" 
+                      src={embedUrl} 
+                      className="w-full transition-opacity duration-300" 
+                      style={{ 
+                        minHeight: 640,
+                        aspectRatio: "16/10",
+                        opacity: isLoading ? 0.5 : 1 
+                      }} 
+                      loading="lazy"
+                      onLoad={() => setIsLoading(false)}
+                      onError={() => setIsLoading(false)}
+                    />
+                  </div>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Conecte um calendário público clicando no botão "+" acima para visualizar sua agenda aqui.</p>
+                <div className="text-center py-12">
+                  <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                    <Plus className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">Nenhum calendário conectado</p>
+                  <p className="text-xs text-muted-foreground">Conecte um calendário público clicando no botão "+" acima para visualizar sua agenda aqui.</p>
+                </div>
               )}
             </CardContent>
           </Card>
