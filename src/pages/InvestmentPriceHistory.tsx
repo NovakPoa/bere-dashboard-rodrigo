@@ -175,7 +175,7 @@ export default function InvestmentPriceHistory() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
                   <Label className="text-sm text-muted-foreground">Nome</Label>
                   <p className="font-medium">{investment.nome_investimento}</p>
@@ -188,6 +188,18 @@ export default function InvestmentPriceHistory() {
                   <Label className="text-sm text-muted-foreground">Última Atualização</Label>
                   <p className="font-medium">
                     {format(parseDateFromDatabase(investment.data_atualizacao_preco), "dd/MM/yyyy", { locale: ptBR })}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">Rentabilidade Absoluta</Label>
+                  <p className={`font-medium ${investment.rentabilidade_absoluta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {currency(investment.rentabilidade_absoluta, investment.moeda)}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">Rentabilidade Percentual</Label>
+                  <p className={`font-medium ${investment.rentabilidade_percentual >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {investment.rentabilidade_percentual.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
                   </p>
                 </div>
               </div>
@@ -292,25 +304,39 @@ export default function InvestmentPriceHistory() {
                     <TableHead className="text-right">Preço</TableHead>
                     <TableHead className="text-right">Quantidade</TableHead>
                     <TableHead className="text-right">Valor Total</TableHead>
+                    <TableHead className="text-right">Rentabilidade</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {priceHistory.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell>
-                        {format(parseDateFromDatabase(p.price_date), "dd/MM/yyyy", { locale: ptBR })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {currency(p.price, investment.moeda)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {investment.quantidade.toLocaleString('pt-BR')}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {currency(p.price * investment.quantidade, investment.moeda)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {priceHistory.map((p) => {
+                    const rentabilidadeAbsoluta = (p.price - investment.preco_unitario_compra) * investment.quantidade;
+                    const rentabilidadePercentual = ((p.price - investment.preco_unitario_compra) / investment.preco_unitario_compra) * 100;
+                    
+                    return (
+                      <TableRow key={p.id}>
+                        <TableCell>
+                          {format(parseDateFromDatabase(p.price_date), "dd/MM/yyyy", { locale: ptBR })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {currency(p.price, investment.moeda)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {investment.quantidade.toLocaleString('pt-BR')}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {currency(p.price * investment.quantidade, investment.moeda)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className={`${rentabilidadeAbsoluta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            <div>{currency(rentabilidadeAbsoluta, investment.moeda)}</div>
+                            <div className="text-xs">
+                              {rentabilidadePercentual.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                   {!hasInitialInHistory && (
                     <TableRow>
                       <TableCell>
@@ -324,6 +350,12 @@ export default function InvestmentPriceHistory() {
                       </TableCell>
                       <TableCell className="text-right">
                         {currency(investment.preco_unitario_compra * investment.quantidade, investment.moeda)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="text-muted-foreground">
+                          <div>{currency(0, investment.moeda)}</div>
+                          <div className="text-xs">0,00%</div>
+                        </div>
                       </TableCell>
                     </TableRow>
                   )}
