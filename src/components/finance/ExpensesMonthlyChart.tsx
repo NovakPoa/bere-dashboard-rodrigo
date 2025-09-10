@@ -7,6 +7,7 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import DateRangePicker from "./DateRangePicker";
 import { filterExpensesByDateRange, filterExpenses } from "@/lib/finance";
 import type { Expense, Category } from "@/types/expense";
+import { parseDateFromDatabase } from "@/lib/utils";
 
 interface ExpensesMonthlyChartProps {
   expenses: Expense[];
@@ -56,7 +57,7 @@ export default function ExpensesMonthlyChart({ expenses, categories }: ExpensesM
     return Object.entries(monthlyData)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([monthKey, despesas]) => ({
-        mes: format(new Date(monthKey + "-01"), "MMM/yy", { locale: ptBR }),
+        mes: format(parseDateFromDatabase(monthKey + "-01"), "MMM/yy", { locale: ptBR }),
         despesas,
       }));
   }, [expenses, startDate, endDate, selectedCategories]);
