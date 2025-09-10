@@ -84,7 +84,7 @@ const convertFromExpense = (expense: Omit<Expense, "id">) => ({
   forma_pagamento: expense.method,
   origem: expense.source,
   descricao: expense.note || null,
-  tipo: 'financeira',
+  tipo: 'despesa',
   user_id: null, // Will be set by RLS automatically when inserting
   installments_total: expense.installmentsTotal || null,
   installment_number: expense.installmentNumber || null,
@@ -100,7 +100,7 @@ export function useExpenses() {
       const { data, error } = await supabase
         .from("financeiro")
         .select("*")
-        .eq("tipo", "financeira")
+        .eq("tipo", "despesa")
         .order("data", { ascending: false });
 
       if (error) throw error;
