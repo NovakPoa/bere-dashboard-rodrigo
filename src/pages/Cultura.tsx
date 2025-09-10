@@ -35,17 +35,16 @@ export default function Cultura() {
   const [selectedGenre, setSelectedGenre] = useState<string>("all-genres");
   const [selectedYear, setSelectedYear] = useState<string>("all-years");
   const [selectedRating, setSelectedRating] = useState<string>("all-ratings");
+  const [selectedContentType, setSelectedContentType] = useState<string>("all");
 
-  // Pagination states
-  const [videoBacklogPage, setVideoBacklogPage] = useState(1);
-  const [videoDonePage, setVideoDonePage] = useState(1);
-  const [bookBacklogPage, setBookBacklogPage] = useState(1);
-  const [bookDonePage, setBookDonePage] = useState(1);
+  // Pagination states (simplified to 2)
+  const [backlogPage, setBacklogPage] = useState(1);
+  const [donePage, setDonePage] = useState(1);
 
   // Form inline por lista - using stable object structure to fix cursor issue
   const [newForm, setNewForm] = useState<{
     isOpen: boolean;
-    list: "video-backlog" | "video-done" | "book-backlog" | "book-done";
+    list: "backlog" | "done";
     title: string;
     author: string;
     subtype: "movie" | "series";
@@ -54,7 +53,7 @@ export default function Cultura() {
     year: number;
   }>({
     isOpen: false,
-    list: "video-backlog",
+    list: "backlog",
     title: "",
     author: "",
     subtype: "movie",
@@ -77,7 +76,6 @@ export default function Cultura() {
     }));
   };
 
-
   const handleUpdateItem = (id: string, patch: Partial<Item>) => updateItem.mutate({ id, updates: patch });
   const handleRemoveItem = (id: string) => removeItem.mutate(id);
 
@@ -86,16 +84,13 @@ export default function Cultura() {
     e.preventDefault();
     const id = e.dataTransfer.getData("text/plain");
     if (!id) return;
-    const domain = list.startsWith("video") ? "videos" : "books";
-    const status = list.endsWith("done") ? "done" : "backlog";
     const item = items.find(x => x.id === id);
     if (!item) return;
     
     handleUpdateItem(id, {
       ...item,
-      domain: domain as "videos" | "books",
-      status: status as "done" | "backlog",
-      year: status === "done" ? item.year || new Date().getFullYear() : undefined,
+      status: list as "done" | "backlog",
+      year: list === "done" ? item.year || new Date().getFullYear() : undefined,
     });
   };
 
@@ -113,6 +108,14 @@ export default function Cultura() {
   // Apply filters function
   const applyFilters = (itemList: Item[]) => {
     return itemList.filter(item => {
+      // Content type filter
+      if (selectedContentType !== "all") {
+        if (selectedContentType === "books" && item.domain !== "books") return false;
+        if (selectedContentType === "movies" && (item.domain !== "videos" || item.subtype !== "movie")) return false;
+        if (selectedContentType === "series" && (item.domain !== "videos" || item.subtype !== "series")) return false;
+      }
+      
+      // Other filters
       if (selectedGenre && selectedGenre !== "all-genres" && item.genre !== selectedGenre) return false;
       if (selectedYear && selectedYear !== "all-years" && item.year?.toString() !== selectedYear) return false;
       if (selectedRating && selectedRating !== "all-ratings") {
@@ -128,26 +131,37 @@ export default function Cultura() {
     setSelectedGenre("all-genres");
     setSelectedYear("all-years");
     setSelectedRating("all-ratings");
+    setSelectedContentType("all");
   };
 
-  // Total counts (without filters) for display in titles
-  const totalVideoBacklog = useMemo(() => items.filter((i) => i.domain === "videos" && i.status === "backlog").length, [items]);
-  const totalVideoDone = useMemo(() => items.filter((i) => i.domain === "videos" && i.status === "done").length, [items]);
-  const totalBookBacklog = useMemo(() => items.filter((i) => i.domain === "books" && i.status === "backlog").length, [items]);
-  const totalBookDone = useMemo(() => items.filter((i) => i.domain === "books" && i.status === "done").length, [items]);
+  // Combined item lists with filters
+  const backlogItems = useMemo(() => applyFilters(items.filter((i) => i.status === "backlog")), [items, selectedGenre, selectedYear, selectedRating, selectedContentType]);
+  const doneItems = useMemo(() => applyFilters(items.filter((i) => i.status === "done")), [items, selectedGenre, selectedYear, selectedRating, selectedContentType]);
 
-  const byVideoBacklog = useMemo(() => applyFilters(items.filter((i) => i.domain === "videos" && i.status === "backlog")), [items, selectedGenre, selectedYear, selectedRating]);
-  const byVideoDone = useMemo(() => applyFilters(items.filter((i) => i.domain === "videos" && i.status === "done")), [items, selectedGenre, selectedYear, selectedRating]);
-  const byBookBacklog = useMemo(() => applyFilters(items.filter((i) => i.domain === "books" && i.status === "backlog")), [items, selectedGenre, selectedYear, selectedRating]);
-  const byBookDone = useMemo(() => applyFilters(items.filter((i) => i.domain === "books" && i.status === "done")), [items, selectedGenre, selectedYear, selectedRating]);
+  // Total counts for display in titles (with content type filter applied)
+  const totalBacklog = useMemo(() => {
+    const filteredItems = items.filter((i) => i.status === "backlog");
+    if (selectedContentType === "all") return filteredItems.length;
+    if (selectedContentType === "books") return filteredItems.filter(i => i.domain === "books").length;
+    if (selectedContentType === "movies") return filteredItems.filter(i => i.domain === "videos" && i.subtype === "movie").length;
+    if (selectedContentType === "series") return filteredItems.filter(i => i.domain === "videos" && i.subtype === "series").length;
+    return filteredItems.length;
+  }, [items, selectedContentType]);
+
+  const totalDone = useMemo(() => {
+    const filteredItems = items.filter((i) => i.status === "done");
+    if (selectedContentType === "all") return filteredItems.length;
+    if (selectedContentType === "books") return filteredItems.filter(i => i.domain === "books").length;
+    if (selectedContentType === "movies") return filteredItems.filter(i => i.domain === "videos" && i.subtype === "movie").length;
+    if (selectedContentType === "series") return filteredItems.filter(i => i.domain === "videos" && i.subtype === "series").length;
+    return filteredItems.length;
+  }, [items, selectedContentType]);
 
   // Reset pages when filters change
   useEffect(() => {
-    setVideoBacklogPage(1);
-    setVideoDonePage(1);
-    setBookBacklogPage(1);
-    setBookDonePage(1);
-  }, [selectedGenre, selectedYear, selectedRating]);
+    setBacklogPage(1);
+    setDonePage(1);
+  }, [selectedGenre, selectedYear, selectedRating, selectedContentType]);
 
   // Pagination logic
   const createPaginationLogic = (items: Item[], currentPage: number) => {
@@ -160,10 +174,8 @@ export default function Cultura() {
   };
 
   // Get paginated data
-  const videoBacklogPaginated = useMemo(() => createPaginationLogic(byVideoBacklog, videoBacklogPage), [byVideoBacklog, videoBacklogPage]);
-  const videoDonePaginated = useMemo(() => createPaginationLogic(byVideoDone, videoDonePage), [byVideoDone, videoDonePage]);
-  const bookBacklogPaginated = useMemo(() => createPaginationLogic(byBookBacklog, bookBacklogPage), [byBookBacklog, bookBacklogPage]);
-  const bookDonePaginated = useMemo(() => createPaginationLogic(byBookDone, bookDonePage), [byBookDone, bookDonePage]);
+  const backlogPaginated = useMemo(() => createPaginationLogic(backlogItems, backlogPage), [backlogItems, backlogPage]);
+  const donePaginated = useMemo(() => createPaginationLogic(doneItems, donePage), [doneItems, donePage]);
 
   // Pagination controls component
   const PaginationControls = ({ 
@@ -269,13 +281,12 @@ export default function Cultura() {
     );
   };
 
-
-
   const AddForm = React.memo(({ list }: { list: NonNullable<typeof newForm>["list"] }) => {
     // Local form state to prevent cursor jumping
     const [formData, setFormData] = useState({
       title: "",
       author: "",
+      domain: "books" as "books" | "videos",
       subtype: "movie" as "movie" | "series",
       genre: "",
       rating: 0,
@@ -288,6 +299,7 @@ export default function Cultura() {
         setFormData({
           title: "",
           author: "",
+          domain: "books",
           subtype: "movie",
           genre: "",
           rating: 0,
@@ -313,6 +325,10 @@ export default function Cultura() {
       setFormData(prev => ({ ...prev, year: e.target.value ? parseInt(e.target.value) : 0 }));
     }, []);
 
+    const handleDomainChange = useCallback((v: string) => {
+      setFormData(prev => ({ ...prev, domain: v as "books" | "videos" }));
+    }, []);
+
     const handleSubtypeChange = useCallback((v: string) => {
       setFormData(prev => ({ ...prev, subtype: v as "movie" | "series" }));
     }, []);
@@ -326,6 +342,7 @@ export default function Cultura() {
       setFormData({
         title: "",
         author: "",
+        domain: "books",
         subtype: "movie",
         genre: "",
         rating: 0,
@@ -335,14 +352,12 @@ export default function Cultura() {
 
     const handleAdd = useCallback(() => {
       if (!formData.title.trim()) return;
-      const domain = list.startsWith("video") ? "videos" : "books";
-      const status = list.endsWith("done") ? "done" : "backlog";
       const it: Omit<Item, "id"> = {
-        domain: domain as "videos" | "books",
-        status: status as "done" | "backlog",
+        domain: formData.domain,
+        status: list as "done" | "backlog",
         title: formData.title.trim(),
         author: formData.author?.trim() || undefined,
-        subtype: domain === "videos" ? formData.subtype : undefined,
+        subtype: formData.domain === "videos" ? formData.subtype : undefined,
         genre: formData.genre?.trim() || undefined,
         rating: formData.rating || undefined,
         year: formData.year || undefined,
@@ -352,6 +367,7 @@ export default function Cultura() {
       setFormData({
         title: "",
         author: "",
+        domain: "books",
         subtype: "movie",
         genre: "",
         rating: 0,
@@ -372,45 +388,40 @@ export default function Cultura() {
           value={formData.author} 
           onChange={handleAuthorChange}
         />
-        {list.startsWith("video") ? (
-          <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-3">
+          <Select value={formData.domain} onValueChange={handleDomainChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="books">Livro</SelectItem>
+              <SelectItem value="videos">Filme/Série</SelectItem>
+            </SelectContent>
+          </Select>
+          {formData.domain === "videos" && (
             <Select value={formData.subtype} onValueChange={handleSubtypeChange}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Tipo" />
+                <SelectValue placeholder="Subtipo" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="movie">Filme</SelectItem>
                 <SelectItem value="series">Série</SelectItem>
               </SelectContent>
             </Select>
-            <Input 
-              placeholder="Gênero" 
-              value={formData.genre} 
-              onChange={handleGenreChange} 
-            />
-            <Input 
-              type="number" 
-              placeholder="Ano" 
-              value={formData.year || ""} 
-              onChange={handleYearChange} 
-            />
-          </div>
-        ) : (
-          <div className="grid gap-2 sm:grid-cols-2">
-            <Input 
-              placeholder="Gênero" 
-              value={formData.genre} 
-              onChange={handleGenreChange} 
-            />
-            <Input 
-              type="number" 
-              placeholder="Ano" 
-              value={formData.year || ""} 
-              onChange={handleYearChange} 
-            />
-          </div>
-        )}
-        <div className="grid gap-2 sm:grid-cols-3">
+          )}
+          <Input 
+            placeholder="Gênero" 
+            value={formData.genre} 
+            onChange={handleGenreChange} 
+          />
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Input 
+            type="number" 
+            placeholder="Ano" 
+            value={formData.year || ""} 
+            onChange={handleYearChange} 
+          />
           <div className="flex items-center gap-3">
             <label className="text-sm text-muted-foreground">Nota</label>
             <StarRating
@@ -436,7 +447,23 @@ export default function Cultura() {
       {/* Filters Section */}
       <section className="space-y-4 mb-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="grid gap-3 sm:grid-cols-3 flex-1">
+          <div className="grid gap-3 sm:grid-cols-4 flex-1">
+            {/* Content Type Filter */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Tipo de Conteúdo</label>
+              <Select value={selectedContentType} onValueChange={setSelectedContentType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os tipos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
+                  <SelectItem value="books">Livros</SelectItem>
+                  <SelectItem value="movies">Filmes</SelectItem>
+                  <SelectItem value="series">Séries</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Genre Filter */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Gênero</label>
@@ -497,7 +524,7 @@ export default function Cultura() {
             variant="outline" 
             size="sm" 
             onClick={clearFilters}
-            disabled={selectedGenre === "all-genres" && selectedYear === "all-years" && selectedRating === "all-ratings"}
+            disabled={selectedGenre === "all-genres" && selectedYear === "all-years" && selectedRating === "all-ratings" && selectedContentType === "all"}
             className="sm:ml-4"
           >
             Limpar Filtros
@@ -506,14 +533,12 @@ export default function Cultura() {
       </section>
 
       <main className="space-y-6 md:space-y-8">
-        {/* Livros */}
-        <section aria-labelledby="books" className="grid gap-6 grid-cols-1">
-          <h2 id="books" className="sr-only">Livros</h2>
-
+        {/* Para consumir */}
+        <section className="grid gap-6 grid-cols-1">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm text-muted-foreground">Livros para ler ({totalBookBacklog})</CardTitle>
-              <Button variant="outline" size="sm" onClick={() => toggleNew("book-backlog")}>+</Button>
+              <CardTitle className="text-sm text-muted-foreground">Para consumir ({totalBacklog})</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => toggleNew("backlog")}>+</Button>
             </CardHeader>
             <CardContent
               className="grid gap-3 min-h-32"
@@ -521,10 +546,10 @@ export default function Cultura() {
                 e.preventDefault();
                 e.dataTransfer.dropEffect = "move";
               }}
-              onDrop={onDropTo("book-backlog")}
+              onDrop={onDropTo("backlog")}
             >
-              {newForm.isOpen && newForm.list === "book-backlog" && <AddForm key="book-backlog" list="book-backlog" />}
-              {bookBacklogPaginated.currentItems.map((i) => (
+              {newForm.isOpen && newForm.list === "backlog" && <AddForm key="backlog" list="backlog" />}
+              {backlogPaginated.currentItems.map((i) => (
                 <CompactItemCard 
                   key={i.id} 
                   item={i} 
@@ -532,78 +557,7 @@ export default function Cultura() {
                   onRemove={handleRemoveItem} 
                 />
               ))}
-              {byBookBacklog.length === 0 && <p className="text-sm text-muted-foreground">Lista vazia.</p>}
-              
-              <PaginationControls
-                currentPage={bookBacklogPage}
-                totalPages={bookBacklogPaginated.totalPages}
-                onPageChange={setBookBacklogPage}
-                totalItems={byBookBacklog.length}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm text-muted-foreground">Livros lidos ({totalBookDone})</CardTitle>
-              <Button variant="outline" size="sm" onClick={() => toggleNew("book-done")}>+</Button>
-            </CardHeader>
-            <CardContent
-              className="grid gap-3 min-h-32"
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = "move";
-              }}
-              onDrop={onDropTo("book-done")}
-            >
-              {newForm.isOpen && newForm.list === "book-done" && <AddForm key="book-done" list="book-done" />}
-              {bookDonePaginated.currentItems.map((i) => (
-                <CompactItemCard 
-                  key={i.id} 
-                  item={i} 
-                  onUpdate={handleUpdateItem} 
-                  onRemove={handleRemoveItem} 
-                />
-              ))}
-              {byBookDone.length === 0 && <p className="text-sm text-muted-foreground">Nenhum lido.</p>}
-              
-              <PaginationControls
-                currentPage={bookDonePage}
-                totalPages={bookDonePaginated.totalPages}
-                onPageChange={setBookDonePage}
-                totalItems={byBookDone.length}
-              />
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* Vídeos */}
-        <section aria-labelledby="videos" className="grid gap-6 grid-cols-1">
-          <h2 id="videos" className="sr-only">Filmes e séries</h2>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm text-muted-foreground">Filmes e séries para ver ({totalVideoBacklog})</CardTitle>
-              <Button variant="outline" size="sm" onClick={() => toggleNew("video-backlog")}>+</Button>
-            </CardHeader>
-            <CardContent
-              className="grid gap-3 min-h-32"
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = "move";
-              }}
-              onDrop={onDropTo("video-backlog")}
-            >
-              {newForm.isOpen && newForm.list === "video-backlog" && <AddForm key="video-backlog" list="video-backlog" />}
-              {videoBacklogPaginated.currentItems.map((i) => (
-                <CompactItemCard 
-                  key={i.id} 
-                  item={i} 
-                  onUpdate={handleUpdateItem} 
-                  onRemove={handleRemoveItem} 
-                />
-              ))}
-              {!isLoading && byVideoBacklog.length === 0 && (
+              {!isLoading && backlogItems.length === 0 && (
                 <div className="text-center space-y-3 py-4">
                   <p className="text-sm text-muted-foreground">
                     {items.length === 0 ? "Nenhum item encontrado para o seu usuário atual" : "Lista vazia."}
@@ -629,18 +583,21 @@ export default function Cultura() {
               )}
               
               <PaginationControls
-                currentPage={videoBacklogPage}
-                totalPages={videoBacklogPaginated.totalPages}
-                onPageChange={setVideoBacklogPage}
-                totalItems={byVideoBacklog.length}
+                currentPage={backlogPage}
+                totalPages={backlogPaginated.totalPages}
+                onPageChange={setBacklogPage}
+                totalItems={backlogItems.length}
               />
             </CardContent>
           </Card>
+        </section>
 
+        {/* Consumidos */}
+        <section className="grid gap-6 grid-cols-1">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm text-muted-foreground">Filmes e séries assistidos ({totalVideoDone})</CardTitle>
-              <Button variant="outline" size="sm" onClick={() => toggleNew("video-done")}>+</Button>
+              <CardTitle className="text-sm text-muted-foreground">Consumidos ({totalDone})</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => toggleNew("done")}>+</Button>
             </CardHeader>
             <CardContent
               className="grid gap-3 min-h-32"
@@ -648,10 +605,10 @@ export default function Cultura() {
                 e.preventDefault();
                 e.dataTransfer.dropEffect = "move";
               }}
-              onDrop={onDropTo("video-done")}
+              onDrop={onDropTo("done")}
             >
-              {newForm.isOpen && newForm.list === "video-done" && <AddForm key="video-done" list="video-done" />}
-              {videoDonePaginated.currentItems.map((i) => (
+              {newForm.isOpen && newForm.list === "done" && <AddForm key="done" list="done" />}
+              {donePaginated.currentItems.map((i) => (
                 <CompactItemCard 
                   key={i.id} 
                   item={i} 
@@ -659,18 +616,17 @@ export default function Cultura() {
                   onRemove={handleRemoveItem} 
                 />
               ))}
-              {byVideoDone.length === 0 && <p className="text-sm text-muted-foreground">Nenhum assistido.</p>}
+              {doneItems.length === 0 && <p className="text-sm text-muted-foreground">Nenhum item consumido.</p>}
               
               <PaginationControls
-                currentPage={videoDonePage}
-                totalPages={videoDonePaginated.totalPages}
-                onPageChange={setVideoDonePage}
-                totalItems={byVideoDone.length}
+                currentPage={donePage}
+                totalPages={donePaginated.totalPages}
+                onPageChange={setDonePage}
+                totalItems={doneItems.length}
               />
             </CardContent>
           </Card>
         </section>
-
       </main>
     </div>
   );
