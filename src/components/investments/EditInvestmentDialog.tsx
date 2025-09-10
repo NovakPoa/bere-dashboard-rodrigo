@@ -78,6 +78,10 @@ export function EditInvestmentDialog({ investment, onUpdated, children }: EditIn
       preco_unitario_atual: investment.preco_unitario_atual,
       quantidade: data.quantidade,
       data_investimento: formatDateForDatabase(data.data_investimento),
+      current_quantity: investment.current_quantity,
+      average_purchase_price: investment.average_purchase_price,
+      realized_profit_loss: investment.realized_profit_loss,
+      is_closed: investment.is_closed,
     };
 
     editInvestment.mutate(formattedData, {

@@ -17,6 +17,11 @@ export interface Investment {
   data_atualizacao_preco: string;
   created_at: string;
   updated_at: string;
+  // New fields for transaction tracking
+  current_quantity: number;
+  average_purchase_price: number;
+  realized_profit_loss: number;
+  is_closed: boolean;
   // Campos calculados
   valor_total_investido: number;
   valor_atual_total: number;

@@ -18,6 +18,10 @@ interface InvestmentRecord {
   created_at: string;
   updated_at: string;
   user_id: string;
+  current_quantity?: number;
+  average_purchase_price?: number;
+  realized_profit_loss?: number;
+  is_closed?: boolean;
 }
 
 // Conversão de dados com lógica corrigida
@@ -43,6 +47,10 @@ const convertToInvestment = (record: InvestmentRecord, baselinePrice?: number): 
     data_atualizacao_preco: record.data_atualizacao_preco,
     created_at: record.created_at,
     updated_at: record.updated_at,
+    current_quantity: record.current_quantity || record.quantidade,
+    average_purchase_price: record.average_purchase_price || record.preco_unitario_compra,
+    realized_profit_loss: record.realized_profit_loss || 0,
+    is_closed: record.is_closed || false,
     valor_total_investido: valorTotalInvestido,
     valor_atual_total: valorAtualTotal,
     rentabilidade_absoluta: rentabilidadeAbsoluta,
@@ -60,6 +68,10 @@ const convertFromInvestment = (investment: Omit<Investment, "id" | "valor_total_
     preco_unitario_atual: investment.preco_unitario_atual,
     quantidade: investment.quantidade,
     data_investimento: investment.data_investimento,
+    current_quantity: investment.current_quantity,
+    average_purchase_price: investment.average_purchase_price,
+    realized_profit_loss: investment.realized_profit_loss,
+    is_closed: investment.is_closed,
     user_id: null, // Será definido pelo trigger
   };
 };
@@ -142,14 +154,25 @@ export const useAddInvestment = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      const investmentData = convertFromInvestment(investment);
+      const investmentData = {
+        nome_investimento: investment.nome_investimento,
+        tipo_investimento: investment.tipo_investimento,
+        corretora: investment.corretora,
+        moeda: investment.moeda,
+        preco_unitario_compra: investment.preco_unitario_compra,
+        preco_unitario_atual: investment.preco_unitario_atual,
+        quantidade: investment.quantidade,
+        data_investimento: investment.data_investimento,
+        current_quantity: investment.quantidade,
+        average_purchase_price: investment.preco_unitario_compra,
+        realized_profit_loss: 0,
+        is_closed: false,
+        user_id: user.id,
+      };
       
       const { data, error } = await supabase
         .from("investments")
-        .insert([{
-          ...investmentData,
-          user_id: user.id,
-        }])
+        .insert([investmentData])
         .select()
         .single();
 
@@ -235,6 +258,10 @@ export const useEditInvestment = () => {
           preco_unitario_compra: investment.preco_unitario_compra,
           quantidade: investment.quantidade,
           data_investimento: investment.data_investimento,
+          current_quantity: investment.current_quantity,
+          average_purchase_price: investment.average_purchase_price,
+          realized_profit_loss: investment.realized_profit_loss,
+          is_closed: investment.is_closed,
         })
         .eq("id", investment.id)
         .select()
