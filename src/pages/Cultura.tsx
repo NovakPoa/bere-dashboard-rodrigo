@@ -130,6 +130,12 @@ export default function Cultura() {
     setSelectedRating("all-ratings");
   };
 
+  // Total counts (without filters) for display in titles
+  const totalVideoBacklog = useMemo(() => items.filter((i) => i.domain === "videos" && i.status === "backlog").length, [items]);
+  const totalVideoDone = useMemo(() => items.filter((i) => i.domain === "videos" && i.status === "done").length, [items]);
+  const totalBookBacklog = useMemo(() => items.filter((i) => i.domain === "books" && i.status === "backlog").length, [items]);
+  const totalBookDone = useMemo(() => items.filter((i) => i.domain === "books" && i.status === "done").length, [items]);
+
   const byVideoBacklog = useMemo(() => applyFilters(items.filter((i) => i.domain === "videos" && i.status === "backlog")), [items, selectedGenre, selectedYear, selectedRating]);
   const byVideoDone = useMemo(() => applyFilters(items.filter((i) => i.domain === "videos" && i.status === "done")), [items, selectedGenre, selectedYear, selectedRating]);
   const byBookBacklog = useMemo(() => applyFilters(items.filter((i) => i.domain === "books" && i.status === "backlog")), [items, selectedGenre, selectedYear, selectedRating]);
@@ -506,7 +512,7 @@ export default function Cultura() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm text-muted-foreground">Livros para ler</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">Livros para ler ({totalBookBacklog})</CardTitle>
               <Button variant="outline" size="sm" onClick={() => toggleNew("book-backlog")}>+</Button>
             </CardHeader>
             <CardContent
@@ -539,7 +545,7 @@ export default function Cultura() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm text-muted-foreground">Livros lidos</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">Livros lidos ({totalBookDone})</CardTitle>
               <Button variant="outline" size="sm" onClick={() => toggleNew("book-done")}>+</Button>
             </CardHeader>
             <CardContent
@@ -577,7 +583,7 @@ export default function Cultura() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm text-muted-foreground">Filmes e séries para ver</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">Filmes e séries para ver ({totalVideoBacklog})</CardTitle>
               <Button variant="outline" size="sm" onClick={() => toggleNew("video-backlog")}>+</Button>
             </CardHeader>
             <CardContent
@@ -633,7 +639,7 @@ export default function Cultura() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm text-muted-foreground">Filmes e séries assistidos</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">Filmes e séries assistidos ({totalVideoDone})</CardTitle>
               <Button variant="outline" size="sm" onClick={() => toggleNew("video-done")}>+</Button>
             </CardHeader>
             <CardContent
