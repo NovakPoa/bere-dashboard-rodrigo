@@ -9,6 +9,17 @@ import { useProfile } from "@/hooks/useProfile";
 import { useLinkHistoricalData } from "@/hooks/useProfile";
 import { CompactItemCard } from "@/components/culture/CompactItemCard";
 import { StarRating } from "@/components/culture/StarRating";
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious,
+  PaginationEllipsis 
+} from "@/components/ui/pagination";
+
+const ITEMS_PER_PAGE = 10;
 
 export default function Cultura() {
   const { data: items = [], isLoading } = useCultureItems();
@@ -24,6 +35,12 @@ export default function Cultura() {
   const [selectedGenre, setSelectedGenre] = useState<string>("all-genres");
   const [selectedYear, setSelectedYear] = useState<string>("all-years");
   const [selectedRating, setSelectedRating] = useState<string>("all-ratings");
+
+  // Pagination states
+  const [videoBacklogPage, setVideoBacklogPage] = useState(1);
+  const [videoDonePage, setVideoDonePage] = useState(1);
+  const [bookBacklogPage, setBookBacklogPage] = useState(1);
+  const [bookDonePage, setBookDonePage] = useState(1);
 
   // Form inline por lista - using stable object structure to fix cursor issue
   const [newForm, setNewForm] = useState<{
@@ -117,6 +134,134 @@ export default function Cultura() {
   const byVideoDone = useMemo(() => applyFilters(items.filter((i) => i.domain === "videos" && i.status === "done")), [items, selectedGenre, selectedYear, selectedRating]);
   const byBookBacklog = useMemo(() => applyFilters(items.filter((i) => i.domain === "books" && i.status === "backlog")), [items, selectedGenre, selectedYear, selectedRating]);
   const byBookDone = useMemo(() => applyFilters(items.filter((i) => i.domain === "books" && i.status === "done")), [items, selectedGenre, selectedYear, selectedRating]);
+
+  // Reset pages when filters change
+  useEffect(() => {
+    setVideoBacklogPage(1);
+    setVideoDonePage(1);
+    setBookBacklogPage(1);
+    setBookDonePage(1);
+  }, [selectedGenre, selectedYear, selectedRating]);
+
+  // Pagination logic
+  const createPaginationLogic = (items: Item[], currentPage: number) => {
+    const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const currentItems = items.slice(startIndex, endIndex);
+    
+    return { currentItems, totalPages, startIndex, endIndex };
+  };
+
+  // Get paginated data
+  const videoBacklogPaginated = useMemo(() => createPaginationLogic(byVideoBacklog, videoBacklogPage), [byVideoBacklog, videoBacklogPage]);
+  const videoDonePaginated = useMemo(() => createPaginationLogic(byVideoDone, videoDonePage), [byVideoDone, videoDonePage]);
+  const bookBacklogPaginated = useMemo(() => createPaginationLogic(byBookBacklog, bookBacklogPage), [byBookBacklog, bookBacklogPage]);
+  const bookDonePaginated = useMemo(() => createPaginationLogic(byBookDone, bookDonePage), [byBookDone, bookDonePage]);
+
+  // Pagination controls component
+  const PaginationControls = ({ 
+    currentPage, 
+    totalPages, 
+    onPageChange, 
+    totalItems 
+  }: { 
+    currentPage: number; 
+    totalPages: number; 
+    onPageChange: (page: number) => void; 
+    totalItems: number;
+  }) => {
+    if (totalPages <= 1) return null;
+
+    const startItem = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+    const endItem = Math.min(currentPage * ITEMS_PER_PAGE, totalItems);
+
+    return (
+      <div className="flex flex-col gap-3 mt-4">
+        <div className="text-sm text-muted-foreground text-center">
+          Mostrando {startItem}-{endItem} de {totalItems} itens
+        </div>
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious 
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (currentPage > 1) onPageChange(currentPage - 1);
+                }}
+                className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+            
+            {/* First page */}
+            {currentPage > 3 && (
+              <>
+                <PaginationItem>
+                  <PaginationLink 
+                    href="#" 
+                    onClick={(e) => { e.preventDefault(); onPageChange(1); }}
+                  >
+                    1
+                  </PaginationLink>
+                </PaginationItem>
+                {currentPage > 4 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+              </>
+            )}
+            
+            {/* Current page and neighbors */}
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(page => Math.abs(page - currentPage) <= 2)
+              .map(page => (
+                <PaginationItem key={page}>
+                  <PaginationLink 
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); onPageChange(page); }}
+                    isActive={page === currentPage}
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+            
+            {/* Last page */}
+            {currentPage < totalPages - 2 && (
+              <>
+                {currentPage < totalPages - 3 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+                <PaginationItem>
+                  <PaginationLink 
+                    href="#" 
+                    onClick={(e) => { e.preventDefault(); onPageChange(totalPages); }}
+                  >
+                    {totalPages}
+                  </PaginationLink>
+                </PaginationItem>
+              </>
+            )}
+            
+            <PaginationItem>
+              <PaginationNext 
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (currentPage < totalPages) onPageChange(currentPage + 1);
+                }}
+                className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
+    );
+  };
 
 
 
@@ -373,7 +518,7 @@ export default function Cultura() {
               onDrop={onDropTo("video-backlog")}
             >
               {newForm.isOpen && newForm.list === "video-backlog" && <AddForm key="video-backlog" list="video-backlog" />}
-              {byVideoBacklog.map((i) => (
+              {videoBacklogPaginated.currentItems.map((i) => (
                 <CompactItemCard 
                   key={i.id} 
                   item={i} 
@@ -405,6 +550,13 @@ export default function Cultura() {
                   )}
                 </div>
               )}
+              
+              <PaginationControls
+                currentPage={videoBacklogPage}
+                totalPages={videoBacklogPaginated.totalPages}
+                onPageChange={setVideoBacklogPage}
+                totalItems={byVideoBacklog.length}
+              />
             </CardContent>
           </Card>
 
@@ -422,7 +574,7 @@ export default function Cultura() {
               onDrop={onDropTo("video-done")}
             >
               {newForm.isOpen && newForm.list === "video-done" && <AddForm key="video-done" list="video-done" />}
-              {byVideoDone.map((i) => (
+              {videoDonePaginated.currentItems.map((i) => (
                 <CompactItemCard 
                   key={i.id} 
                   item={i} 
@@ -431,6 +583,13 @@ export default function Cultura() {
                 />
               ))}
               {byVideoDone.length === 0 && <p className="text-sm text-muted-foreground">Nenhum assistido.</p>}
+              
+              <PaginationControls
+                currentPage={videoDonePage}
+                totalPages={videoDonePaginated.totalPages}
+                onPageChange={setVideoDonePage}
+                totalItems={byVideoDone.length}
+              />
             </CardContent>
           </Card>
         </section>
@@ -453,7 +612,7 @@ export default function Cultura() {
               onDrop={onDropTo("book-backlog")}
             >
               {newForm.isOpen && newForm.list === "book-backlog" && <AddForm key="book-backlog" list="book-backlog" />}
-              {byBookBacklog.map((i) => (
+              {bookBacklogPaginated.currentItems.map((i) => (
                 <CompactItemCard 
                   key={i.id} 
                   item={i} 
@@ -462,6 +621,13 @@ export default function Cultura() {
                 />
               ))}
               {byBookBacklog.length === 0 && <p className="text-sm text-muted-foreground">Lista vazia.</p>}
+              
+              <PaginationControls
+                currentPage={bookBacklogPage}
+                totalPages={bookBacklogPaginated.totalPages}
+                onPageChange={setBookBacklogPage}
+                totalItems={byBookBacklog.length}
+              />
             </CardContent>
           </Card>
 
@@ -479,7 +645,7 @@ export default function Cultura() {
               onDrop={onDropTo("book-done")}
             >
               {newForm.isOpen && newForm.list === "book-done" && <AddForm key="book-done" list="book-done" />}
-              {byBookDone.map((i) => (
+              {bookDonePaginated.currentItems.map((i) => (
                 <CompactItemCard 
                   key={i.id} 
                   item={i} 
@@ -488,6 +654,13 @@ export default function Cultura() {
                 />
               ))}
               {byBookDone.length === 0 && <p className="text-sm text-muted-foreground">Nenhum lido.</p>}
+              
+              <PaginationControls
+                currentPage={bookDonePage}
+                totalPages={bookDonePaginated.totalPages}
+                onPageChange={setBookDonePage}
+                totalItems={byBookDone.length}
+              />
             </CardContent>
           </Card>
         </section>
