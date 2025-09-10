@@ -471,48 +471,104 @@ export type Database = {
           },
         ]
       }
+      investment_transactions: {
+        Row: {
+          created_at: string
+          id: string
+          investment_id: string
+          quantity: number
+          transaction_date: string
+          transaction_type: string
+          unit_price: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          investment_id: string
+          quantity: number
+          transaction_date: string
+          transaction_type: string
+          unit_price: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          investment_id?: string
+          quantity?: number
+          transaction_date?: string
+          transaction_type?: string
+          unit_price?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investment_transactions_investment_id_fkey"
+            columns: ["investment_id"]
+            isOneToOne: false
+            referencedRelation: "investments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investments: {
         Row: {
+          average_purchase_price: number
           corretora: string
           created_at: string
+          current_quantity: number
           data_atualizacao_preco: string
           data_investimento: string
           id: string
+          is_closed: boolean
           moeda: string
           nome_investimento: string
           preco_unitario_atual: number
           preco_unitario_compra: number
           quantidade: number
+          realized_profit_loss: number
           tipo_investimento: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          average_purchase_price?: number
           corretora: string
           created_at?: string
+          current_quantity?: number
           data_atualizacao_preco?: string
           data_investimento: string
           id?: string
+          is_closed?: boolean
           moeda?: string
           nome_investimento: string
           preco_unitario_atual: number
           preco_unitario_compra: number
           quantidade: number
+          realized_profit_loss?: number
           tipo_investimento: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          average_purchase_price?: number
           corretora?: string
           created_at?: string
+          current_quantity?: number
           data_atualizacao_preco?: string
           data_investimento?: string
           id?: string
+          is_closed?: boolean
           moeda?: string
           nome_investimento?: string
           preco_unitario_atual?: number
           preco_unitario_compra?: number
           quantidade?: number
+          realized_profit_loss?: number
           tipo_investimento?: string
           updated_at?: string
           user_id?: string
