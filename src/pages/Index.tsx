@@ -97,11 +97,11 @@ const Index = () => {
               <Plus className="h-4 w-4" />
             </Button>
           </DrawerTrigger>
-          <DrawerContent>
-            <DrawerHeader>
+          <DrawerContent className="max-h-[95vh]">
+            <DrawerHeader className="pb-2">
               <DrawerTitle>Nova Despesa</DrawerTitle>
             </DrawerHeader>
-            <div className="px-6 pb-6">
+            <div className="px-4 pb-4 overflow-y-auto flex-1">
               <AddExpenseForm onAdded={handleExpenseAdded} />
             </div>
           </DrawerContent>
