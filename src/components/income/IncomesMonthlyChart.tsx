@@ -7,6 +7,7 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import DateRangePicker from "@/components/finance/DateRangePicker";
 import { filterIncomes, filterIncomesByDateRange } from "@/lib/income";
 import type { Income, IncomeCategory } from "@/types/income";
+import { parseDateFromDatabase } from "@/lib/utils";
 
 interface IncomesMonthlyChartProps {
   incomes: Income[];
@@ -57,7 +58,7 @@ export default function IncomesMonthlyChart({ incomes, categories }: IncomesMont
     return Object.entries(monthlyData)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([monthKey, ganhos]) => ({
-        mes: format(new Date(monthKey + "-01"), "MMM/yy", { locale: ptBR }),
+        mes: format(parseDateFromDatabase(monthKey + "-01"), "MMM/yy", { locale: ptBR }),
         ganhos,
       }));
   }, [incomes, startDate, endDate, selectedCategories]);
