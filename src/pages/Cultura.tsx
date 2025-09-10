@@ -500,6 +500,77 @@ export default function Cultura() {
       </section>
 
       <main className="space-y-6 md:space-y-8">
+        {/* Livros */}
+        <section aria-labelledby="books" className="grid gap-6 grid-cols-1">
+          <h2 id="books" className="sr-only">Livros</h2>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-sm text-muted-foreground">Livros para ler</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => toggleNew("book-backlog")}>+</Button>
+            </CardHeader>
+            <CardContent
+              className="grid gap-3 min-h-32"
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+              }}
+              onDrop={onDropTo("book-backlog")}
+            >
+              {newForm.isOpen && newForm.list === "book-backlog" && <AddForm key="book-backlog" list="book-backlog" />}
+              {bookBacklogPaginated.currentItems.map((i) => (
+                <CompactItemCard 
+                  key={i.id} 
+                  item={i} 
+                  onUpdate={handleUpdateItem} 
+                  onRemove={handleRemoveItem} 
+                />
+              ))}
+              {byBookBacklog.length === 0 && <p className="text-sm text-muted-foreground">Lista vazia.</p>}
+              
+              <PaginationControls
+                currentPage={bookBacklogPage}
+                totalPages={bookBacklogPaginated.totalPages}
+                onPageChange={setBookBacklogPage}
+                totalItems={byBookBacklog.length}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-sm text-muted-foreground">Livros lidos</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => toggleNew("book-done")}>+</Button>
+            </CardHeader>
+            <CardContent
+              className="grid gap-3 min-h-32"
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+              }}
+              onDrop={onDropTo("book-done")}
+            >
+              {newForm.isOpen && newForm.list === "book-done" && <AddForm key="book-done" list="book-done" />}
+              {bookDonePaginated.currentItems.map((i) => (
+                <CompactItemCard 
+                  key={i.id} 
+                  item={i} 
+                  onUpdate={handleUpdateItem} 
+                  onRemove={handleRemoveItem} 
+                />
+              ))}
+              {byBookDone.length === 0 && <p className="text-sm text-muted-foreground">Nenhum lido.</p>}
+              
+              <PaginationControls
+                currentPage={bookDonePage}
+                totalPages={bookDonePaginated.totalPages}
+                onPageChange={setBookDonePage}
+                totalItems={byBookDone.length}
+              />
+            </CardContent>
+          </Card>
+        </section>
+
         {/* Vídeos */}
         <section aria-labelledby="videos" className="grid gap-6 grid-cols-1">
           <h2 id="videos" className="sr-only">Filmes e séries</h2>
@@ -589,77 +660,6 @@ export default function Cultura() {
                 totalPages={videoDonePaginated.totalPages}
                 onPageChange={setVideoDonePage}
                 totalItems={byVideoDone.length}
-              />
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* Livros */}
-        <section aria-labelledby="books" className="grid gap-6 grid-cols-1">
-          <h2 id="books" className="sr-only">Livros</h2>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm text-muted-foreground">Livros para ler</CardTitle>
-              <Button variant="outline" size="sm" onClick={() => toggleNew("book-backlog")}>+</Button>
-            </CardHeader>
-            <CardContent
-              className="grid gap-3 min-h-32"
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = "move";
-              }}
-              onDrop={onDropTo("book-backlog")}
-            >
-              {newForm.isOpen && newForm.list === "book-backlog" && <AddForm key="book-backlog" list="book-backlog" />}
-              {bookBacklogPaginated.currentItems.map((i) => (
-                <CompactItemCard 
-                  key={i.id} 
-                  item={i} 
-                  onUpdate={handleUpdateItem} 
-                  onRemove={handleRemoveItem} 
-                />
-              ))}
-              {byBookBacklog.length === 0 && <p className="text-sm text-muted-foreground">Lista vazia.</p>}
-              
-              <PaginationControls
-                currentPage={bookBacklogPage}
-                totalPages={bookBacklogPaginated.totalPages}
-                onPageChange={setBookBacklogPage}
-                totalItems={byBookBacklog.length}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm text-muted-foreground">Livros lidos</CardTitle>
-              <Button variant="outline" size="sm" onClick={() => toggleNew("book-done")}>+</Button>
-            </CardHeader>
-            <CardContent
-              className="grid gap-3 min-h-32"
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = "move";
-              }}
-              onDrop={onDropTo("book-done")}
-            >
-              {newForm.isOpen && newForm.list === "book-done" && <AddForm key="book-done" list="book-done" />}
-              {bookDonePaginated.currentItems.map((i) => (
-                <CompactItemCard 
-                  key={i.id} 
-                  item={i} 
-                  onUpdate={handleUpdateItem} 
-                  onRemove={handleRemoveItem} 
-                />
-              ))}
-              {byBookDone.length === 0 && <p className="text-sm text-muted-foreground">Nenhum lido.</p>}
-              
-              <PaginationControls
-                currentPage={bookDonePage}
-                totalPages={bookDonePaginated.totalPages}
-                onPageChange={setBookDonePage}
-                totalItems={byBookDone.length}
               />
             </CardContent>
           </Card>
