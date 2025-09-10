@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,6 +21,19 @@ export function CompactItemCard({ item, onUpdate, onRemove }: CompactItemCardPro
     year: item.year || "",
     subtype: item.subtype || "movie"
   });
+
+  // Sync edit values when item changes externally
+  useEffect(() => {
+    if (!isEditing) {
+      setEditValues({
+        title: item.title,
+        author: item.author || "",
+        genre: item.genre || "",
+        year: item.year || "",
+        subtype: item.subtype || "movie"
+      });
+    }
+  }, [item, isEditing]);
 
   const handleSave = () => {
     onUpdate(item.id, {

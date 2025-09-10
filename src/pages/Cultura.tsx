@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { setPageSEO } from "@/lib/seo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -120,16 +120,30 @@ export default function Cultura() {
 
 
 
-  const AddForm = ({ list }: { list: NonNullable<typeof newForm>["list"] }) => {
+  const AddForm = React.memo(({ list }: { list: NonNullable<typeof newForm>["list"] }) => {
     // Local form state to prevent cursor jumping
     const [formData, setFormData] = useState({
-      title: newForm.title,
-      author: newForm.author,
-      subtype: newForm.subtype,
-      genre: newForm.genre,
-      rating: newForm.rating,
-      year: newForm.year,
+      title: "",
+      author: "",
+      subtype: "movie" as "movie" | "series",
+      genre: "",
+      rating: 0,
+      year: 0,
     });
+
+    // Sync form data when form opens/closes
+    useEffect(() => {
+      if (newForm.isOpen && newForm.list === list) {
+        setFormData({
+          title: "",
+          author: "",
+          subtype: "movie",
+          genre: "",
+          rating: 0,
+          year: 0,
+        });
+      }
+    }, [newForm.isOpen, newForm.list, list]);
 
     // Memoized change handlers to prevent re-renders
     const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -260,7 +274,7 @@ export default function Cultura() {
         </div>
       </div>
     );
-  };
+  });
 
   return (
     <div className="min-h-screen w-full min-w-0 overflow-x-hidden">
@@ -358,7 +372,7 @@ export default function Cultura() {
               }}
               onDrop={onDropTo("video-backlog")}
             >
-              {newForm.isOpen && newForm.list === "video-backlog" && <AddForm list="video-backlog" />}
+              {newForm.isOpen && newForm.list === "video-backlog" && <AddForm key="video-backlog" list="video-backlog" />}
               {byVideoBacklog.map((i) => (
                 <CompactItemCard 
                   key={i.id} 
@@ -407,7 +421,7 @@ export default function Cultura() {
               }}
               onDrop={onDropTo("video-done")}
             >
-              {newForm.isOpen && newForm.list === "video-done" && <AddForm list="video-done" />}
+              {newForm.isOpen && newForm.list === "video-done" && <AddForm key="video-done" list="video-done" />}
               {byVideoDone.map((i) => (
                 <CompactItemCard 
                   key={i.id} 
@@ -438,7 +452,7 @@ export default function Cultura() {
               }}
               onDrop={onDropTo("book-backlog")}
             >
-              {newForm.isOpen && newForm.list === "book-backlog" && <AddForm list="book-backlog" />}
+              {newForm.isOpen && newForm.list === "book-backlog" && <AddForm key="book-backlog" list="book-backlog" />}
               {byBookBacklog.map((i) => (
                 <CompactItemCard 
                   key={i.id} 
@@ -464,7 +478,7 @@ export default function Cultura() {
               }}
               onDrop={onDropTo("book-done")}
             >
-              {newForm.isOpen && newForm.list === "book-done" && <AddForm list="book-done" />}
+              {newForm.isOpen && newForm.list === "book-done" && <AddForm key="book-done" list="book-done" />}
               {byBookDone.map((i) => (
                 <CompactItemCard 
                   key={i.id} 
