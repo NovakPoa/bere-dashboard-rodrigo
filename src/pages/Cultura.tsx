@@ -18,6 +18,7 @@ import {
   PaginationPrevious,
   PaginationEllipsis 
 } from "@/components/ui/pagination";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -35,7 +36,7 @@ export default function Cultura() {
   const [selectedGenre, setSelectedGenre] = useState<string>("all-genres");
   const [selectedYear, setSelectedYear] = useState<string>("all-years");
   const [selectedRating, setSelectedRating] = useState<string>("all-ratings");
-  const [selectedContentType, setSelectedContentType] = useState<string>("all");
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(["books", "movies", "series"]);
 
   // Pagination states (simplified to 2)
   const [backlogPage, setBacklogPage] = useState(1);
@@ -108,11 +109,16 @@ export default function Cultura() {
   // Apply filters function
   const applyFilters = (itemList: Item[]) => {
     return itemList.filter(item => {
-      // Content type filter
-      if (selectedContentType !== "all") {
-        if (selectedContentType === "books" && item.domain !== "books") return false;
-        if (selectedContentType === "movies" && (item.domain !== "videos" || item.subtype !== "movie")) return false;
-        if (selectedContentType === "series" && (item.domain !== "videos" || item.subtype !== "series")) return false;
+      // Content type filter (multi-select)
+      if (selectedTypes.length === 0) return false;
+      if (selectedTypes.length < 3) {
+        const matches =
+          (item.domain === "books" && selectedTypes.includes("books")) ||
+          (item.domain === "videos" && (
+            (item.subtype === "movie" && selectedTypes.includes("movies")) ||
+            (item.subtype === "series" && selectedTypes.includes("series"))
+          ));
+        if (!matches) return false;
       }
       
       // Other filters
@@ -131,37 +137,45 @@ export default function Cultura() {
     setSelectedGenre("all-genres");
     setSelectedYear("all-years");
     setSelectedRating("all-ratings");
-    setSelectedContentType("all");
+    setSelectedTypes(["books", "movies", "series"]);
   };
 
   // Combined item lists with filters
-  const backlogItems = useMemo(() => applyFilters(items.filter((i) => i.status === "backlog")), [items, selectedGenre, selectedYear, selectedRating, selectedContentType]);
-  const doneItems = useMemo(() => applyFilters(items.filter((i) => i.status === "done")), [items, selectedGenre, selectedYear, selectedRating, selectedContentType]);
+  const backlogItems = useMemo(() => applyFilters(items.filter((i) => i.status === "backlog")), [items, selectedGenre, selectedYear, selectedRating, selectedTypes]);
+  const doneItems = useMemo(() => applyFilters(items.filter((i) => i.status === "done")), [items, selectedGenre, selectedYear, selectedRating, selectedTypes]);
 
   // Total counts for display in titles (with content type filter applied)
   const totalBacklog = useMemo(() => {
     const filteredItems = items.filter((i) => i.status === "backlog");
-    if (selectedContentType === "all") return filteredItems.length;
-    if (selectedContentType === "books") return filteredItems.filter(i => i.domain === "books").length;
-    if (selectedContentType === "movies") return filteredItems.filter(i => i.domain === "videos" && i.subtype === "movie").length;
-    if (selectedContentType === "series") return filteredItems.filter(i => i.domain === "videos" && i.subtype === "series").length;
-    return filteredItems.length;
-  }, [items, selectedContentType]);
+    if (selectedTypes.length === 0) return 0;
+    if (selectedTypes.length === 3) return filteredItems.length;
+    return filteredItems.filter(i => (
+      (i.domain === "books" && selectedTypes.includes("books")) ||
+      (i.domain === "videos" && (
+        (i.subtype === "movie" && selectedTypes.includes("movies")) ||
+        (i.subtype === "series" && selectedTypes.includes("series"))
+      ))
+    )).length;
+  }, [items, selectedTypes]);
 
   const totalDone = useMemo(() => {
     const filteredItems = items.filter((i) => i.status === "done");
-    if (selectedContentType === "all") return filteredItems.length;
-    if (selectedContentType === "books") return filteredItems.filter(i => i.domain === "books").length;
-    if (selectedContentType === "movies") return filteredItems.filter(i => i.domain === "videos" && i.subtype === "movie").length;
-    if (selectedContentType === "series") return filteredItems.filter(i => i.domain === "videos" && i.subtype === "series").length;
-    return filteredItems.length;
-  }, [items, selectedContentType]);
+    if (selectedTypes.length === 0) return 0;
+    if (selectedTypes.length === 3) return filteredItems.length;
+    return filteredItems.filter(i => (
+      (i.domain === "books" && selectedTypes.includes("books")) ||
+      (i.domain === "videos" && (
+        (i.subtype === "movie" && selectedTypes.includes("movies")) ||
+        (i.subtype === "series" && selectedTypes.includes("series"))
+      ))
+    )).length;
+  }, [items, selectedTypes]);
 
   // Reset pages when filters change
   useEffect(() => {
     setBacklogPage(1);
     setDonePage(1);
-  }, [selectedGenre, selectedYear, selectedRating, selectedContentType]);
+  }, [selectedGenre, selectedYear, selectedRating, selectedTypes]);
 
   // Pagination logic
   const createPaginationLogic = (items: Item[], currentPage: number) => {
@@ -451,17 +465,17 @@ export default function Cultura() {
             {/* Content Type Filter */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Tipo de Conteúdo</label>
-              <Select value={selectedContentType} onValueChange={setSelectedContentType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os tipos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os tipos</SelectItem>
-                  <SelectItem value="books">Livros</SelectItem>
-                  <SelectItem value="movies">Filmes</SelectItem>
-                  <SelectItem value="series">Séries</SelectItem>
-                </SelectContent>
-              </Select>
+              <MultiSelect
+                label={undefined}
+                options={[
+                  { label: "Livros", value: "books" },
+                  { label: "Filmes", value: "movies" },
+                  { label: "Séries", value: "series" },
+                ]}
+                selected={selectedTypes}
+                onSelectionChange={setSelectedTypes}
+                placeholder="Todos os tipos"
+              />
             </div>
 
             {/* Genre Filter */}
@@ -524,7 +538,7 @@ export default function Cultura() {
             variant="outline" 
             size="sm" 
             onClick={clearFilters}
-            disabled={selectedGenre === "all-genres" && selectedYear === "all-years" && selectedRating === "all-ratings" && selectedContentType === "all"}
+            disabled={selectedGenre === "all-genres" && selectedYear === "all-years" && selectedRating === "all-ratings" && selectedTypes.length === 3}
             className="sm:ml-4"
           >
             Limpar Filtros
