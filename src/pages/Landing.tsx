@@ -45,7 +45,7 @@ export default function Landing() {
         <section className="container px-4 py-16 md:py-24">
           <div className="mx-auto max-w-3xl text-center">
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-              Seu hub pessoal para finanças, hábitos e organização
+              Seu Hub pessoal para finanças, hábitos e organização
             </h1>
             <p className="mt-4 text-muted-foreground">
               Uma plataforma minimalista para visualizar seus indicadores e ganhar clareza
