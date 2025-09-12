@@ -32,12 +32,8 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
     });
   };
 
-  const handleEdit = (investment: Investment) => {
-    navigate(`/financeiro/investimentos/${investment.id}/precos`);
-  };
-
-  const handleTransactions = (investment: Investment) => {
-    navigate(`/financeiro/investimentos/${investment.id}/transacoes`);
+  const handleDetails = (investment: Investment) => {
+    navigate(`/financeiro/investimentos/${investment.id}/detalhes`);
   };
 
   if (memoizedInvestments.length === 0) {
@@ -129,18 +125,10 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEdit(investment)}
-                          title="Histórico de preços"
+                          onClick={() => handleDetails(investment)}
+                          title="Ver detalhes do ativo"
                         >
-                          <TrendingUp className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleTransactions(investment)}
-                          title="Gerenciar transações"
-                        >
-                          <ArrowUpRight className="h-4 w-4" />
+                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
