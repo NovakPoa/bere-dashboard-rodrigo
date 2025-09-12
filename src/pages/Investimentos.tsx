@@ -121,7 +121,7 @@ export default function Investimentos() {
                 <Plus className="h-4 w-4" />
               </Button>
             </DrawerTrigger>
-            <DrawerContent className="max-h-[90vh]">
+            <DrawerContent className="h-[90vh] overflow-y-auto">
               <div className="mx-auto w-full max-w-2xl p-4">
                 <AddInvestmentForm onAdded={handleInvestmentAdded} />
               </div>

@@ -27,10 +27,10 @@ interface InvestmentRecord {
 // Conversão de dados com lógica corrigida
 
 const convertToInvestment = (record: InvestmentRecord, baselinePrice?: number): Investment => {
-  // Use baseline price if available, otherwise fallback to purchase price
-  const actualBaselinePrice = baselinePrice ?? record.preco_unitario_compra;
+  // Use average purchase price for rentability calculation, not baseline from price history
+  const basePrice = record.average_purchase_price ?? record.preco_unitario_compra;
   const quantityForCalc = record.current_quantity ?? record.quantidade;
-  const valorTotalInvestido = actualBaselinePrice * quantityForCalc;
+  const valorTotalInvestido = basePrice * quantityForCalc;
   const valorAtualTotal = record.preco_unitario_atual * quantityForCalc;
   const rentabilidadeAbsoluta = valorAtualTotal - valorTotalInvestido;
   const rentabilidadePercentual = valorTotalInvestido > 0 ? (rentabilidadeAbsoluta / valorTotalInvestido) * 100 : 0;
@@ -130,9 +130,9 @@ export const useInvestments = () => {
         });
       }
 
-      // Convert investments using baseline prices
+      // Convert investments (baseline prices no longer used for rentability)
       return investments.map(investment => 
-        convertToInvestment(investment, baselinePrices.get(investment.id))
+        convertToInvestment(investment)
       );
     },
   });
