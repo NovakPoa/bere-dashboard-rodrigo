@@ -1,6 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Plus, Edit, Trash2 } from "lucide-react";
@@ -24,6 +26,7 @@ export default function InvestmentDetails() {
   const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
 
+  const queryClient = useQueryClient();
   const { data: investments = [], isLoading: loadingInvestments } = useInvestments();
   const { data: transactions = [], isLoading: loadingTransactions } = useInvestmentTransactions(investmentId);
   const { data: priceHistory = [], isLoading: loadingPrices } = useInvestmentPrices(investmentId || "");
@@ -80,16 +83,32 @@ export default function InvestmentDetails() {
       return;
     }
 
-    const priceDate = `${selectedYear}-${selectedMonth.padStart(2, '0')}-01`;
+    const today = new Date().toISOString().split('T')[0];
     
     try {
-        await upsertPrice.mutateAsync({
-          investmentId: investmentId,
-          price: parseFloat(newPrice),
-          priceDate: priceDate,
-        });
+      // Update investment current price
+      const { error: updateError } = await supabase
+        .from("investments")
+        .update({
+          preco_unitario_atual: parseFloat(newPrice),
+          data_atualizacao_preco: new Date().toISOString(),
+        })
+        .eq("id", investmentId);
+
+      if (updateError) throw updateError;
+
+      // Add to price history
+      await upsertPrice.mutateAsync({
+        investmentId: investmentId,
+        price: parseFloat(newPrice),
+        priceDate: today,
+      });
+
       setNewPrice("");
       toast.success("Preço atualizado com sucesso");
+      
+      // Invalidate investments query to refresh the UI
+      queryClient.invalidateQueries({ queryKey: ["investments"] });
     } catch (error) {
       console.error("Erro ao atualizar preço:", error);
       toast.error("Erro ao atualizar preço");
@@ -308,42 +327,15 @@ export default function InvestmentDetails() {
           {/* Price Update Form */}
           <Card>
             <CardHeader>
-              <CardTitle>Atualizar Preço</CardTitle>
+              <CardTitle>Atualizar Preço Atual</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <p className="text-sm text-muted-foreground">
+                Atualize o preço atual do ativo. Isso afetará o cálculo da rentabilidade.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="month">Mês</Label>
-                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o mês" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {months.map((month) => (
-                        <SelectItem key={month.value} value={month.value}>
-                          {month.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="year">Ano</Label>
-                  <Select value={selectedYear} onValueChange={setSelectedYear}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o ano" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {years.map((year) => (
-                        <SelectItem key={year} value={year}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="price">Preço ({investment.moeda})</Label>
+                  <Label htmlFor="price">Novo Preço ({investment.moeda})</Label>
                   <Input
                     id="price"
                     type="text"
@@ -352,13 +344,16 @@ export default function InvestmentDetails() {
                     placeholder="0,00"
                   />
                 </div>
+                <div className="flex items-end">
+                  <Button 
+                    onClick={handleUpdatePrice}
+                    disabled={upsertPrice.isPending || !newPrice}
+                    className="w-full"
+                  >
+                    {upsertPrice.isPending ? "Salvando..." : "Atualizar Preço"}
+                  </Button>
+                </div>
               </div>
-              <Button 
-                onClick={handleUpdatePrice}
-                disabled={upsertPrice.isPending || !newPrice}
-              >
-                {upsertPrice.isPending ? "Salvando..." : "Salvar Preço"}
-              </Button>
             </CardContent>
           </Card>
 

@@ -179,13 +179,13 @@ export const useAddInvestment = () => {
 
       if (error) throw error;
 
-      // Create initial price history record
+      // Create initial price history record (using current price)
       const { error: priceHistoryError } = await supabase
         .from("investment_prices")
         .insert([{
           investment_id: data.id,
-          price: investment.preco_unitario_compra,
-          price_date: investment.data_investimento,
+          price: investment.preco_unitario_atual,
+          price_date: new Date().toISOString().split('T')[0], // Today's date
           user_id: user.id,
         }]);
 
@@ -193,11 +193,29 @@ export const useAddInvestment = () => {
         console.warn("Failed to create initial price history:", priceHistoryError);
       }
 
+      // Create initial purchase transaction
+      const { error: transactionError } = await supabase
+        .from("investment_transactions")
+        .insert([{
+          investment_id: data.id,
+          user_id: user.id,
+          transaction_type: "BUY",
+          quantity: investment.quantidade,
+          unit_price: investment.preco_unitario_compra,
+          transaction_date: investment.data_investimento,
+        }]);
+
+      if (transactionError) {
+        console.warn("Failed to create initial transaction:", transactionError);
+      }
+
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["investments"] });
-      toast.success("Investimento adicionado com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["investment-transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["investment-prices"] });
+      toast.success("Investimento e transação inicial criados com sucesso!");
     },
     onError: (error) => {
       console.error("Erro ao adicionar investimento:", error);
