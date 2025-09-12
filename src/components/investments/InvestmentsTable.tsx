@@ -5,14 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, TrendingUp, TrendingDown, Edit, History } from "lucide-react";
+import { Trash2, TrendingUp, TrendingDown, Edit, History, ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { currency, percentage, formatQuantity, formatLabel } from "@/lib/investments";
 import { parseDateFromDatabase } from "@/lib/utils";
-import { SellInvestmentDialog } from "./SellInvestmentDialog";
-import { TransactionHistoryDialog } from "./TransactionHistoryDialog";
 
 
 interface InvestmentsTableProps {
@@ -24,9 +22,6 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
   const memoizedInvestments = useMemo(() => investments, [investments]);
   const removeInvestment = useRemoveInvestment();
   const navigate = useNavigate();
-  const [sellDialogOpen, setSellDialogOpen] = useState(false);
-  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
-  const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null);
 
   const handleDelete = (id: string) => {
     console.log("[InvestmentsTable] Deleting investment", id);
@@ -37,14 +32,12 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
     });
   };
 
-  const handleSell = (investment: Investment) => {
-    setSelectedInvestment(investment);
-    setSellDialogOpen(true);
+  const handleEdit = (investment: Investment) => {
+    navigate(`/financeiro/investimentos/${investment.id}/precos`);
   };
 
-  const handleViewHistory = (investment: Investment) => {
-    setSelectedInvestment(investment);
-    setHistoryDialogOpen(true);
+  const handleTransactions = (investment: Investment) => {
+    navigate(`/financeiro/investimentos/${investment.id}/transacoes`);
   };
 
   if (memoizedInvestments.length === 0) {
@@ -79,8 +72,9 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                 <TableHead className="text-right">Valor Investido</TableHead>
                 <TableHead className="text-right">Valor Atual</TableHead>
                 <TableHead className="text-right">Rentabilidade</TableHead>
+                <TableHead className="text-right">Resultado Realizado</TableHead>
                 <TableHead>Data</TableHead>
-                <TableHead className="w-20">Ações</TableHead>
+                <TableHead className="text-right">Gerenciar</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -98,17 +92,14 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                     {formatLabel(investment.corretora)}
                   </TableCell>
                   <TableCell className="text-right">
-                    {formatQuantity(investment.quantidade)}
-                  </TableCell>
-                  <TableCell>
                     {formatQuantity(investment.current_quantity)}
                     {investment.is_closed && <span className="text-muted-foreground ml-1">(Fechado)</span>}
                   </TableCell>
                   <TableCell className="text-right">
-                    {currency(investment.valor_total_investido, investment.moeda)}
+                    {currency(investment.current_quantity * investment.average_purchase_price, investment.moeda)}
                   </TableCell>
                   <TableCell className="text-right">
-                    {currency(investment.valor_atual_total, investment.moeda)}
+                    {currency(investment.current_quantity * investment.preco_unitario_atual, investment.moeda)}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
@@ -133,47 +124,33 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
                   <TableCell>
                     {format(parseDateFromDatabase(investment.data_investimento), "dd/MM/yyyy", { locale: ptBR })}
                   </TableCell>
-                    <TableCell className="text-center">
-                     <div className="flex items-center justify-center gap-1">
-                       <Button
-                         variant="ghost"
-                         size="icon"
-                         className="h-6 w-6 text-muted-foreground hover:text-primary"
-                         onClick={() => navigate(`/financeiro/investimentos/${investment.id}/historico-precos`)}
-                         aria-label="Histórico de preços"
-                       >
-                         <Edit className="h-3 w-3" />
-                       </Button>
-                       <Button
-                         variant="ghost"
-                         size="icon"
-                         className="h-6 w-6 text-muted-foreground hover:text-primary"
-                         onClick={() => handleViewHistory(investment)}
-                         aria-label="Ver histórico"
-                       >
-                         <History className="h-3 w-3" />
-                       </Button>
-                       {investment.current_quantity > 0 && (
-                         <Button
-                           variant="ghost"
-                           size="icon"
-                           className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                           onClick={() => handleSell(investment)}
-                           aria-label="Vender"
-                         >
-                           <TrendingDown className="h-3 w-3" />
-                         </Button>
-                       )}
-                       <Button
-                         variant="ghost"
-                         size="icon"
-                         className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                         onClick={() => handleDelete(investment.id)}
-                         aria-label="Excluir investimento"
-                       >
-                         <Trash2 className="h-3 w-3" />
-                       </Button>
-                     </div>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(investment)}
+                          title="Histórico de preços"
+                        >
+                          <TrendingUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleTransactions(investment)}
+                          title="Gerenciar transações"
+                        >
+                          <ArrowUpRight className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(investment.id)}
+                          title="Excluir investimento"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                 </TableRow>
               ))}
@@ -181,21 +158,6 @@ export function InvestmentsTable({ investments, onChange }: InvestmentsTableProp
           </Table>
         </div>
       </CardContent>
-      
-      {selectedInvestment && (
-        <>
-          <SellInvestmentDialog
-            investment={selectedInvestment}
-            open={sellDialogOpen}
-            onOpenChange={setSellDialogOpen}
-          />
-          <TransactionHistoryDialog
-            investment={selectedInvestment}
-            open={historyDialogOpen}
-            onOpenChange={setHistoryDialogOpen}
-          />
-        </>
-      )}
     </Card>
   );
 }
