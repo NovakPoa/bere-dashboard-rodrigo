@@ -131,16 +131,20 @@ async function recalculateInvestmentPosition(investmentId: string) {
   
   for (const transaction of transactions) {
     if (transaction.transaction_type === "BUY") {
-      currentQuantity += transaction.quantity;
-      totalInvested += transaction.quantity * transaction.unit_price;
+      const qty = Number(transaction.quantity);
+      const price = Number(transaction.unit_price);
+      currentQuantity += qty;
+      totalInvested += qty * price;
       buyTransactions.push({
-        quantity: transaction.quantity,
-        price: transaction.unit_price,
+        quantity: qty,
+        price,
       });
     } else if (transaction.transaction_type === "SELL") {
-      let remainingToSell = transaction.quantity;
-      totalSoldQuantity += transaction.quantity;
-      totalSoldValue += transaction.quantity * transaction.unit_price;
+      const qty = Number(transaction.quantity);
+      const price = Number(transaction.unit_price);
+      let remainingToSell = qty;
+      totalSoldQuantity += qty;
+      totalSoldValue += qty * price;
       
       // FIFO: Sell from earliest purchases first
       while (remainingToSell > 0 && buyTransactions.length > 0) {
@@ -148,7 +152,7 @@ async function recalculateInvestmentPosition(investmentId: string) {
         const soldFromThisBuy = Math.min(remainingToSell, oldestBuy.quantity);
         
         // Calculate realized profit/loss for this portion
-        realizedProfitLoss += soldFromThisBuy * (transaction.unit_price - oldestBuy.price);
+        realizedProfitLoss += soldFromThisBuy * (price - oldestBuy.price);
         
         oldestBuy.quantity -= soldFromThisBuy;
         remainingToSell -= soldFromThisBuy;
@@ -158,7 +162,7 @@ async function recalculateInvestmentPosition(investmentId: string) {
         }
       }
       
-      currentQuantity -= transaction.quantity;
+      currentQuantity -= qty;
     }
   }
 
@@ -177,6 +181,7 @@ async function recalculateInvestmentPosition(investmentId: string) {
       average_purchase_price: averagePurchasePrice,
       realized_profit_loss: realizedProfitLoss,
       is_closed: currentQuantity === 0,
+      quantidade: currentQuantity,
     })
     .eq("id", investmentId);
 

@@ -29,8 +29,9 @@ interface InvestmentRecord {
 const convertToInvestment = (record: InvestmentRecord, baselinePrice?: number): Investment => {
   // Use baseline price if available, otherwise fallback to purchase price
   const actualBaselinePrice = baselinePrice ?? record.preco_unitario_compra;
-  const valorTotalInvestido = actualBaselinePrice * record.quantidade;
-  const valorAtualTotal = record.preco_unitario_atual * record.quantidade;
+  const quantityForCalc = record.current_quantity ?? record.quantidade;
+  const valorTotalInvestido = actualBaselinePrice * quantityForCalc;
+  const valorAtualTotal = record.preco_unitario_atual * quantityForCalc;
   const rentabilidadeAbsoluta = valorAtualTotal - valorTotalInvestido;
   const rentabilidadePercentual = valorTotalInvestido > 0 ? (rentabilidadeAbsoluta / valorTotalInvestido) * 100 : 0;
 
