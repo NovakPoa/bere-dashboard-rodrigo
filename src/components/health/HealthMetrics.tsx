@@ -20,7 +20,7 @@ export default function HealthMetrics({ metrics }: HealthMetricsProps) {
   };
 
   return (
-    <div className="grid gap-4 md:gap-6 grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-3">
       <Card className="transition-smooth hover:shadow-elegant">
         <CardHeader>
           <CardTitle className="text-sm text-muted-foreground">Consumo Médio</CardTitle>
@@ -56,27 +56,6 @@ export default function HealthMetrics({ metrics }: HealthMetricsProps) {
           <p className="text-xs text-muted-foreground mt-1">
             {metrics.avgBalance > 0 ? "Superávit" : "Déficit"}
           </p>
-        </CardContent>
-      </Card>
-
-      <Card className="transition-smooth hover:shadow-elegant">
-        <CardHeader>
-          <CardTitle className="text-sm text-muted-foreground">
-            {Math.abs(metrics.maxDeficit) > metrics.maxSurplus ? "Maior Déficit" : "Maior Superávit"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className={`text-2xl font-semibold ${
-            Math.abs(metrics.maxDeficit) > metrics.maxSurplus 
-              ? "text-green-600" 
-              : "text-orange-600"
-          }`}>
-            {Math.abs(metrics.maxDeficit) > metrics.maxSurplus 
-              ? `${formatCalories(metrics.maxDeficit)} kcal`
-              : `+${formatCalories(metrics.maxSurplus)} kcal`
-            }
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">em {metrics.totalDays} dias</p>
         </CardContent>
       </Card>
     </div>
