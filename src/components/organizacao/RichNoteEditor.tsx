@@ -46,11 +46,10 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
         window.clearTimeout(saveTimer.current);
         saveTimer.current = null;
       }
+      // Force immediate save on unmount regardless of lastHtmlRef
       if (editorRef.current) {
         const currentHtml = editorRef.current.innerHTML;
-        if (currentHtml !== lastHtmlRef.current) {
-          onChange(currentHtml);
-        }
+        onChange(currentHtml);
       }
     };
   }, [onChange]);
@@ -60,7 +59,7 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {
       onChange(nextHtml);
-    }, 200);
+    }, 150);
   };
 
   const withinEditor = () => {
@@ -232,6 +231,7 @@ export default function RichNoteEditor({ html, onChange, onConvertToPage, onOpen
       if (text) {
         document.execCommand('insertText', false, text);
         const next = editorRef.current?.innerHTML || "";
+        lastHtmlRef.current = next; // Update ref immediately
         scheduleSave(next);
       }
     }

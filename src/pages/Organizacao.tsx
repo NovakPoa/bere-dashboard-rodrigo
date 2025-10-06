@@ -135,6 +135,14 @@ function OrganizacaoContent() {
       return;
     }
     
+    // Force save current page content before navigation
+    if (page) {
+      const currentContent = editorRef.current?.innerHTML;
+      if (currentContent) {
+        setContent(page.id, currentContent);
+      }
+    }
+    
     setIsChangingPage(true);
     setActivePageId(pageId);
     setPageVersion(prev => prev + 1); // Force re-render
